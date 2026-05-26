@@ -18,6 +18,7 @@ import CommunityPage      from '@/pages/CommunityPage'
 import VendorPage         from '@/pages/VendorPage'
 import MessagesPage       from '@/pages/MessagesPage'
 import NotificationsPage  from '@/pages/NotificationsPage'
+import FavoritesPage      from '@/pages/FavoritesPage'
 
 function SplashScreen() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
           <Route index                      element={<MarketplacePage />} />
           <Route path="/commandes"          element={<OrdersPage />} />
           <Route path="/portefeuille"       element={<WalletPage />} />
+          <Route path="/favoris"            element={<FavoritesPage />} />
           <Route path="/profil"             element={<ProfilePage />} />
           <Route path="/vendeur"            element={<VendorPage />} />
           <Route path="/messages"           element={<MessagesPage />} />
