@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Wallet, RefreshCw, Copy, Check, Eye, EyeOff,
-  Shield, ChevronRight, X, Loader2, TrendingUp,
-  TrendingDown, Phone, Download, Lock, Key
+  Shield, ChevronRight, X, TrendingUp, TrendingDown,
+  Phone, Download, Loader2
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 const OPERATORS = [
   { id: 'MTN',    label: 'MTN Mobile Money', emoji: '🟡' },
@@ -17,25 +15,30 @@ const OPERATORS = [
   { id: 'Celtis', label: 'Celtis Cash',      emoji: '🟢' },
 ]
 
-const TX_TYPES = {
-  deposit:           { label: 'Rechargement',     icon: '💰', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  withdraw:          { label: 'Retrait',           icon: '💸', color: 'text-red-600',     bg: 'bg-red-50'     },
-  transfer_sent:     { label: 'Transfert envoyé', icon: '📤', color: 'text-red-600',     bg: 'bg-red-50'     },
-  transfer_received: { label: 'Transfert reçu',   icon: '📥', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  order_payment:     { label: 'Paiement commande',icon: '🛒', color: 'text-red-600',     bg: 'bg-red-50'     },
-  order_received:    { label: 'Vente reçue',      icon: '💵', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  subscription:      { label: 'Abonnement',       icon: '⭐', color: 'text-red-600',     bg: 'bg-red-50'     },
+const TX_CONFIG = {
+  recharge:        { label: 'Recharge',          icon: '💰', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  deposit:         { label: 'Dépôt',             icon: '💰', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  transfer_in:     { label: 'Transfert reçu',    icon: '📥', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  transfer_out:    { label: 'Transfert envoyé',  icon: '📤', color: 'text-red-600',     bg: 'bg-red-50'     },
+  withdraw:        { label: 'Retrait',            icon: '💸', color: 'text-red-600',     bg: 'bg-red-50'     },
+  order_payment:   { label: 'Paiement commande', icon: '🛒', color: 'text-red-600',     bg: 'bg-red-50'     },
+  order_received:  { label: 'Vente reçue',       icon: '💵', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  order_refund:    { label: 'Remboursement',      icon: '↩️', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  subscription:    { label: 'Abonnement premium',icon: '⭐', color: 'text-red-600',     bg: 'bg-red-50'     },
+  pieces_purchase: { label: 'Achat pièces',      icon: '🪙', color: 'text-red-600',     bg: 'bg-red-50'     },
 }
 
 function getTxConfig(tx) {
-  const type = (tx.transaction_type || tx.type || '').toLowerCase()
-  if (type.includes('deposit')) return TX_TYPES.deposit
-  if (type.includes('withdraw')) return TX_TYPES.withdraw
-  if (type.includes('transfer_sent')) return TX_TYPES.transfer_sent
-  if (type.includes('transfer_received')) return TX_TYPES.transfer_received
-  if (type.includes('transfer')) return Number(tx.amount) < 0 ? TX_TYPES.transfer_sent : TX_TYPES.transfer_received
-  if (type.includes('order') || type.includes('purchase')) return Number(tx.amount) < 0 ? TX_TYPES.order_payment : TX_TYPES.order_received
-  if (type.includes('subscription') || type.includes('premium')) return TX_TYPES.subscription
+  const type = (tx.type || tx.transaction_type || '').toLowerCase()
+  if (TX_CONFIG[type]) return TX_CONFIG[type]
+  if (type.includes('deposit') || type.includes('recharge')) return TX_CONFIG.recharge
+  if (type.includes('transfer_in') || type.includes('transfer_received')) return TX_CONFIG.transfer_in
+  if (type.includes('transfer_out') || type.includes('transfer_sent')) return TX_CONFIG.transfer_out
+  if (type.includes('transfer')) return Number(tx.amount) < 0 ? TX_CONFIG.transfer_out : TX_CONFIG.transfer_in
+  if (type.includes('withdraw')) return TX_CONFIG.withdraw
+  if (type.includes('order') && Number(tx.amount) < 0) return TX_CONFIG.order_payment
+  if (type.includes('order')) return TX_CONFIG.order_received
+  if (type.includes('subscription') || type.includes('premium')) return TX_CONFIG.subscription
   return { label: 'Transaction', icon: '💳', color: 'text-gray-600', bg: 'bg-gray-50' }
 }
 
@@ -44,35 +47,39 @@ async function sha256(text) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// ── Sheet générique ────────────────────────────────────────
+// ============================================================
+// SHEET GÉNÉRIQUE
+// ============================================================
 function Sheet({ open, onClose, title, children }) {
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
   if (!open) return null
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-h-[92vh] flex flex-col animate-slide-up">
+      <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose}/>
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-h-[92vh] flex flex-col animate-slide-up max-w-[480px] mx-auto">
         <div className="flex justify-center pt-3 flex-shrink-0">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          <div className="w-10 h-1 bg-gray-200 rounded-full"/>
         </div>
         {title && (
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-shrink-0">
             <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
             <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center">
-              <X size={16} className="text-gray-500" />
+              <X size={16} className="text-gray-500"/>
             </button>
           </div>
         )}
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
-      <style>{`
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.28s cubic-bezier(.32,.72,0,1); }
-      `}</style>
     </>
   )
 }
 
-// ── PIN Input ──────────────────────────────────────────────
+// ============================================================
+// PIN INPUT
+// ============================================================
 function PinInput({ value, onChange, error, label }) {
   const refs = useRef([])
   const digits = value.split('')
@@ -110,14 +117,15 @@ function PinInput({ value, onChange, error, label }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// ============================================================
 // DÉPÔT
-// ══════════════════════════════════════════════════════════
+// ============================================================
 function DepositSheet({ open, onClose, user }) {
   const [operator, setOperator] = useState('')
   const [phone, setPhone] = useState('')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
   const PRESETS = [1000, 2000, 5000, 10000, 25000, 50000]
 
   const handleDeposit = async () => {
@@ -173,10 +181,10 @@ function DepositSheet({ open, onClose, user }) {
         <div>
           <p className="text-sm font-bold text-gray-700 mb-2">Numéro Mobile Money</p>
           <div className="relative">
-            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input type="tel" placeholder="Ex: 22961000000" value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
           </div>
         </div>
         <div>
@@ -192,7 +200,7 @@ function DepositSheet({ open, onClose, user }) {
           </div>
           <input type="number" placeholder="Autre montant" value={amount}
             onChange={e => setAmount(e.target.value)} min="100"
-            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
         </div>
         {amount && parseInt(amount) >= 100 && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm">
@@ -202,7 +210,7 @@ function DepositSheet({ open, onClose, user }) {
         )}
         <button onClick={handleDeposit} disabled={loading}
           className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-2">
-          {loading ? <Loader2 size={20} className="animate-spin" /> : '💳 Payer maintenant'}
+          {loading ? <Loader2 size={20} className="animate-spin"/> : '💳 Payer maintenant'}
         </button>
         <p className="text-center text-xs text-gray-400">🔒 Paiement sécurisé via FedaPay</p>
       </div>
@@ -210,9 +218,9 @@ function DepositSheet({ open, onClose, user }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// ============================================================
 // RETRAIT
-// ══════════════════════════════════════════════════════════
+// ============================================================
 function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   const [operator, setOperator] = useState('')
   const [phone, setPhone] = useState('')
@@ -221,6 +229,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [pinError, setPinError] = useState(false)
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
   const balance = (wallet?.balance_available || 0) / 100
 
   const reset = () => { setStep(1); setPin(''); setPinError(false); setOperator(''); setPhone(''); setAmount('') }
@@ -238,7 +247,6 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
     if (pin.length !== 4) return
     setLoading(true); setPinError(false)
     try {
-      // Vérifier PIN
       const { data: wd } = await supabase.from('wallets').select('pin_hash, pin_set').eq('user_id', user.id).single()
       if (!wd?.pin_set) { setLoading(false); return toast.error('Configurez votre PIN d\'abord') }
       const pinHash = await sha256(pin)
@@ -253,7 +261,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
           user_id: user.id, type: 'withdraw', operator,
           phone: phone.trim(), amount: parseInt(amount), currency: 'XOF',
           description: 'Retrait MANG Wallet', email: user.email,
-          first_name: fullName.split(' ')[0] || user.email?.split('@')[0] || 'Client',
+          first_name: fullName.split(' ')[0] || 'Client',
           last_name: fullName.split(' ')[1] || 'MANG',
         }),
       })
@@ -290,13 +298,13 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
               <p className="text-sm font-bold text-gray-700 mb-2">Numéro Mobile Money</p>
               <input type="tel" placeholder="Ex: 22961000000" value={phone}
                 onChange={e => setPhone(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
             </div>
             <div>
               <p className="text-sm font-bold text-gray-700 mb-2">Montant (FCFA)</p>
               <input type="number" placeholder="Montant à retirer" value={amount}
                 onChange={e => setAmount(e.target.value)} min="500"
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
               <p className="text-xs text-gray-400 mt-1 pl-1">Solde : {balance.toLocaleString('fr-FR')} FCFA</p>
             </div>
             <button onClick={handleContinue}
@@ -312,16 +320,16 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
               <p className="text-white/50 text-xs mt-1">→ {phone} via {OPERATORS.find(o=>o.id===operator)?.label}</p>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-              <Shield size={18} className="text-amber-600 flex-shrink-0" />
+              <Shield size={18} className="text-amber-600 flex-shrink-0"/>
               <p className="text-amber-700 text-sm font-semibold">Entrez votre PIN pour confirmer</p>
             </div>
-            <PinInput value={pin} onChange={setPin} error={pinError} />
+            <PinInput value={pin} onChange={setPin} error={pinError}/>
             <div className="flex gap-3">
               <button onClick={() => { setStep(1); setPin(''); setPinError(false) }}
                 className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl">Retour</button>
               <button onClick={handleWithdraw} disabled={loading || pin.length !== 4}
                 className="flex-1 py-3.5 bg-green-600 text-white font-bold rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Confirmer'}
+                {loading ? <Loader2 size={18} className="animate-spin"/> : 'Confirmer'}
               </button>
             </div>
           </>
@@ -331,9 +339,9 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
-// TRANSFERT
-// ══════════════════════════════════════════════════════════
+// ============================================================
+// TRANSFERT — Lookup amélioré
+// ============================================================
 function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
   const [receiverNum, setReceiverNum] = useState('')
   const [receiver, setReceiver] = useState(null)
@@ -352,21 +360,73 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
     setReceiverNum(''); setReceiver(null); setAmount(''); setNotFound(false)
   }
 
+  // Lookup destinataire — méthode robuste
   const handleNumChange = (v) => {
-    setReceiverNum(v); setReceiver(null); setNotFound(false)
+    const clean = v.replace(/\s/g, '')
+    setReceiverNum(clean)
+    setReceiver(null)
+    setNotFound(false)
     clearTimeout(lookupTimer.current)
-    if (v.length < 7) return
+    if (clean.length < 7) return
+
     lookupTimer.current = setTimeout(async () => {
       setLookingUp(true)
-      const { data } = await supabase
-        .from('wallets')
-        .select('user_id, wallet_number, user:profiles!wallets_user_id_fkey(username, full_name, avatar_url)')
-        .eq('wallet_number', v.trim())
-        .single()
-      setLookingUp(false)
-      if (!data) { setNotFound(true); return }
-      if (data.user_id === user.id) { toast.error('Vous ne pouvez pas vous transférer à vous-même'); return }
-      setReceiver(data)
+      try {
+        // Méthode 1 : via RPC get_wallet_by_number
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_wallet_by_number', { p_wallet_number: clean })
+
+        if (!rpcError && rpcData?.found) {
+          if (rpcData.user_id === user.id) {
+            toast.error('Vous ne pouvez pas vous transférer à vous-même')
+            setNotFound(true)
+          } else {
+            setReceiver(rpcData)
+          }
+          setLookingUp(false)
+          return
+        }
+
+        // Méthode 2 : query directe
+        const { data, error } = await supabase
+          .from('wallets')
+          .select('user_id, wallet_number')
+          .eq('wallet_number', clean)
+          .single()
+
+        if (error || !data) {
+          setNotFound(true)
+          setLookingUp(false)
+          return
+        }
+
+        if (data.user_id === user.id) {
+          toast.error('Vous ne pouvez pas vous transférer à vous-même')
+          setNotFound(true)
+          setLookingUp(false)
+          return
+        }
+
+        // Récupérer le profil
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .eq('id', data.user_id)
+          .single()
+
+        setReceiver({
+          found: true,
+          user_id: data.user_id,
+          wallet_number: data.wallet_number,
+          username: profile?.username,
+          full_name: profile?.full_name,
+          avatar_url: profile?.avatar_url,
+        })
+      } catch {
+        setNotFound(true)
+      } finally {
+        setLookingUp(false)
+      }
     }, 600)
   }
 
@@ -389,17 +449,21 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
       if (wd.pin_hash !== pinHash) { setPinError(true); setPin(''); setLoading(false); return }
 
       // Appel RPC transfer_money
-      const { error } = await supabase.rpc('transfer_money', {
+      const { data, error } = await supabase.rpc('transfer_money', {
         sender_uuid: user.id,
         receiver_wallet_number: receiverNum.trim(),
         transfer_amount: parseInt(amount),
-        user_pin: pin,
+        user_pin: pinHash, // On envoie le hash
       })
+
       if (error) throw new Error(error.message || 'Erreur transfert')
-      toast.success(`✅ ${parseInt(amount).toLocaleString('fr-FR')} FCFA envoyés à @${receiver.user?.username}`)
+      if (data?.error) throw new Error(data.error)
+
+      toast.success(`✅ ${parseInt(amount).toLocaleString('fr-FR')} FCFA envoyés à @${receiver.username} !`)
       onSuccess(); onClose(); reset()
     } catch (err) {
-      toast.error(err.message)
+      if (err.message.includes('PIN')) { setPinError(true); setPin('') }
+      toast.error(err.message || 'Erreur lors du transfert')
     } finally {
       setLoading(false)
     }
@@ -412,38 +476,54 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
           <>
             <div>
               <p className="text-sm font-bold text-gray-700 mb-2">Numéro de wallet destinataire</p>
-              <input type="text" inputMode="numeric" placeholder="Ex: 1234567890"
-                value={receiverNum} onChange={e => handleNumChange(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400" />
-              {lookingUp && <p className="text-xs text-green-600 mt-1 pl-1">🔍 Recherche en cours...</p>}
-              {notFound && !lookingUp && receiverNum.length >= 7 && (
-                <p className="text-xs text-red-500 mt-1 pl-1">❌ Aucun wallet trouvé pour ce numéro</p>
+              <input type="text" inputMode="numeric"
+                placeholder="Ex: 1234567890 (10 chiffres)"
+                value={receiverNum}
+                onChange={e => handleNumChange(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400"
+                maxLength={10}
+              />
+              {lookingUp && (
+                <p className="text-xs text-green-600 mt-1.5 pl-1 flex items-center gap-1">
+                  <Loader2 size={12} className="animate-spin"/> Recherche en cours...
+                </p>
               )}
+              {notFound && !lookingUp && receiverNum.length >= 7 && (
+                <p className="text-xs text-red-500 mt-1.5 pl-1">❌ Aucun wallet trouvé pour ce numéro</p>
+              )}
+              <p className="text-xs text-gray-400 mt-1.5 pl-1">
+                💡 Demandez le numéro de wallet à 10 chiffres au destinataire
+              </p>
             </div>
+
+            {/* Destinataire trouvé */}
             {receiver && (
               <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-2xl">
                 <div className="w-11 h-11 rounded-xl bg-green-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                  {receiver.user?.avatar_url
-                    ? <img src={receiver.user.avatar_url} className="w-full h-full object-cover" />
-                    : <span className="text-lg font-bold text-green-700">{receiver.user?.username?.[0]?.toUpperCase()}</span>}
+                  {receiver.avatar_url
+                    ? <img src={receiver.avatar_url} className="w-full h-full object-cover" alt=""/>
+                    : <span className="text-lg font-bold text-green-700">{(receiver.username || '?')[0]?.toUpperCase()}</span>
+                  }
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-green-800 text-sm">{receiver.user?.full_name || receiver.user?.username}</p>
-                  <p className="text-green-600 text-xs">@{receiver.user?.username} · #{receiver.wallet_number}</p>
+                  <p className="font-bold text-green-800 text-sm">{receiver.full_name || receiver.username}</p>
+                  <p className="text-green-600 text-xs">@{receiver.username} · #{receiver.wallet_number}</p>
                 </div>
-                <Check size={18} className="text-green-600" />
+                <Check size={18} className="text-green-600"/>
               </div>
             )}
+
             <div>
               <p className="text-sm font-bold text-gray-700 mb-2">Montant (FCFA)</p>
               <input type="number" placeholder="Ex: 5000" value={amount}
                 onChange={e => setAmount(e.target.value)} min="100"
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-              <p className="text-xs text-gray-400 mt-1 pl-1">Solde : {balance.toLocaleString('fr-FR')} FCFA</p>
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+              <p className="text-xs text-gray-400 mt-1 pl-1">Solde disponible : {balance.toLocaleString('fr-FR')} FCFA</p>
             </div>
+
             {receiver && amount && parseInt(amount) >= 100 && (
               <div className="bg-gray-800 rounded-2xl p-4 space-y-1.5">
-                <div className="flex justify-between text-sm"><span className="text-white/60">Destinataire</span><span className="text-white font-bold">@{receiver.user?.username}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-white/60">Destinataire</span><span className="text-white font-bold">@{receiver.username}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-white/60">Montant</span><span className="text-white font-bold">{parseInt(amount).toLocaleString('fr-FR')} FCFA</span></div>
                 <div className="flex justify-between text-xs border-t border-white/10 pt-1.5">
                   <span className="text-white/40">Solde restant</span>
@@ -451,6 +531,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
                 </div>
               </div>
             )}
+
             <button onClick={handleContinue} disabled={!receiver || !amount || parseInt(amount) < 100}
               className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl active:scale-95 transition-transform disabled:opacity-60">
               Continuer →
@@ -459,20 +540,20 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
         ) : (
           <>
             <div className="bg-gray-800 rounded-2xl p-4 text-center">
-              <p className="text-white/60 text-sm">Transfert à @{receiver?.user?.username}</p>
+              <p className="text-white/60 text-sm">Transfert à @{receiver?.username}</p>
               <p className="text-white font-black text-3xl">{parseInt(amount).toLocaleString('fr-FR')} FCFA</p>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-              <Shield size={18} className="text-amber-600 flex-shrink-0" />
+              <Shield size={18} className="text-amber-600 flex-shrink-0"/>
               <p className="text-amber-700 text-sm font-semibold">Entrez votre PIN pour confirmer</p>
             </div>
-            <PinInput value={pin} onChange={setPin} error={pinError} />
+            <PinInput value={pin} onChange={setPin} error={pinError}/>
             <div className="flex gap-3">
               <button onClick={() => { setStep(1); setPin(''); setPinError(false) }}
                 className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl">Retour</button>
               <button onClick={handleTransfer} disabled={loading || pin.length !== 4}
                 className="flex-1 py-3.5 bg-green-600 text-white font-bold rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Confirmer'}
+                {loading ? <Loader2 size={18} className="animate-spin"/> : 'Confirmer'}
               </button>
             </div>
           </>
@@ -482,14 +563,14 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
-// PIN SETUP (avec vérification ancien PIN)
-// ══════════════════════════════════════════════════════════
+// ============================================================
+// PIN SETUP
+// ============================================================
 function PinSetupSheet({ open, onClose, user }) {
   const [oldPin, setOldPin] = useState('')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
-  const [step, setStep] = useState(1) // 1=ancien, 2=nouveau, 3=confirmer
+  const [step, setStep] = useState(1)
   const [hasPinAlready, setHasPinAlready] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pinError, setPinError] = useState(false)
@@ -517,11 +598,6 @@ function PinSetupSheet({ open, onClose, user }) {
     setPinError(false); setStep(2)
   }
 
-  const handleSetNew = () => {
-    if (newPin.length !== 4) return
-    setStep(3)
-  }
-
   const handleConfirm = async () => {
     if (confirmPin !== newPin) { setPinError(true); setConfirmPin(''); return }
     setLoading(true)
@@ -537,56 +613,45 @@ function PinSetupSheet({ open, onClose, user }) {
     }
   }
 
-  const titles = {
-    1: '🔐 Ancien PIN',
-    2: '🔐 Nouveau PIN',
-    3: '🔐 Confirmer le PIN',
-  }
-
   return (
-    <Sheet open={open} onClose={() => { reset(); onClose() }} title={titles[step]}>
+    <Sheet open={open} onClose={() => { reset(); onClose() }} title="🔐 Code PIN Wallet">
       <div className="px-5 py-6 space-y-5 pb-10">
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
-          <Shield size={20} className="text-green-600 flex-shrink-0" />
+          <Shield size={20} className="text-green-600 flex-shrink-0"/>
           <div>
             <p className="font-bold text-green-800 text-sm">Code PIN sécurisé</p>
             <p className="text-green-600 text-xs">Requis pour les paiements et transferts</p>
           </div>
         </div>
 
-        {step === 1 && (
+        {step === 1 && hasPinAlready && (
           <>
-            <PinInput value={oldPin} onChange={v => { setOldPin(v); setPinError(false) }}
-              error={pinError} label="Entrez votre PIN actuel" />
+            <PinInput value={oldPin} onChange={v => { setOldPin(v); setPinError(false) }} error={pinError} label="Entrez votre PIN actuel"/>
             <button onClick={handleVerifyOld} disabled={loading || oldPin.length !== 4}
               className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Vérifier →'}
+              {loading ? <Loader2 size={18} className="animate-spin"/> : 'Vérifier →'}
             </button>
           </>
         )}
-
         {step === 2 && (
           <>
-            <PinInput value={newPin} onChange={v => { setNewPin(v); setPinError(false) }}
-              error={false} label="Choisissez un nouveau PIN à 4 chiffres" />
-            <button onClick={handleSetNew} disabled={newPin.length !== 4}
+            <PinInput value={newPin} onChange={v => { setNewPin(v); setPinError(false) }} error={false} label="Choisissez un PIN à 4 chiffres"/>
+            <button onClick={() => newPin.length === 4 && setStep(3)} disabled={newPin.length !== 4}
               className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl disabled:opacity-60">
               Continuer →
             </button>
           </>
         )}
-
         {step === 3 && (
           <>
-            <PinInput value={confirmPin} onChange={v => { setConfirmPin(v); setPinError(false) }}
-              error={pinError} label="Confirmez votre nouveau PIN" />
+            <PinInput value={confirmPin} onChange={v => { setConfirmPin(v); setPinError(false) }} error={pinError} label="Confirmez votre PIN"/>
             {pinError && <p className="text-red-500 text-xs text-center font-semibold">❌ Les PIN ne correspondent pas</p>}
             <div className="flex gap-3">
               <button onClick={() => { setStep(2); setConfirmPin(''); setPinError(false) }}
                 className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl">Retour</button>
               <button onClick={handleConfirm} disabled={loading || confirmPin.length !== 4}
                 className="flex-1 py-3.5 bg-green-600 text-white font-bold rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Confirmer'}
+                {loading ? <Loader2 size={18} className="animate-spin"/> : 'Confirmer'}
               </button>
             </div>
           </>
@@ -596,65 +661,14 @@ function PinSetupSheet({ open, onClose, user }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
-// DÉTAIL TRANSACTION + REÇU PDF
-// ══════════════════════════════════════════════════════════
+// ============================================================
+// DÉTAIL TRANSACTION
+// ============================================================
 function TxDetailSheet({ open, onClose, tx }) {
   if (!tx) return null
   const cfg = getTxConfig(tx)
   const amount = Math.abs(Number(tx.amount)) / 100
   const isCredit = Number(tx.amount) > 0
-
-  const downloadPDF = async () => {
-    try {
-      const { jsPDF } = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
-      const doc = new jsPDF({ unit: 'pt', format: 'a5' })
-      const receiptNum = `MANG-${new Date().getFullYear()}-${String(tx.id).slice(0, 8).toUpperCase()}`
-
-      // Header
-      doc.setFillColor(11, 61, 46)
-      doc.rect(0, 0, 420, 80, 'F')
-      doc.setTextColor('#ffffff')
-      doc.setFontSize(18); doc.setFont(undefined, 'bold')
-      doc.text('MANG WALLET', 30, 42)
-      doc.setFontSize(9); doc.setFont(undefined, 'normal')
-      doc.text('Reçu de transaction officiel', 280, 42)
-
-      // Corps
-      doc.setTextColor('#222')
-      doc.setFontSize(11); doc.setFont(undefined, 'bold')
-      doc.text('REÇU DE TRANSACTION', 210, 110, { align: 'center' })
-
-      doc.setFontSize(28); doc.setFont(undefined, 'bold')
-      doc.setTextColor(isCredit ? '#16a34a' : '#dc2626')
-      doc.text(`${isCredit ? '+' : '-'}${amount.toLocaleString('fr-FR')} FCFA`, 210, 150, { align: 'center' })
-
-      doc.setFontSize(10); doc.setFont(undefined, 'normal'); doc.setTextColor('#444')
-      const rows = [
-        ['Reçu N°', receiptNum],
-        ['Type', cfg.label],
-        ['Date', new Date(tx.created_at).toLocaleString('fr-FR')],
-        ['Statut', tx.status === 'completed' ? '✅ Validé' : tx.status === 'pending' ? '⏳ En attente' : tx.status || 'Validé'],
-        tx.description && ['Description', tx.description],
-      ].filter(Boolean)
-
-      let y = 180
-      rows.forEach(([label, val]) => {
-        doc.setFont(undefined, 'bold'); doc.text(String(label), 30, y)
-        doc.setFont(undefined, 'normal'); doc.text(String(val), 180, y)
-        y += 28
-      })
-
-      // Footer
-      doc.setFontSize(7); doc.setTextColor('#aaa')
-      doc.text('Document certifié électroniquement par MANG. Toute modification invalide ce reçu.', 210, 560, { align: 'center' })
-
-      doc.save(`${receiptNum}.pdf`)
-      toast.success('✅ Reçu téléchargé !')
-    } catch {
-      toast.error('Erreur génération PDF')
-    }
-  }
 
   return (
     <Sheet open={open} onClose={onClose} title="📄 Détail transaction">
@@ -667,53 +681,50 @@ function TxDetailSheet({ open, onClose, tx }) {
           <p className="text-gray-500 text-sm mt-1">{cfg.label}</p>
         </div>
 
-        <div className={clsx('flex items-center justify-center py-2 px-4 rounded-xl text-sm font-bold',
-          (!tx.status || tx.status === 'completed') ? 'bg-emerald-100 text-emerald-700' :
-          tx.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')}>
-          {(!tx.status || tx.status === 'completed') ? '✅ Validé' : tx.status === 'pending' ? '⏳ En attente' : '❌ Échoué'}
-        </div>
-
         <div className="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-100">
           {[
             ['📅 Date', new Date(tx.created_at).toLocaleString('fr-FR')],
             ['🧾 Type', cfg.label],
-            tx.description && ['📌 Description', tx.description],
+            tx.receipt_number && ['🔖 Reçu', tx.receipt_number],
+            tx.description && ['📌 Note', tx.description],
+            tx.balance_after !== undefined && ['💰 Solde après', `${(Number(tx.balance_after)/100).toLocaleString('fr-FR')} FCFA`],
           ].filter(Boolean).map(([label, value]) => (
             <div key={label} className="flex items-center justify-between px-4 py-3">
               <span className="text-gray-500 text-sm">{label}</span>
-              <span className="text-gray-800 text-sm font-semibold text-right max-w-[55%]">{value}</span>
+              <span className="text-gray-800 text-sm font-semibold text-right max-w-[55%] break-all">{value}</span>
             </div>
           ))}
         </div>
 
-        <button onClick={downloadPDF}
-          className="w-full py-4 bg-gray-800 text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
-          <Download size={18} /> Télécharger le reçu PDF
-        </button>
+        {tx.receipt_number && (
+          <button onClick={() => { navigator.clipboard.writeText(tx.receipt_number); toast.success('Reçu copié !') }}
+            className="w-full py-4 bg-gray-800 text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+            <Copy size={18}/> Copier le numéro de reçu
+          </button>
+        )}
       </div>
     </Sheet>
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// ============================================================
 // GRAPHIQUE 7 JOURS
-// ══════════════════════════════════════════════════════════
+// ============================================================
 function MiniChart({ transactions }) {
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
     const day = d.toLocaleDateString('fr-FR', { weekday: 'short' })
     const txDay = transactions.filter(tx => new Date(tx.created_at).toDateString() === d.toDateString())
-    const inAmt = txDay.filter(t => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount) / 100, 0)
-    const outAmt = txDay.filter(t => Number(t.amount) < 0).reduce((s, t) => s + Math.abs(Number(t.amount)) / 100, 0)
+    const inAmt  = txDay.filter(t => Number(t.amount) > 0).reduce((s,t) => s + Number(t.amount)/100, 0)
+    const outAmt = txDay.filter(t => Number(t.amount) < 0).reduce((s,t) => s + Math.abs(Number(t.amount))/100, 0)
     return { day, in: inAmt, out: outAmt }
   })
-
   const maxVal = Math.max(...last7.map(d => Math.max(d.in, d.out)), 1)
   const W = 300, H = 70, pad = 20
-  const x = (i) => pad + i * (W - pad * 2) / 6
+  const x = (i) => pad + i * (W - pad*2) / 6
   const y = (v) => H - (v / maxVal) * (H - 8)
-  const ptIn = last7.map((d, i) => `${x(i)},${y(d.in)}`).join(' ')
-  const ptOut = last7.map((d, i) => `${x(i)},${y(d.out)}`).join(' ')
+  const ptIn  = last7.map((d,i) => `${x(i)},${y(d.in)}`).join(' ')
+  const ptOut = last7.map((d,i) => `${x(i)},${y(d.out)}`).join(' ')
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4">
@@ -724,14 +735,14 @@ function MiniChart({ transactions }) {
           <span className="text-red-500 flex items-center gap-1"><span className="w-3 h-1 bg-red-400 rounded inline-block"/>Sorties</span>
         </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H + 18}`} className="w-full" style={{ height: 75 }}>
-        <polyline points={ptIn} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg viewBox={`0 0 ${W} ${H+18}`} className="w-full" style={{height:75}}>
+        <polyline points={ptIn}  fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         <polyline points={ptOut} fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        {last7.map((d, i) => (
+        {last7.map((d,i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(d.in)} r="3" fill="#22c55e"/>
+            <circle cx={x(i)} cy={y(d.in)}  r="3" fill="#22c55e"/>
             <circle cx={x(i)} cy={y(d.out)} r="3" fill="#f87171"/>
-            <text x={x(i)} y={H + 14} textAnchor="middle" fontSize="8" fill="#9ca3af">{d.day}</text>
+            <text x={x(i)} y={H+14} textAnchor="middle" fontSize="8" fill="#9ca3af">{d.day}</text>
           </g>
         ))}
       </svg>
@@ -739,9 +750,9 @@ function MiniChart({ transactions }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// ============================================================
 // PAGE PRINCIPALE
-// ══════════════════════════════════════════════════════════
+// ============================================================
 export default function WalletPage() {
   const { user, wallet, refreshWallet } = useAuthStore()
   const [transactions, setTransactions] = useState([])
@@ -750,11 +761,11 @@ export default function WalletPage() {
   const [walletCopied, setWalletCopied] = useState(false)
   const [txFilter, setTxFilter] = useState('all')
 
-  const [depositOpen, setDepositOpen] = useState(false)
+  const [depositOpen,  setDepositOpen]  = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [pinSetupOpen, setPinSetupOpen] = useState(false)
-  const [selectedTx, setSelectedTx] = useState(null)
+  const [selectedTx,   setSelectedTx]   = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -768,14 +779,14 @@ export default function WalletPage() {
     }
   }, [user])
 
-  // Realtime wallet
+  // Realtime
   useEffect(() => {
     if (!user) return
     const ch = supabase.channel('wallet_rt')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wallet_transactions' }, payload => {
         if (payload.new.user_id === user.id) {
           const amt = Number(payload.new.amount)
-          if (amt > 0) toast.success(`💰 +${(amt / 100).toLocaleString('fr-FR')} FCFA reçu !`)
+          if (amt > 0) toast.success(`💰 +${(amt/100).toLocaleString('fr-FR')} FCFA reçu !`)
           loadTransactions(); refreshWallet()
         }
       })
@@ -789,14 +800,38 @@ export default function WalletPage() {
   const loadTransactions = async () => {
     if (!user) return
     setLoadingTx(true)
-    const { data, error } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(100)
-    if (!error) setTransactions(data || [])
-    setLoadingTx(false)
+    try {
+      // Requête avec user_id (après le correctif SQL)
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (!error && data?.length > 0) {
+        setTransactions(data)
+        setLoadingTx(false)
+        return
+      }
+
+      // Fallback : via wallet_id
+      const { data: walletData } = await supabase
+        .from('wallets').select('id').eq('user_id', user.id).single()
+      if (!walletData) { setLoadingTx(false); return }
+
+      const { data: txData } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('wallet_id', walletData.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+      setTransactions(txData || [])
+    } catch {
+      setTransactions([])
+    } finally {
+      setLoadingTx(false)
+    }
   }
 
   const handleCopy = () => {
@@ -808,35 +843,31 @@ export default function WalletPage() {
 
   const handleSuccess = () => { loadTransactions(); refreshWallet() }
 
-  const balance = (wallet?.balance_available || 0) / 100
-  const reserved = (wallet?.balance_reserved || 0) / 100
+  const balance  = (wallet?.balance_available || 0) / 100
+  const reserved = (wallet?.balance_reserved  || 0) / 100
 
   const now = new Date()
-  const monthTx = transactions.filter(tx => {
-    const d = new Date(tx.created_at)
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-  })
-  const monthIn = monthTx.filter(t => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount) / 100, 0)
-  const monthOut = monthTx.filter(t => Number(t.amount) < 0).reduce((s, t) => s + Math.abs(Number(t.amount)) / 100, 0)
+  const monthTx  = transactions.filter(tx => { const d = new Date(tx.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() })
+  const monthIn  = monthTx.filter(t => Number(t.amount) > 0).reduce((s,t) => s + Number(t.amount)/100, 0)
+  const monthOut = monthTx.filter(t => Number(t.amount) < 0).reduce((s,t) => s + Math.abs(Number(t.amount))/100, 0)
 
   const filteredTx = transactions.filter(tx => {
     if (txFilter === 'all') return true
-    if (txFilter === 'in') return Number(tx.amount) > 0
+    if (txFilter === 'in')  return Number(tx.amount) > 0
     if (txFilter === 'out') return Number(tx.amount) < 0
-    const type = (tx.transaction_type || '').toLowerCase()
+    const type = (tx.type || tx.transaction_type || '').toLowerCase()
     return type.includes(txFilter)
   })
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
-
-      {/* ── CARTE WALLET ── */}
+      {/* CARTE WALLET */}
       <div className="relative overflow-hidden pt-14 pb-28 px-4"
         style={{ background: 'linear-gradient(135deg, #0b3d2e 0%, #1a5c2e 60%, #2d8a3e 100%)' }}>
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none"/>
         <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-black/10 pointer-events-none"/>
         <div className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }}/>
+          style={{ backgroundImage: 'radial-gradient(circle,white 1px,transparent 1px)', backgroundSize: '24px 24px' }}/>
 
         <div className="relative flex items-center justify-between mb-8">
           <div className="flex items-center gap-2.5">
@@ -868,9 +899,7 @@ export default function WalletPage() {
             </h2>
             <span className="text-white/60 text-lg mb-1">FCFA</span>
           </div>
-          {reserved > 0 && (
-            <p className="text-yellow-300 text-xs mt-2">🔒 {reserved.toLocaleString('fr-FR')} FCFA en escrow</p>
-          )}
+          {reserved > 0 && <p className="text-yellow-300 text-xs mt-2">🔒 {reserved.toLocaleString('fr-FR')} FCFA en escrow</p>}
         </div>
 
         <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/10 border border-white/15 mb-6">
@@ -890,10 +919,10 @@ export default function WalletPage() {
 
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: '➕', label: 'Dépôt',     action: () => setDepositOpen(true),  color: 'bg-emerald-500' },
-            { icon: '💸', label: 'Retrait',    action: () => setWithdrawOpen(true), color: 'bg-red-500'     },
-            { icon: '🔄', label: 'Transfert',  action: () => setTransferOpen(true), color: 'bg-blue-500'    },
-            { icon: '🔐', label: 'PIN',        action: () => setPinSetupOpen(true), color: 'bg-purple-500'  },
+            { icon: '➕', label: 'Dépôt',    action: () => setDepositOpen(true),  color: 'bg-emerald-500' },
+            { icon: '💸', label: 'Retrait',   action: () => setWithdrawOpen(true), color: 'bg-red-500'     },
+            { icon: '🔄', label: 'Transfert', action: () => setTransferOpen(true), color: 'bg-blue-500'    },
+            { icon: '🔐', label: 'PIN',       action: () => setPinSetupOpen(true), color: 'bg-purple-500'  },
           ].map(btn => (
             <button key={btn.label} onClick={btn.action}
               className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
@@ -906,7 +935,7 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* ── STATS MOIS ── */}
+      {/* STATS MOIS */}
       <div className="px-4 -mt-14 relative z-10">
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-4">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ce mois-ci</p>
@@ -933,14 +962,12 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* ── GRAPHIQUE ── */}
+      {/* GRAPHIQUE */}
       {transactions.length > 0 && (
-        <div className="px-4 mt-4">
-          <MiniChart transactions={transactions}/>
-        </div>
+        <div className="px-4 mt-4"><MiniChart transactions={transactions}/></div>
       )}
 
-      {/* ── HISTORIQUE ── */}
+      {/* HISTORIQUE */}
       <div className="px-4 mt-4">
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-gray-700 text-sm">Historique ({transactions.length})</p>
@@ -950,14 +977,15 @@ export default function WalletPage() {
           </button>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
           {[
-            { key: 'all',      label: 'Tout'        },
-            { key: 'in',       label: '📥 Entrées'  },
-            { key: 'out',      label: '📤 Sorties'  },
-            { key: 'deposit',  label: '💰 Dépôts'   },
-            { key: 'transfer', label: '🔄 Transferts'},
+            { key: 'all',      label: 'Tout'         },
+            { key: 'in',       label: '📥 Entrées'   },
+            { key: 'out',      label: '📤 Sorties'   },
+            { key: 'recharge', label: '💰 Dépôts'    },
+            { key: 'transfer', label: '🔄 Transferts' },
             { key: 'withdraw', label: '💸 Retraits'  },
+            { key: 'order',    label: '🛒 Commandes' },
           ].map(f => (
             <button key={f.key} onClick={() => setTxFilter(f.key)}
               className={clsx('flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors',
@@ -970,7 +998,7 @@ export default function WalletPage() {
         {loadingTx ? (
           <div className="flex justify-center py-10"><Loader2 size={28} className="animate-spin text-green-500"/></div>
         ) : filteredTx.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 bg-white rounded-2xl">
             <div className="text-4xl mb-3">💳</div>
             <p className="font-bold text-gray-500">Aucune transaction</p>
             <p className="text-sm text-gray-400 mt-1">Vos transactions apparaîtront ici</p>
@@ -993,6 +1021,7 @@ export default function WalletPage() {
                     <p className="text-gray-400 text-xs">
                       {date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} · {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
+                    {tx.description && <p className="text-gray-400 text-[10px] truncate">{tx.description}</p>}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className={clsx('font-black text-base', isCredit ? 'text-emerald-600' : 'text-red-500')}>
@@ -1008,12 +1037,12 @@ export default function WalletPage() {
         )}
       </div>
 
-      {/* ── MODALS ── */}
-      <DepositSheet  open={depositOpen}   onClose={() => setDepositOpen(false)}  user={user} />
-      <WithdrawSheet open={withdrawOpen}  onClose={() => setWithdrawOpen(false)} user={user} wallet={wallet} onSuccess={handleSuccess} />
-      <TransferSheet open={transferOpen}  onClose={() => setTransferOpen(false)} user={user} wallet={wallet} onSuccess={handleSuccess} />
-      <PinSetupSheet open={pinSetupOpen}  onClose={() => setPinSetupOpen(false)} user={user} />
-      <TxDetailSheet open={!!selectedTx} onClose={() => setSelectedTx(null)}    tx={selectedTx} />
+      {/* MODALS */}
+      <DepositSheet  open={depositOpen}   onClose={() => setDepositOpen(false)}  user={user}/>
+      <WithdrawSheet open={withdrawOpen}  onClose={() => setWithdrawOpen(false)} user={user} wallet={wallet} onSuccess={handleSuccess}/>
+      <TransferSheet open={transferOpen}  onClose={() => setTransferOpen(false)} user={user} wallet={wallet} onSuccess={handleSuccess}/>
+      <PinSetupSheet open={pinSetupOpen}  onClose={() => setPinSetupOpen(false)} user={user}/>
+      <TxDetailSheet open={!!selectedTx} onClose={() => setSelectedTx(null)}    tx={selectedTx}/>
     </div>
   )
 }
