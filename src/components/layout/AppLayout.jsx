@@ -2,30 +2,25 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   Home, MessageCircle, Plus, Bell, User,
-  Package, Wallet, Store, Globe, X, ChevronRight
+  Package, Wallet, Store, Globe, X, ChevronRight, Heart
 } from 'lucide-react'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { clsx } from 'clsx'
 
-// ============================================================
-// BARRE DU BAS — Accueil | Messages | ➕ | Notifications | Profil
-// ============================================================
 const NAV_ITEMS = [
-  { icon: Home,          label: 'Accueil',       path: '/' },
-  { icon: MessageCircle, label: 'Messages',       path: '/messages' },
-  { icon: Plus,          label: 'Menu',           path: null, isCenter: true },
-  { icon: Bell,          label: 'Notifications',  path: '/notifications' },
-  { icon: User,          label: 'Profil',         path: '/profil' },
+  { icon: Home,          label: 'Accueil',      path: '/marketplace' },
+  { icon: MessageCircle, label: 'Messages',      path: '/messages'    },
+  { icon: Plus,          label: 'Menu',          path: null, isCenter: true },
+  { icon: Bell,          label: 'Notifications', path: '/notifications' },
+  { icon: User,          label: 'Profil',        path: '/profil'      },
 ]
 
-// ============================================================
-// MENU ➕ — Vendeur | Commandes | Wallet | Communauté
-// ============================================================
 const CENTER_MENU = [
-  { icon: Store,   label: 'Espace Vendeur', path: '/vendeur',    color: 'bg-primary-600' },
-  { icon: Package, label: 'Commandes',      path: '/commandes',  color: 'bg-orange-500' },
-  { icon: Wallet,  label: 'Mon Wallet',     path: '/portefeuille', color: 'bg-dark-800' },
-  { icon: Globe,   label: 'Communauté',     path: '/communaute', color: 'bg-violet-500' },
+  { icon: Store,   label: 'Espace Vendeur', path: '/vendeur',       color: 'bg-primary-600' },
+  { icon: Package, label: 'Commandes',      path: '/commandes',     color: 'bg-orange-500'  },
+  { icon: Wallet,  label: 'Mon Wallet',     path: '/portefeuille',  color: 'bg-dark-800'    },
+  { icon: Heart,   label: 'Mes Favoris',    path: '/favoris',       color: 'bg-red-500'     },
+  { icon: Globe,   label: 'Communauté',     path: '/communaute',    color: 'bg-violet-500'  },
 ]
 
 export default function AppLayout() {
@@ -122,7 +117,6 @@ export default function AppLayout() {
                     strokeWidth={isActive ? 2.5 : 1.8}
                     className={clsx('transition-colors duration-200', isActive ? 'text-primary-600' : 'text-dark-600/60')}
                   />
-                  {/* Badge notifications sur l'icône Bell */}
                   {item.path === '/notifications' && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
