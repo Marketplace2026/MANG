@@ -1,28 +1,37 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Home, MessageCircle, Plus, Bell, User, Package, Wallet, Store, Globe, X, ChevronRight } from 'lucide-react'
+import {
+  Home, MessageCircle, Plus, Bell, User,
+  Package, Wallet, Store, Globe, X, ChevronRight
+} from 'lucide-react'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { clsx } from 'clsx'
 
+// ============================================================
+// BARRE DU BAS — Accueil | Messages | ➕ | Notifications | Profil
+// ============================================================
 const NAV_ITEMS = [
-  { icon: Home,    label: 'Accueil',   path: '/' },
-  { icon: Package, label: 'Commandes', path: '/commandes' },
-  { icon: Plus,    label: 'Menu',      path: null, isCenter: true },
-  { icon: Wallet,  label: 'Wallet',    path: '/portefeuille' },
-  { icon: User,    label: 'Profil',    path: '/profil' },
+  { icon: Home,          label: 'Accueil',       path: '/' },
+  { icon: MessageCircle, label: 'Messages',       path: '/messages' },
+  { icon: Plus,          label: 'Menu',           path: null, isCenter: true },
+  { icon: Bell,          label: 'Notifications',  path: '/notifications' },
+  { icon: User,          label: 'Profil',         path: '/profil' },
 ]
 
+// ============================================================
+// MENU ➕ — Vendeur | Commandes | Wallet | Communauté
+// ============================================================
 const CENTER_MENU = [
-  { icon: Store,         label: 'Espace Vendeur', path: '/vendeur',       color: 'bg-primary-600' },
-  { icon: MessageCircle, label: 'Messages',        path: '/messages',      color: 'bg-blue-500' },
-  { icon: Globe,         label: 'Communauté',      path: '/communaute',    color: 'bg-violet-500' },
-  { icon: Bell,          label: 'Notifications',   path: '/notifications', color: 'bg-orange-500' },
+  { icon: Store,   label: 'Espace Vendeur', path: '/vendeur',    color: 'bg-primary-600' },
+  { icon: Package, label: 'Commandes',      path: '/commandes',  color: 'bg-orange-500' },
+  { icon: Wallet,  label: 'Mon Wallet',     path: '/portefeuille', color: 'bg-dark-800' },
+  { icon: Globe,   label: 'Communauté',     path: '/communaute', color: 'bg-violet-500' },
 ]
 
 export default function AppLayout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { user } = useAuthStore()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const { user }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -33,7 +42,6 @@ export default function AppLayout() {
     return unsub
   }, [user])
 
-  // Fermer menu au changement de route
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   const handleNav = (path) => { navigate(path); setMenuOpen(false) }
@@ -49,8 +57,10 @@ export default function AppLayout() {
       {/* Overlay menu + */}
       {menuOpen && (
         <>
-          <div className="fixed inset-0 bg-dark-900/50 z-40 backdrop-blur-sm animate-fade-in"
-            onClick={() => setMenuOpen(false)}/>
+          <div
+            className="fixed inset-0 bg-dark-900/50 z-40 backdrop-blur-sm animate-fade-in"
+            onClick={() => setMenuOpen(false)}
+          />
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-72 animate-scale-in">
             <div className="bg-white rounded-3xl shadow-modal p-4 space-y-2">
               <p className="text-xs font-bold text-dark-600/40 uppercase tracking-wider text-center mb-3">
@@ -58,24 +68,13 @@ export default function AppLayout() {
               </p>
               {CENTER_MENU.map((item, i) => {
                 const Icon = item.icon
-                const showBadge = item.path === '/notifications' && unreadCount > 0
                 return (
                   <button key={i} onClick={() => handleNav(item.path)}
                     className="w-full flex items-center gap-3 p-3 rounded-2xl bg-surface-50 active:bg-surface-100 transition-colors">
-                    <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative', item.color)}>
+                    <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', item.color)}>
                       <Icon size={17} className="text-white"/>
-                      {showBadge && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
                     </div>
                     <span className="font-semibold text-dark-800 text-sm flex-1 text-left">{item.label}</span>
-                    {showBadge && (
-                      <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
                     <ChevronRight size={15} className="text-dark-600/30"/>
                   </button>
                 )
@@ -88,12 +87,14 @@ export default function AppLayout() {
         </>
       )}
 
-      {/* BARRE NAV */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 shadow-bottom-nav"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* BARRE NAV BAS */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 shadow-bottom-nav"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="mx-auto max-w-[var(--content-max-width)] flex items-center h-16">
           {NAV_ITEMS.map((item, idx) => {
-            const Icon    = item.icon
+            const Icon     = item.icon
             const isActive = item.path && location.pathname === item.path
 
             if (item.isCenter) {
@@ -103,13 +104,10 @@ export default function AppLayout() {
                     'w-14 h-14 -mt-5 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90 relative',
                     menuOpen ? 'bg-dark-800 shadow-modal rotate-45' : 'bg-primary-600 shadow-green'
                   )}>
-                    {menuOpen ? <X size={24} className="text-white"/> : <Icon size={26} className="text-white" strokeWidth={2.5}/>}
-                    {/* Badge notif sur le bouton + quand menu fermé */}
-                    {!menuOpen && unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-white">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
+                    {menuOpen
+                      ? <X size={24} className="text-white"/>
+                      : <Icon size={26} className="text-white" strokeWidth={2.5}/>
+                    }
                   </div>
                 </button>
               )
@@ -118,15 +116,28 @@ export default function AppLayout() {
             return (
               <button key={idx} onClick={() => handleNav(item.path)}
                 className="flex-1 flex flex-col items-center justify-center gap-1 py-2 relative active:scale-95 transition-transform duration-150">
-                <Icon
-                  size={22}
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                  className={clsx('transition-colors duration-200', isActive ? 'text-primary-600' : 'text-dark-600/60')}
-                />
-                <span className={clsx('text-[10px] font-semibold transition-colors', isActive ? 'text-primary-600' : 'text-dark-600/50')}>
+                <div className="relative">
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                    className={clsx('transition-colors duration-200', isActive ? 'text-primary-600' : 'text-dark-600/60')}
+                  />
+                  {/* Badge notifications sur l'icône Bell */}
+                  {item.path === '/notifications' && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className={clsx(
+                  'text-[10px] font-semibold transition-colors duration-200',
+                  isActive ? 'text-primary-600' : 'text-dark-600/50'
+                )}>
                   {item.label}
                 </span>
-                {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary-600"/>}
+                {isActive && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary-600"/>
+                )}
               </button>
             )
           })}
