@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from '@/store'
 
 import AppLayout          from '@/components/layout/AppLayout'
 import AuthLayout         from '@/components/layout/AuthLayout'
+import OnboardingPage     from '@/pages/OnboardingPage'
 import LoginPage          from '@/pages/LoginPage'
 import RegisterPage       from '@/pages/RegisterPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
@@ -20,9 +21,10 @@ import MessagesPage       from '@/pages/MessagesPage'
 import NotificationsPage  from '@/pages/NotificationsPage'
 import FavoritesPage      from '@/pages/FavoritesPage'
 
+// ── Splash screen (photo existante) ──────────────────────
 function SplashScreen() {
   return (
-    <div className="min-h-screen bg-primary-900 flex flex-col items-center justify-center gap-4">
+    <div className="fixed inset-0 bg-primary-900 flex flex-col items-center justify-center gap-4">
       <div className="text-center">
         <div className="w-20 h-20 rounded-3xl bg-gold-400 flex items-center justify-center mb-4 mx-auto shadow-gold animate-pulse">
           <span className="text-4xl">🌿</span>
@@ -33,60 +35,99 @@ function SplashScreen() {
       <div className="flex gap-1 mt-4">
         {[0,1,2].map(i => (
           <div key={i} className="w-2 h-2 rounded-full bg-gold-400 animate-bounce"
-            style={{animationDelay:`${i*0.15}s`}}/>
+            style={{ animationDelay: `${i * 0.15}s` }}/>
         ))}
       </div>
     </div>
   )
 }
 
+// ── Route racine intelligente ─────────────────────────────
+// Après le splash :
+// - Connecté → /marketplace
+// - Non connecté → /accueil (onboarding)
+function RootRoute() {
+  const { user, loading } = useAuthStore()
+  if (loading) return <SplashScreen />
+  if (user) return <Navigate to="/marketplace" replace />
+  return <Navigate to="/accueil" replace />
+}
+
+// ── Route privée ──────────────────────────────────────────
 function PrivateRoute({ children }) {
   const { user, loading } = useAuthStore()
   if (loading) return <SplashScreen />
-  if (!user)   return <Navigate to="/connexion" replace />
+  if (!user) return <Navigate to="/accueil" replace />
   return children
 }
 
+// ── Route publique (login/register) ──────────────────────
 function PublicRoute({ children }) {
   const { user, loading } = useAuthStore()
   if (loading) return <SplashScreen />
-  if (user)    return <Navigate to="/" replace />
+  if (user) return <Navigate to="/marketplace" replace />
   return children
 }
 
+// ── App ───────────────────────────────────────────────────
 export default function App() {
   const { initialize, loading } = useAuthStore()
+  const [splashDone, setSplashDone] = useState(false)
+
   useEffect(() => { initialize() }, [])
-  if (loading) return <SplashScreen />
+
+  // Montrer le splash au moins 2.5s avant de router
+  useEffect(() => {
+    const t = setTimeout(() => setSplashDone(true), 2500)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Pendant le chargement initial OU splash pas fini → splash
+  if (loading || !splashDone) return <SplashScreen />
 
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* Racine → logique splash */}
+        <Route path="/" element={<RootRoute />} />
+
+        {/* Onboarding — non connecté seulement */}
+        <Route path="/accueil" element={
+          <PublicRoute><OnboardingPage /></PublicRoute>
+        } />
+
         {/* Boutique publique (sans auth) */}
         <Route path="/boutique/:slug" element={<ShopPublicPage />} />
 
         {/* Auth */}
         <Route element={<AuthLayout />}>
-          <Route path="/connexion"                  element={<PublicRoute><LoginPage /></PublicRoute>} />
-          <Route path="/inscription"                element={<PublicRoute><RegisterPage /></PublicRoute>} />
-          <Route path="/mot-de-passe-oublie"        element={<ForgotPasswordPage />} />
-          <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+          <Route path="/connexion"
+            element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/inscription"
+            element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/mot-de-passe-oublie"
+            element={<ForgotPasswordPage />} />
+          <Route path="/reinitialiser-mot-de-passe"
+            element={<ResetPasswordPage />} />
         </Route>
 
         {/* App protégée */}
         <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
-          <Route index                      element={<MarketplacePage />} />
-          <Route path="/commandes"          element={<OrdersPage />} />
-          <Route path="/portefeuille"       element={<WalletPage />} />
-          <Route path="/favoris"            element={<FavoritesPage />} />
-          <Route path="/profil"             element={<ProfilePage />} />
-          <Route path="/vendeur"            element={<VendorPage />} />
-          <Route path="/messages"           element={<MessagesPage />} />
-          <Route path="/communaute"         element={<CommunityPage />} />
-          <Route path="/notifications"      element={<NotificationsPage />} />
+          <Route path="/marketplace"   element={<MarketplacePage />} />
+          <Route path="/commandes"     element={<OrdersPage />} />
+          <Route path="/portefeuille"  element={<WalletPage />} />
+          <Route path="/favoris"       element={<FavoritesPage />} />
+          <Route path="/profil"        element={<ProfilePage />} />
+          <Route path="/vendeur"       element={<VendorPage />} />
+          <Route path="/messages"      element={<MessagesPage />} />
+          <Route path="/communaute"    element={<CommunityPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
 
       <Toaster position="top-center" toastOptions={{
