@@ -502,7 +502,7 @@ function ChatWindow({ conv, user, onBack }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 bg-surface-50 flex flex-col z-10">
+    <div className="fixed inset-0 bg-surface-50 flex flex-col" style={{ zIndex: 100 }}>
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
@@ -542,7 +542,7 @@ function ChatWindow({ conv, user, onBack }) {
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Search size={16} className="text-white"/>
             </button>
-            <button onClick={() => toast('Appel bientôt disponible')}
+            <button onClick={() => { if (other?.phone) window.open(`tel:${other.phone}`); else toast('Numéro non disponible') }}
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Phone size={16} className="text-white"/>
             </button>
@@ -647,8 +647,8 @@ function ChatWindow({ conv, user, onBack }) {
       )}
 
       {/* ── INPUT ── */}
-      <div className="bg-white border-t border-surface-100 px-3 py-2.5 pb-safe flex-shrink-0"
-        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
+      <div className="bg-white border-t border-surface-100 px-3 py-2.5 flex-shrink-0"
+        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', zIndex: 50, position: 'relative' }}>
 
         {recording ? (
           /* Mode enregistrement */
@@ -737,9 +737,9 @@ function ChatWindow({ conv, user, onBack }) {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {[
-                { icon: Bell,    label: 'Notifications',       action: () => toast('Bientôt') },
-                { icon: Archive, label: 'Archiver conversation', action: () => toast('Bientôt') },
-                { icon: Star,    label: 'Messages favoris',    action: () => toast('Bientôt') },
+                { icon: Bell,    label: 'Notifications',       action: () => { setNotifMuted(v => !v); toast(notifMuted ? 'Notifications activées' : 'Notifications désactivées') } },
+                { icon: Archive, label: 'Archiver conversation', action: async () => { await supabase.from('conversations').update({ is_archived: true }).eq('id', conv.id); toast.success('Conversation archivée'); onBack() } },
+                { icon: Star,    label: 'Messages favoris',    action: () => { setShowInfo(false); setSearchMsg('⭐') } },
                 { icon: Search,  label: 'Rechercher',          action: () => { setShowSearch(true); setShowInfo(false) } },
               ].map(item => {
                 const Icon = item.icon
@@ -764,7 +764,13 @@ function ChatWindow({ conv, user, onBack }) {
                 </div>
               </div>
 
-              <button className="w-full p-4 bg-red-50 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:bg-red-100">
+              <button onClick={async () => {
+                if (!confirm('Supprimer cette conversation ?')) return
+                await supabase.from('conversations').delete().eq('id', conv.id)
+                toast.success('Conversation supprimée')
+                setShowInfo(false)
+                onBack()
+              }} className="w-full p-4 bg-red-50 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:bg-red-100">
                 <Trash2 size={15}/> Supprimer la conversation
               </button>
             </div>
