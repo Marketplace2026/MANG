@@ -502,7 +502,7 @@ function ChatWindow({ conv, user, onBack }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 bg-surface-50 flex flex-col z-10">
+    <div className="fixed inset-0 bg-surface-50 flex flex-col z-10" style={{ paddingBottom: '64px' }}>
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
@@ -647,7 +647,7 @@ function ChatWindow({ conv, user, onBack }) {
       )}
 
       {/* ── INPUT ── */}
-      <div className="bg-white border-t border-surface-100 px-3 py-2.5 pb-safe flex-shrink-0"
+      <div className="bg-white border-t border-surface-100 px-3 py-2.5 flex-shrink-0"
         style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
 
         {recording ? (
@@ -1030,7 +1030,11 @@ export default function MessagesPage() {
         ) : (
           <div>
             {filtered.map(conv => (
-              <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={() => setActive(conv)}/>
+              <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={() => {
+                // Réinitialiser le badge immédiatement (comme Facebook)
+                setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
+                setActive(conv)
+              }}/>
             ))}
           </div>
         )}
