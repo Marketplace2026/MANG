@@ -502,7 +502,7 @@ function ChatWindow({ conv, user, onBack }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 bg-surface-50 flex flex-col" style={{ zIndex: 100 }}>
+    <div className="fixed inset-0 bg-surface-50 flex flex-col z-10">
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
@@ -542,7 +542,7 @@ function ChatWindow({ conv, user, onBack }) {
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Search size={16} className="text-white"/>
             </button>
-            <button onClick={() => { if (other?.phone) window.open(`tel:${other.phone}`); else toast('Numéro non disponible') }}
+            <button onClick={() => toast('Appel bientôt disponible')}
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Phone size={16} className="text-white"/>
             </button>
@@ -647,8 +647,8 @@ function ChatWindow({ conv, user, onBack }) {
       )}
 
       {/* ── INPUT ── */}
-      <div className="bg-white border-t border-surface-100 px-3 py-2.5 flex-shrink-0"
-        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', zIndex: 50, position: 'relative' }}>
+      <div className="bg-white border-t border-surface-100 px-3 py-2.5 pb-safe flex-shrink-0"
+        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
 
         {recording ? (
           /* Mode enregistrement */
@@ -737,9 +737,9 @@ function ChatWindow({ conv, user, onBack }) {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {[
-                { icon: Bell,    label: 'Notifications',       action: () => { setNotifMuted(v => !v); toast(notifMuted ? 'Notifications activées' : 'Notifications désactivées') } },
-                { icon: Archive, label: 'Archiver conversation', action: async () => { await supabase.from('conversations').update({ is_archived: true }).eq('id', conv.id); toast.success('Conversation archivée'); onBack() } },
-                { icon: Star,    label: 'Messages favoris',    action: () => { setShowInfo(false); setSearchMsg('⭐') } },
+                { icon: Bell,    label: 'Notifications',       action: () => toast('Bientôt') },
+                { icon: Archive, label: 'Archiver conversation', action: () => toast('Bientôt') },
+                { icon: Star,    label: 'Messages favoris',    action: () => toast('Bientôt') },
                 { icon: Search,  label: 'Rechercher',          action: () => { setShowSearch(true); setShowInfo(false) } },
               ].map(item => {
                 const Icon = item.icon
@@ -764,13 +764,7 @@ function ChatWindow({ conv, user, onBack }) {
                 </div>
               </div>
 
-              <button onClick={async () => {
-                if (!confirm('Supprimer cette conversation ?')) return
-                await supabase.from('conversations').delete().eq('id', conv.id)
-                toast.success('Conversation supprimée')
-                setShowInfo(false)
-                onBack()
-              }} className="w-full p-4 bg-red-50 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:bg-red-100">
+              <button className="w-full p-4 bg-red-50 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:bg-red-100">
                 <Trash2 size={15}/> Supprimer la conversation
               </button>
             </div>
@@ -792,24 +786,40 @@ function ConvItem({ conv, userId, onClick }) {
   const other = conv.buyer_id === userId ? conv.seller : conv.buyer
   const online = isOnline(other?.last_seen_at)
   const unread = conv.unread_count || 0
+  const hasUnread = unread > 0
+  const isAchat = conv.buyer_id === userId
 
   return (
     <button onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-surface-50 transition-colors text-left border-b border-surface-100/60">
+      className={clsx(
+        'w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left border-b border-surface-100/60',
+        hasUnread ? 'bg-white active:bg-surface-50' : 'bg-white/60 active:bg-surface-50'
+      )}>
       <div className="relative flex-shrink-0">
         <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
+        {/* Badge achat/vente */}
+        <span className={clsx(
+          'absolute -top-1 -left-1 text-[8px] font-black px-1 py-0.5 rounded-full',
+          isAchat ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'
+        )}>
+          {isAchat ? '🛒' : '🏪'}
+        </span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <p className="font-bold text-dark-800 text-sm truncate">@{other?.username}</p>
+          <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900' : 'font-bold text-dark-700')}>
+            @{other?.username}
+          </p>
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
             {conv.last_message_at && (
-              <span className="text-[10px] text-dark-400">{fmtTime(conv.last_message_at)}</span>
+              <span className={clsx('text-[10px]', hasUnread ? 'text-primary-600 font-bold' : 'text-dark-400')}>
+                {fmtTime(conv.last_message_at)}
+              </span>
             )}
-            {unread > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-black flex items-center justify-center">
-                {unread > 9 ? '9+' : unread}
+            {hasUnread && (
+              <span className="min-w-[20px] h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center px-1 shadow-sm animate-pulse">
+                {unread > 99 ? '99+' : unread}
               </span>
             )}
           </div>
@@ -821,7 +831,8 @@ function ConvItem({ conv, userId, onClick }) {
           </p>
         )}
 
-        <p className={clsx('text-xs truncate', unread > 0 ? 'text-dark-700 font-semibold' : 'text-dark-400')}>
+        <p className={clsx('text-xs truncate',
+          hasUnread ? 'text-dark-800 font-bold' : 'text-dark-400 font-normal')}>
           {conv.last_message || 'Démarrer la conversation...'}
         </p>
       </div>
@@ -856,7 +867,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
   const [active, setActive]   = useState(null)
-  const [tab, setTab]         = useState('all') // 'all' | 'unread'
+  const [tab, setTab]         = useState('all') // 'all' | 'unread' | 'achat' | 'vente'
 
   useEffect(() => { if (user) loadConvs() }, [user])
 
@@ -867,11 +878,27 @@ export default function MessagesPage() {
     }
   }, [openConvId, convs])
 
-  // Realtime
+  // Realtime - écouter nouveaux messages ET conversations
   useEffect(() => {
     if (!user) return
-    const ch = supabase.channel('convs-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, loadConvs)
+    const ch = supabase.channel('convs-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => loadConvs())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        // Nouveau message → mettre à jour le badge si pas de notre part
+        if (payload.new.sender_id !== user.id) {
+          setConvs(prev => prev.map(c => {
+            if (c.id === payload.new.conversation_id) {
+              return {
+                ...c,
+                last_message: payload.new.content,
+                last_message_at: payload.new.created_at,
+                unread_count: (c.unread_count || 0) + 1,
+              }
+            }
+            return c
+          }))
+        }
+      })
       .subscribe()
     return () => supabase.removeChannel(ch)
   }, [user])
@@ -885,7 +912,27 @@ export default function MessagesPage() {
         seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false })
-    setConvs(data || [])
+
+    if (data?.length) {
+      // Calculer unread_count pour chaque conversation
+      const convIds = data.map(c => c.id)
+      const { data: unreadData } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .in('conversation_id', convIds)
+        .eq('is_read', false)
+        .neq('sender_id', user.id)
+
+      const unreadMap = {}
+      unreadData?.forEach(m => {
+        unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1
+      })
+
+      const enriched = data.map(c => ({ ...c, unread_count: unreadMap[c.id] || 0 }))
+      setConvs(enriched)
+    } else {
+      setConvs([])
+    }
     setLoading(false)
   }
 
@@ -893,9 +940,18 @@ export default function MessagesPage() {
     const other = c.buyer_id === user?.id ? c.seller : c.buyer
     const q = search.toLowerCase()
     const matchSearch = !q || (other?.username || '').toLowerCase().includes(q) || (c.shop?.name || '').toLowerCase().includes(q) || (c.last_message || '').toLowerCase().includes(q)
-    const matchTab = tab === 'all' || (tab === 'unread' && (c.unread_count || 0) > 0)
+    // Achat = l'utilisateur est le buyer (il a initié la conv)
+    // Vente = l'utilisateur est le seller (l'autre a initié)
+    const matchTab =
+      tab === 'all' ? true :
+      tab === 'unread' ? (c.unread_count || 0) > 0 :
+      tab === 'achat' ? c.buyer_id === user?.id :
+      tab === 'vente' ? c.seller_id === user?.id : true
     return matchSearch && matchTab
   })
+  
+  const unreadAchat = convs.filter(c => c.buyer_id === user?.id && (c.unread_count || 0) > 0).length
+  const unreadVente = convs.filter(c => c.seller_id === user?.id && (c.unread_count || 0) > 0).length
 
   const unreadTotal = convs.reduce((s, c) => s + (c.unread_count || 0), 0)
 
@@ -930,16 +986,24 @@ export default function MessagesPage() {
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-white/40"/></button>}
         </div>
 
-        {/* Onglets */}
-        <div className="flex gap-2">
+        {/* Onglets Achat / Vente / Tous / Non lus */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {[
-            { key: 'all',    label: 'Tous'    },
-            { key: 'unread', label: `Non lus${unreadTotal > 0 ? ` (${unreadTotal})` : ''}` },
+            { key: 'all',    label: 'Tous',    badge: unreadTotal },
+            { key: 'achat',  label: '🛒 Achat', badge: unreadAchat },
+            { key: 'vente',  label: '🏪 Vente', badge: unreadVente },
+            { key: 'unread', label: 'Non lus',  badge: unreadTotal },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={clsx('px-4 py-1.5 rounded-xl text-xs font-bold transition-all',
+              className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
                 tab === t.key ? 'bg-white text-primary-700' : 'bg-white/10 text-white/60')}>
               {t.label}
+              {t.badge > 0 && (
+                <span className={clsx('w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center',
+                  tab === t.key ? 'bg-primary-600 text-white' : 'bg-red-500 text-white')}>
+                  {t.badge > 9 ? '9+' : t.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
