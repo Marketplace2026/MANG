@@ -11,7 +11,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore, useMessagesStore } from '@/store'
+import { useAuthStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -874,8 +874,7 @@ export default function MessagesPage() {
   const [search, setSearch]   = useState('')
   const [active, setActive]   = useState(null)
   const [tab, setTab]         = useState('all') // 'all' | 'unread' | 'achat' | 'vente'
-  // Set persistant des conv IDs marquées lues localement (survit aux rechargements)
-  const readConvsRef = useRef(new Set())
+  const readConvsSet = useRef(new Set())
 
   useEffect(() => { if (user) loadConvs() }, [user])
 
@@ -936,10 +935,9 @@ export default function MessagesPage() {
         unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1
       })
 
-      // Les convs dans readConvsRef sont forcées à 0 même si la DB dit autre chose
       setConvs(data.map(c => ({
         ...c,
-        unread_count: readConvsRef.current.has(c.id) ? 0 : (unreadMap[c.id] || 0)
+        unread_count: readConvsSet.current.has(c.id) ? 0 : (unreadMap[c.id] || 0)
       })))
     } else {
       setConvs([])
@@ -966,13 +964,8 @@ export default function MessagesPage() {
 
   const unreadTotal = convs.reduce((s, c) => s + (c.unread_count || 0), 0)
 
-  const { fetchUnreadCount } = useMessagesStore()
-
   const handleMarkRead = (convId) => {
-    readConvsRef.current.add(convId)
     setConvs(prev => prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c))
-    // Synchroniser le badge de la navbar
-    if (user?.id) fetchUnreadCount(user.id)
   }
 
   if (active) return <ChatWindow conv={active} user={user} onBack={() => { setActive(null); loadConvs() }} onMarkRead={handleMarkRead}/>
@@ -1051,19 +1044,17 @@ export default function MessagesPage() {
           <div>
             {filtered.map(conv => (
               <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={async () => {
-                // 1) Enregistrer dans le ref (persiste même si loadConvs recharge)
-                readConvsRef.current.add(conv.id)
-                // 2) Mise à jour locale immédiate (UI instantanée)
+                // 1) Badge à 0 immédiatement + protéger contre reload realtime
+                readConvsSet.current.add(conv.id)
                 setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
-                // 3) Marquer en DB (await pour s'assurer que c'est bien écrit avant tout reload)
+                // 2) Marquer en DB avec await (so realtime reload voit déjà is_read=true)
                 await supabase.from("messages")
                   .update({ is_read: true })
                   .eq("conversation_id", conv.id)
                   .eq("is_read", false)
                   .neq("sender_id", user.id)
-                // 4) Nettoyer le ref + synchroniser le badge navbar
-                readConvsRef.current.delete(conv.id)
-                if (user?.id) fetchUnreadCount(user.id)
+                // 3) DB confirmée → nettoyer le verrou
+                readConvsSet.current.delete(conv.id)
                 setActive(conv)
               }}/>
             ))}
