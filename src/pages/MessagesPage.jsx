@@ -934,8 +934,14 @@ export default function MessagesPage() {
         unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1
       })
 
-      const enriched = data.map(c => ({ ...c, unread_count: unreadMap[c.id] || 0 }))
-      setConvs(enriched)
+      // Préserver les convs déjà marquées 0 localement (évite que le realtime écrase)
+      setConvs(prev => {
+        const localZeroed = new Set(prev.filter(c => c.unread_count === 0 && (unreadMap[c.id] || 0) > 0).map(c => c.id))
+        return data.map(c => ({
+          ...c,
+          unread_count: localZeroed.has(c.id) ? 0 : (unreadMap[c.id] || 0)
+        }))
+      })
     } else {
       setConvs([])
     }
@@ -1040,8 +1046,15 @@ export default function MessagesPage() {
         ) : (
           <div>
             {filtered.map(conv => (
-              <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={() => {
+              <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={async () => {
+                // 1) Mise à jour locale immédiate (UI instantanée)
                 setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
+                // 2) Marquer en DB immédiatement pour que le realtime ne réécrase pas
+                supabase.from("messages")
+                  .update({ is_read: true })
+                  .eq("conversation_id", conv.id)
+                  .eq("is_read", false)
+                  .neq("sender_id", user.id)
                 setActive(conv)
               }}/>
             ))}
