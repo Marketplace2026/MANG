@@ -520,45 +520,47 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
           <p className="text-dark-600/60 text-[10px] leading-tight line-clamp-2 mb-2">{shop.description}</p>
         )}
 
-        {/* Actions : cloche abonnement + pousse like */}
+        {/* Actions : cloche abonnement + pouce like — sans compteurs (les vrais chiffres sont dans la page boutique) */}
         <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
 
           {/* Bouton Abonnement — cloche */}
           <button
             onClick={e => { e.stopPropagation(); onFollow() }}
             className={clsx(
-              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 active:scale-95',
+              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
               isFollowing
                 ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-500'
+                : 'bg-surface-100 text-dark-400'
             )}
           >
-            {/* Icône cloche SVG inline */}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill={isFollowing ? 'white' : 'none'}
-              stroke={isFollowing ? 'white' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24"
+              fill={isFollowing ? 'white' : 'none'}
+              stroke={isFollowing ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <span>{shop.followers_count || 0}</span>
+            <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
           {/* Bouton Like — pouce */}
           <button
             onClick={e => { e.stopPropagation(); onLike() }}
             className={clsx(
-              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 active:scale-95',
+              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
               isLiked
                 ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-500'
+                : 'bg-surface-100 text-dark-400'
             )}
           >
-            {/* Icône pouce SVG inline */}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill={isLiked ? 'white' : 'none'}
-              stroke={isLiked ? 'white' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24"
+              fill={isLiked ? 'white' : 'none'}
+              stroke={isLiked ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
               <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
             </svg>
-            <span>{shop.likes_count || 0}</span>
+            <span>{isLiked ? 'Aimé' : "J'aime"}</span>
           </button>
 
         </div>

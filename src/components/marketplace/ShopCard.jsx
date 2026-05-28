@@ -88,43 +88,43 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
           </p>
         )}
 
-        {/* Actions : Cloche abonnement + Pouce like */}
+        {/* Actions : Cloche abonnement + Pouce like — sans compteurs */}
         <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
 
           {/* Cloche — S'abonner */}
           <button
             onClick={e => { e.stopPropagation(); onFollow?.() }}
             className={clsx(
-              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95',
-              isFollowing ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-500'
+              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
+              isFollowing ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
             )}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24"
+            <svg width="13" height="13" viewBox="0 0 24 24"
               fill={isFollowing ? 'white' : 'none'}
               stroke={isFollowing ? 'white' : 'currentColor'}
               strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <span>{shop.followers_count ?? 0}</span>
+            <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
           {/* Pouce — Liker */}
           <button
             onClick={e => { e.stopPropagation(); onLike?.() }}
             className={clsx(
-              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95',
-              isLiked ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-500'
+              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
+              isLiked ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
             )}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24"
+            <svg width="13" height="13" viewBox="0 0 24 24"
               fill={isLiked ? 'white' : 'none'}
               stroke={isLiked ? 'white' : 'currentColor'}
               strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
               <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
             </svg>
-            <span>{shop.likes_count ?? 0}</span>
+            <span>{isLiked ? 'Aimé' : "J'aime"}</span>
           </button>
 
         </div>
