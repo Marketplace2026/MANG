@@ -309,7 +309,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 // ══════════════════════════════════════════════════════════
 // CHAT WINDOW
 // ══════════════════════════════════════════════════════════
-function ChatWindow({ conv, user, onBack }) {
+function ChatWindow({ conv, user, onBack, onMarkRead }) {
   const other = conv.buyer_id === user.id ? conv.seller : conv.buyer
   const [messages, setMessages]     = useState([])
   const [loading, setLoading]       = useState(true)
@@ -348,7 +348,10 @@ function ChatWindow({ conv, user, onBack }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
         payload => {
           setMessages(prev => [...prev, payload.new])
-          if (payload.new.sender_id !== user.id) markRead(payload.new.id)
+          if (payload.new.sender_id !== user.id) {
+            markRead(payload.new.id)
+            onMarkRead?.(conv.id)
+          }
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
         payload => setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m)))
@@ -385,7 +388,10 @@ function ChatWindow({ conv, user, onBack }) {
     // Marquer comme lus
     if (data?.length) {
       const unread = data.filter(m => m.sender_id !== user.id && !m.is_read).map(m => m.id)
-      if (unread.length) supabase.from('messages').update({ is_read: true }).in('id', unread)
+      if (unread.length) {
+        supabase.from('messages').update({ is_read: true }).in('id', unread)
+        onMarkRead?.(conv.id)
+      }
     }
     setLoading(false)
   }
@@ -502,7 +508,7 @@ function ChatWindow({ conv, user, onBack }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 bg-surface-50 flex flex-col z-10" style={{ paddingBottom: '64px' }}>
+    <div className="fixed inset-0 bg-surface-50 flex flex-col" style={{ zIndex: 200 }}>
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
@@ -667,15 +673,15 @@ function ChatWindow({ conv, user, onBack }) {
             </button>
           </div>
         ) : (
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             {/* Boutons médias */}
-            <div className="flex items-center gap-1 flex-shrink-0 pb-0.5">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <button onClick={() => imgRef.current?.click()}
-                className="w-9 h-9 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90">
+                className="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90">
                 <Camera size={17} className="text-dark-500"/>
               </button>
               <button onClick={() => fileRef.current?.click()}
-                className="w-9 h-9 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90">
+                className="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90">
                 <Paperclip size={17} className="text-dark-500"/>
               </button>
             </div>
@@ -689,7 +695,7 @@ function ChatWindow({ conv, user, onBack }) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText() } }}
                 placeholder="Message..."
                 rows={1}
-                className="w-full bg-surface-100 rounded-2xl px-4 py-2.5 text-sm text-dark-800 placeholder-dark-400 outline-none resize-none leading-relaxed font-medium"
+                className="w-full bg-surface-100 rounded-2xl px-4 py-2.5 text-sm text-dark-800 placeholder-dark-400 outline-none resize-none leading-relaxed font-medium block"
                 style={{ minHeight: '40px', maxHeight: '120px' }}
               />
             </div>
@@ -955,7 +961,11 @@ export default function MessagesPage() {
 
   const unreadTotal = convs.reduce((s, c) => s + (c.unread_count || 0), 0)
 
-  if (active) return <ChatWindow conv={active} user={user} onBack={() => { setActive(null); loadConvs() }}/>
+  const handleMarkRead = (convId) => {
+    setConvs(prev => prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c))
+  }
+
+  if (active) return <ChatWindow conv={active} user={user} onBack={() => { setActive(null); loadConvs() }} onMarkRead={handleMarkRead}/>
 
   return (
     <div className="min-h-screen bg-surface-50 flex flex-col">
@@ -1031,7 +1041,6 @@ export default function MessagesPage() {
           <div>
             {filtered.map(conv => (
               <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={() => {
-                // Réinitialiser le badge immédiatement (comme Facebook)
                 setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
                 setActive(conv)
               }}/>
