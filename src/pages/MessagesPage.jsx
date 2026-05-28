@@ -875,7 +875,7 @@ export default function MessagesPage() {
   const [active, setActive]   = useState(null)
   const [tab, setTab]         = useState('all') // 'all' | 'unread' | 'achat' | 'vente'
   // Set persistant des conv IDs marquées lues localement (survit aux rechargements)
-  const readConvsRef = React.useRef(new Set())
+  const readConvsRef = useRef(new Set())
 
   useEffect(() => { if (user) loadConvs() }, [user])
 
