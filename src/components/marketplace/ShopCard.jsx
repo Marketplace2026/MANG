@@ -1,12 +1,12 @@
 import { clsx } from 'clsx'
-import { MapPin, Truck, Heart, Users, Star } from 'lucide-react'
+import { MapPin, Truck, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, PremiumBadge } from '@/components/ui'
 
 // ============================================================
 // SHOP CARD — Carte boutique principale
 // ============================================================
-export function ShopCard({ shop, onLike, isLiked = false, style }) {
+export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing = false, style }) {
   const navigate = useNavigate()
   const isOnline = shop.owner?.last_seen_at
     ? (new Date() - new Date(shop.owner.last_seen_at)) < 120000
@@ -29,7 +29,7 @@ export function ShopCard({ shop, onLike, isLiked = false, style }) {
       onClick={() => navigate(`/boutique/${shop.slug}`)}
     >
       {/* Cover */}
-      <div className="relative h-36 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
+      <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url ? (
           <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
         ) : (
@@ -54,67 +54,88 @@ export function ShopCard({ shop, onLike, isLiked = false, style }) {
             <span className="text-white text-[10px] font-bold">Livraison</span>
           </div>
         )}
-
-        {/* Bouton like */}
-        <button
-          onClick={e => { e.stopPropagation(); onLike?.() }}
-          className="absolute bottom-2.5 right-2.5 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-90 transition-transform"
-        >
-          <Heart
-            size={15}
-            className={clsx('transition-colors', isLiked ? 'text-red-500 fill-red-500' : 'text-dark-600/50')}
-          />
-        </button>
       </div>
 
       {/* Infos */}
-      <div className="p-3.5">
-        <div className="flex items-start gap-2.5">
-          <div className="relative flex-shrink-0 -mt-7">
+      <div className="px-3 pt-2.5 pb-3">
+
+        {/* Avatar + nom — dans le flux, pas en débordement */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="relative flex-shrink-0">
             <Avatar
               src={shop.owner?.avatar_url}
               name={shop.name}
-              size="md"
+              size="sm"
               className="ring-2 ring-white shadow-sm"
             />
             {isOnline && (
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"/>
+              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-white"/>
             )}
           </div>
-
-          <div className="flex-1 min-w-0 pt-0.5">
+          <div className="flex-1 min-w-0">
             <h3 className="font-display font-bold text-dark-800 text-sm leading-tight truncate">
               {shop.name}
             </h3>
-            <p className="text-dark-600/50 text-xs mt-0.5">
+            <p className="text-dark-600/40 text-xs truncate">
               @{shop.owner?.username}
             </p>
           </div>
         </div>
 
         {shop.description && (
-          <p className="text-dark-600/60 text-xs mt-2 line-clamp-2 leading-relaxed">
+          <p className="text-dark-600/60 text-xs mb-2.5 line-clamp-2 leading-relaxed">
             {shop.description}
           </p>
         )}
 
-        {/* Footer stats */}
-        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-surface-100">
-          {shop.city && (
-            <div className="flex items-center gap-1">
-              <MapPin size={10} className="text-dark-600/40"/>
-              <span className="text-dark-600/50 text-[10px] font-medium truncate max-w-[80px]">{shop.city}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1 ml-auto">
-            <Users size={10} className="text-primary-500"/>
-            <span className="text-dark-600/60 text-[10px] font-semibold">{shop.followers_count}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Heart size={10} className="text-red-400"/>
-            <span className="text-dark-600/60 text-[10px] font-semibold">{shop.likes_count}</span>
-          </div>
+        {/* Actions : Cloche abonnement + Pouce like */}
+        <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
+
+          {/* Cloche — S'abonner */}
+          <button
+            onClick={e => { e.stopPropagation(); onFollow?.() }}
+            className={clsx(
+              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95',
+              isFollowing ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-500'
+            )}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24"
+              fill={isFollowing ? 'white' : 'none'}
+              stroke={isFollowing ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span>{shop.followers_count ?? 0}</span>
+          </button>
+
+          {/* Pouce — Liker */}
+          <button
+            onClick={e => { e.stopPropagation(); onLike?.() }}
+            className={clsx(
+              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95',
+              isLiked ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-500'
+            )}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24"
+              fill={isLiked ? 'white' : 'none'}
+              stroke={isLiked ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+            </svg>
+            <span>{shop.likes_count ?? 0}</span>
+          </button>
+
         </div>
+
+        {/* Localisation */}
+        {shop.city && (
+          <div className="flex items-center gap-1 mt-2">
+            <MapPin size={9} className="text-dark-600/40"/>
+            <span className="text-dark-600/40 text-[10px] font-medium truncate">{shop.city}</span>
+          </div>
+        )}
       </div>
     </div>
   )

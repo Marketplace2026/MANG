@@ -468,18 +468,21 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
   return (
     <div className={clsx('bg-white rounded-2xl shadow-card overflow-hidden active:scale-[0.97] transition-transform duration-150 cursor-pointer', premiumRing)}
       onClick={onOpen}>
-      {/* Image */}
-      <div className="relative h-36 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
+
+      {/* Image cover */}
+      <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">🌿</div>
         }
+
         {/* Badge premium */}
         {shop.premium_level > 0 && (
           <div className="absolute top-2 right-2">
             <PremiumBadge level={shop.premium_level}/>
           </div>
         )}
+
         {/* Livraison */}
         {shop.has_delivery && (
           <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary-700/90 backdrop-blur-sm">
@@ -487,56 +490,77 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             <span className="text-white text-[9px] font-bold">Livraison</span>
           </div>
         )}
+
         {/* Distance si mode proche */}
         {isNearby && shop.distance != null && (
           <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/50 backdrop-blur-sm">
             <span className="text-white text-[10px] font-bold">📍 {shop.distance < 1 ? (shop.distance*1000).toFixed(0)+'m' : shop.distance.toFixed(1)+'km'}</span>
           </div>
         )}
-        {/* Bouton like */}
-        <button onClick={e => { e.stopPropagation(); onLike() }}
-          className="absolute bottom-2 right-2 w-7 h-7 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-90">
-          <span className={clsx('text-sm transition-transform', isLiked && 'scale-110')}>
-            {isLiked ? '❤️' : '🤍'}
-          </span>
-        </button>
       </div>
 
       {/* Infos */}
-      <div className="p-2.5">
-        <div className="flex items-start gap-2 -mt-6">
+      <div className="px-2.5 pt-2 pb-2.5">
+
+        {/* Nom + username — sans avatar qui déborde */}
+        <div className="flex items-center gap-2 mb-1">
           <div className="relative flex-shrink-0">
-            <Avatar src={shop.owner?.avatar_url} name={shop.name} size="md"
+            <Avatar src={shop.owner?.avatar_url} name={shop.name} size="sm"
               className="ring-2 ring-white shadow-sm"/>
-            {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"/>}
+            {isOnline && <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-white"/>}
           </div>
-          <div className="flex-1 min-w-0 pt-1">
+          <div className="flex-1 min-w-0">
             <h3 className="font-bold text-dark-800 text-xs leading-tight truncate">{shop.name}</h3>
-            <p className="text-dark-600/50 text-[10px]">@{shop.owner?.username}</p>
+            <p className="text-dark-600/40 text-[10px] truncate">@{shop.owner?.username}</p>
           </div>
         </div>
 
-        {/* Description scrollante */}
+        {/* Description */}
         {shop.description && (
-          <div className="mt-1.5 overflow-hidden">
-            <p className="text-dark-600/60 text-[10px] leading-tight line-clamp-2">{shop.description}</p>
-          </div>
+          <p className="text-dark-600/60 text-[10px] leading-tight line-clamp-2 mb-2">{shop.description}</p>
         )}
 
-        {/* Stats + suivre */}
-        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-surface-100">
-          <button onClick={e => { e.stopPropagation(); onFollow() }}
+        {/* Actions : cloche abonnement + pousse like */}
+        <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
+
+          {/* Bouton Abonnement — cloche */}
+          <button
+            onClick={e => { e.stopPropagation(); onFollow() }}
             className={clsx(
-              'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all active:scale-95 flex-1',
-              isFollowing ? 'bg-primary-100 text-primary-700' : 'bg-surface-100 text-dark-600'
-            )}>
-            {isFollowing ? '❤️' : '🤍'}
+              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 active:scale-95',
+              isFollowing
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'bg-surface-100 text-dark-500'
+            )}
+          >
+            {/* Icône cloche SVG inline */}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={isFollowing ? 'white' : 'none'}
+              stroke={isFollowing ? 'white' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
             <span>{shop.followers_count || 0}</span>
           </button>
-          <div className="flex items-center gap-0.5 text-[10px] text-dark-600/50">
-            <span>👍</span>
+
+          {/* Bouton Like — pouce */}
+          <button
+            onClick={e => { e.stopPropagation(); onLike() }}
+            className={clsx(
+              'flex items-center justify-center gap-1 flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all duration-200 active:scale-95',
+              isLiked
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'bg-surface-100 text-dark-500'
+            )}
+          >
+            {/* Icône pouce SVG inline */}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={isLiked ? 'white' : 'none'}
+              stroke={isLiked ? 'white' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+            </svg>
             <span>{shop.likes_count || 0}</span>
-          </div>
+          </button>
+
         </div>
       </div>
     </div>
@@ -569,13 +593,18 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
       <div className="flex-1 min-w-0">
         <p className="font-bold text-dark-800 text-sm truncate">{shop.name}</p>
         {premiumStars && <p className="text-gold-500 text-xs font-semibold">{premiumStars}</p>}
-        <p className="text-dark-600/50 text-xs">❤️ {shop.followers_count || 0} abonnés</p>
+        <p className="text-dark-600/50 text-xs">🔔 {shop.followers_count || 0} abonnés</p>
 
         <div className="flex gap-2 mt-2">
           <button onClick={onFollow}
-            className={clsx('flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95',
-              isFollowing ? 'bg-primary-100 text-primary-700 border-primary-200' : 'bg-surface-50 text-dark-600 border-surface-200')}>
-            {isFollowing ? '❤️ Abonné' : '🤍 Suivre'}
+            className={clsx('flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 flex items-center justify-center gap-1',
+              isFollowing ? 'bg-primary-500 text-white border-primary-500' : 'bg-surface-50 text-dark-600 border-surface-200')}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={isFollowing ? 'white' : 'none'}
+              stroke={isFollowing ? 'white' : 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {isFollowing ? 'Abonné' : 'Suivre'}
           </button>
           <button onClick={onOpen}
             className="flex-1 py-1.5 rounded-xl text-xs font-bold bg-primary-600 text-white shadow-green active:scale-95">
