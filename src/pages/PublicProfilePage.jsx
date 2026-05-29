@@ -106,13 +106,13 @@ export default function PublicProfilePage() {
       setIsFollowing(true)
       setStats(s => ({ ...s, followers: s.followers + 1 }))
       // Notification
-      await supabase.from('notifications').insert({
-        user_id: profile.id,
-        type: 'user_follow',
-        title: '👤 Nouveau follower',
-        body: `@${myProfile?.username} vous suit maintenant`,
-        reference_id: user.id,
-        reference_type: 'profile',
+      await supabase.rpc('create_notification', {
+        p_user_id: profile.id,
+        p_type: 'user_follow',
+        p_title: '👤 Nouveau follower',
+        p_body: `@${myProfile?.username} vous suit maintenant`,
+        p_reference_id: user.id,
+        p_reference_type: 'profile',
       })
       toast.success(`Vous suivez @${profile.username} !`)
     }
