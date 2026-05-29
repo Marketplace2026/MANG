@@ -181,15 +181,23 @@ function PostsTab({ user, profile, mode }) {
       setLikedPosts(prev => new Set([...prev, postId]))
       // Notification à l auteur du post
       const post = posts.find(p => p.id === postId)
+      console.log('POST TROUVÉ:', post)
+      console.log('USER ID:', user.id)
+      console.log('POST USER ID:', post?.user_id)
+      console.log('PROFILE:', profile)
       if (post && post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
+        const { data: notifData, error: notifError } = await supabase.from('notifications').insert({
           user_id: post.user_id,
           type: 'post_like',
           title: '❤️ Nouveau like',
           body: `@${profile?.username} a aimé votre publication`,
           reference_id: postId,
           reference_type: 'post',
-        })
+        }).select()
+        console.log('NOTIF INSERT DATA:', notifData)
+        console.log('NOTIF INSERT ERROR:', notifError)
+      } else {
+        console.log('CONDITION BLOQUÉE - même user ou post non trouvé')
       }
     }
     setPosts(prev => prev.map(p =>
