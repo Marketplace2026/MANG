@@ -75,11 +75,16 @@ export default function NotificationsPage() {
   const handleClick = async (notif) => {
     if (!notif.is_read) await markAsRead(notif.id)
     // Navigation selon type
-    if (ORDER_TYPES.includes(notif.type))        navigate('/commandes')
-    else if (WALLET_TYPES.includes(notif.type))  navigate('/portefeuille')
-    else if (notif.type === 'new_message')        navigate('/messages')
-    else if (notif.type === 'user_follow')        navigate('/communaute')
-    else if (notif.type === 'post_like')          navigate('/communaute')
+    if (ORDER_TYPES.includes(notif.type))              navigate('/commandes')
+    else if (WALLET_TYPES.includes(notif.type))        navigate('/portefeuille')
+    else if (notif.type === 'new_message')             navigate('/messages')
+    else if (notif.type === 'user_follow' && notif.reference_id)
+      navigate('/profil/' + (notif.reference_username || notif.reference_id))
+    else if (notif.type === 'post_like')               navigate('/communaute')
+    else if (notif.type === 'shop_comment')            navigate('/communaute')
+    else if (notif.type === 'comment_like')            navigate('/communaute')
+    else if (notif.type === 'shop_follow' && notif.reference_id)
+      navigate('/boutique/' + notif.reference_id)
   }
 
   const handleDelete = async (e, notifId) => {
