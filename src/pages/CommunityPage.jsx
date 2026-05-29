@@ -179,6 +179,18 @@ function PostsTab({ user, profile, mode }) {
       const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
       if (error) { toast.error('Erreur'); return }
       setLikedPosts(prev => new Set([...prev, postId]))
+      // Notification à l auteur du post
+      const post = posts.find(p => p.id === postId)
+      if (post && post.user_id !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          type: 'post_like',
+          title: '❤️ Nouveau like',
+          body: `@${profile?.username} a aimé votre publication`,
+          reference_id: postId,
+          reference_type: 'post',
+        })
+      }
     }
     setPosts(prev => prev.map(p =>
       p.id === postId ? { ...p, likes_count: p.likes_count + (isLiked ? -1 : 1) } : p
