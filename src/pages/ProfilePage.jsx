@@ -67,12 +67,18 @@ export default function ProfilePage() {
     setTimeout(() => setWalletCopied(false), 2000)
   }
 
-  const handleSignOut = async () => { await signOut(); navigate('/connexion') }
+  const [signOutConfirm, setSignOutConfirm] = useState(false)
+
+  const handleSignOut = async () => {
+    if (!signOutConfirm) { setSignOutConfirm(true); return }
+    await signOut()
+    navigate('/connexion')
+  }
 
   if (!profile) return <ProfileSkeleton />
 
   const isOnline = profile.last_seen_at
-    ? (new Date() - new Date(profile.last_seen_at)) < 60000 : false
+    ? (new Date() - new Date(profile.last_seen_at)) < 300000 : false
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -121,12 +127,14 @@ export default function ProfilePage() {
       </div>
 
       {/* Contenu flottant */}
-      <div className="relative -mt-12 px-4 space-y-4 pb-8">
+      <div className="relative -mt-12 px-4 space-y-4 pb-24">
         <WalletCard wallet={wallet} copied={walletCopied} onCopy={handleCopyWallet}/>
 
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Coins} label="Pièces MANG" value={`${pieces?.balance ?? 0} pièces`} color="gold"/>
-          <StatCard icon={Star}  label="Mes boutiques" value="Voir tout" color="primary"/>
+          <div onClick={() => navigate('/vendeur')} className="cursor-pointer">
+            <StatCard icon={Star} label="Mes boutiques" value="Voir tout" color="primary"/>
+          </div>
         </div>
 
         <PersonalInfoCard profile={profile}/>
@@ -137,6 +145,30 @@ export default function ProfilePage() {
           onHelp={() => { setSettingsOpen(false); setHelpOpen(true) }}
         />
       </div>
+
+      {/* Confirmation déconnexion */}
+      {signOutConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60]" onClick={() => setSignOutConfirm(false)}/>
+          <div className="fixed bottom-0 left-0 right-0 z-[70] max-w-[480px] mx-auto bg-white rounded-t-3xl p-6 pb-10 shadow-modal">
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-3">👋</div>
+              <h3 className="font-display text-lg font-bold text-dark-800">Se déconnecter ?</h3>
+              <p className="text-sm text-dark-600/60 mt-1">Vous devrez vous reconnecter pour accéder à votre compte.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setSignOutConfirm(false)}
+                className="flex-1 py-3.5 rounded-2xl bg-surface-100 text-dark-700 font-bold text-sm active:scale-95 transition-transform">
+                Annuler
+              </button>
+              <button onClick={async () => { await signOut(); navigate('/connexion') }}
+                className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-transform shadow-sm">
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Feuille : modifier profil */}
       <EditProfileSheet
@@ -171,7 +203,7 @@ export default function ProfilePage() {
       />
 
       {/* Feuille : langue */}
-      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)}/>
+      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} profile={profile} onUpdated={refreshProfile}/>
 
       {/* Feuille : aide & FAQ */}
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)}/>
@@ -218,8 +250,8 @@ function AvatarUploader({ profile, onUpdated }) {
 // ─── WalletCard ───────────────────────────────────────────────────────────────
 
 function WalletCard({ wallet, copied, onCopy }) {
-  const balance  = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '—'
-  const reserved = wallet ? (wallet.balance_reserved / 100) : 0
+  const balance  = wallet ? Number(wallet.balance_available ?? 0).toLocaleString('fr-FR') : '—'
+  const reserved = wallet ? Number(wallet.balance_reserved ?? 0) : 0
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-dark-800 to-dark-900 p-5 shadow-modal">
@@ -242,7 +274,7 @@ function WalletCard({ wallet, copied, onCopy }) {
           <p className="font-display text-3xl font-bold text-white">
             {balance} <span className="text-lg text-white/50">FCFA</span>
           </p>
-          {reserved > 0 && <p className="text-gold-400 text-xs mt-1">{(reserved/100).toLocaleString('fr-FR')} FCFA en réserve</p>}
+          {reserved > 0 && <p className="text-gold-400 text-xs mt-1">{Number(reserved).toLocaleString('fr-FR')} FCFA en réserve</p>}
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-white/10">
           <button onClick={onCopy} className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors">
@@ -379,6 +411,15 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
   }
 
   const handleSave = async () => {
+    // Validation téléphone béninois
+    if (form.phone) {
+      const phoneClean = form.phone.replace(/\s/g, '')
+      const validPhone = /^(\+229)?[0-9]{8}$/.test(phoneClean)
+      if (!validPhone) {
+        toast.error('Numéro invalide (ex: +229 61 00 00 00)')
+        return
+      }
+    }
     setLoading(true)
     const { error } = await supabase.from('profiles').update({
       full_name:     form.full_name.trim()     || null,
@@ -496,9 +537,18 @@ function SecuritySheet({ open, onClose }) {
   const [show,    setShow]    = useState({ current: false, next: false, confirm: false })
   const [loading, setLoading] = useState(false)
   const [errors,  setErrors]  = useState({})
+  const [isOAuth, setIsOAuth] = useState(false)
 
   useEffect(() => {
-    if (open) { setForm({ current: '', next: '', confirm: '' }); setErrors({}) }
+    if (open) {
+      setForm({ current: '', next: '', confirm: '' })
+      setErrors({})
+      // Vérifier si l'utilisateur est connecté via Google OAuth
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        const providers = user?.app_metadata?.providers || []
+        setIsOAuth(providers.includes('google') && !providers.includes('email'))
+      })
+    }
   }, [open])
 
   const validate = () => {
@@ -555,12 +605,23 @@ function SecuritySheet({ open, onClose }) {
   return (
     <BottomSheet open={open} onClose={onClose} title="Changer le mot de passe">
       <div className="px-5 pt-4 pb-6 space-y-4">
-        <PasswordInput {...fieldProps('current', 'Mot de passe actuel', '••••••••')}/>
-        <PasswordInput {...fieldProps('next',    'Nouveau mot de passe', '6 caractères minimum')}/>
-        <PasswordInput {...fieldProps('confirm', 'Confirmer',            'Répéter le nouveau mot de passe')}/>
-        <Button variant="primary" className="w-full" loading={loading} onClick={handleSave}>
-          Mettre à jour
-        </Button>
+        {isOAuth ? (
+          <div className="p-4 bg-blue-50 rounded-2xl text-sm text-blue-700 leading-relaxed">
+            <p className="font-semibold mb-1">🔑 Compte Google</p>
+            <p className="text-xs text-blue-600/80">
+              Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.
+            </p>
+          </div>
+        ) : (
+          <>
+            <PasswordInput {...fieldProps('current', 'Mot de passe actuel', '••••••••')}/>
+            <PasswordInput {...fieldProps('next',    'Nouveau mot de passe', '6 caractères minimum')}/>
+            <PasswordInput {...fieldProps('confirm', 'Confirmer',            'Répéter le nouveau mot de passe')}/>
+            <Button variant="primary" className="w-full" loading={loading} onClick={handleSave}>
+              Mettre à jour
+            </Button>
+          </>
+        )}
       </div>
     </BottomSheet>
   )
@@ -636,7 +697,7 @@ function NotificationsSheet({ open, onClose, profile, onUpdated }) {
               )}>
               <div className={clsx(
                 'w-5 h-5 bg-white rounded-full shadow absolute transition-all duration-200',
-                prefs[key] ? 'left-6.5' : 'left-0.5'
+                prefs[key] ? 'left-[26px]' : 'left-0.5'
               )}/>
             </button>
           </div>
@@ -698,7 +759,7 @@ function PrivacySheet({ open, onClose, profile, onUpdated }) {
             )}>
             <div className={clsx(
               'w-5 h-5 bg-white rounded-full shadow absolute transition-all duration-200',
-              shareLocation ? 'left-6.5' : 'left-0.5'
+              shareLocation ? 'left-[26px]' : 'left-0.5'
             )}/>
           </button>
         </div>
@@ -742,12 +803,17 @@ const LANGUAGES = [
   { code: 'en',  label: 'English',  flag: '🇬🇧' },
 ]
 
-function LanguageSheet({ open, onClose }) {
+function LanguageSheet({ open, onClose, profile, onUpdated }) {
   const [selected, setSelected] = useState('fr')
 
-  const handleSelect = (code) => {
+  useEffect(() => {
+    if (open && profile) setSelected(profile.language || 'fr')
+  }, [open, profile])
+
+  const handleSelect = async (code) => {
     setSelected(code)
-    // En production : i18n.changeLanguage(code) + sauvegarde dans les prefs
+    await supabase.from('profiles').update({ language: code }).eq('id', profile.id)
+    await onUpdated()
     toast.success(`Langue mise à jour : ${LANGUAGES.find(l => l.code === code)?.label}`)
     setTimeout(onClose, 400)
   }
@@ -811,11 +877,11 @@ function HelpSheet({ open, onClose }) {
       <div className="px-5 pt-2 pb-6 space-y-3">
         {/* Bouton contact rapide */}
         <div className="flex gap-2">
-          <a href="tel:+22900000000"
+          <a href="tel:+22961000000" // TODO: remplacer par ton numéro support réel
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary-50 text-primary-700 font-semibold text-sm active:scale-95 transition-transform">
             <Phone size={15}/> Appeler
           </a>
-          <a href="https://wa.me/22900000000" target="_blank" rel="noreferrer"
+          <a href="https://wa.me/22961000000" target="_blank" rel="noreferrer" // TODO: remplacer par ton numéro WhatsApp réel
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 text-emerald-700 font-semibold text-sm active:scale-95 transition-transform">
             <span className="text-base">💬</span> WhatsApp
           </a>
