@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 // ============================================================
 // TABS
@@ -67,7 +67,7 @@ export default function CommunityPage() {
         {tab === 'feed'      && <PostsTab user={user} profile={profile} mode="feed"/>}
         {tab === 'following' && <PostsTab user={user} profile={profile} mode="following"/>}
         {tab === 'trending'  && <PostsTab user={user} profile={profile} mode="trending"/>}
-        {tab === 'members'   && <MembersTab user={user}/>}
+        {tab === 'members'   && <MembersTab user={user} profile={profile}/>}
       </div>
     </div>
   )
@@ -87,18 +87,6 @@ function PostsTab({ user, profile, mode }) {
   const [hasMore, setHasMore]           = useState(true)
   const [loadingMore, setLoadingMore]   = useState(false)
   const PAGE_SIZE = 20
-  const location = useLocation()
-
-  // Ouvrir automatiquement les commentaires si on vient d'une notification
-  useEffect(() => {
-    if (location.state?.openPostId && posts.length > 0) {
-      const post = posts.find(p => p.id === location.state.openPostId)
-      if (post) {
-        setCommentsPost(post)
-        window.history.replaceState({}, '') // reset state
-      }
-    }
-  }, [location.state?.openPostId, posts])
 
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
@@ -191,10 +179,10 @@ function PostsTab({ user, profile, mode }) {
       const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
       if (error) { toast.error('Erreur'); return }
       setLikedPosts(prev => new Set([...prev, postId]))
-      // Notification à l auteur du post
+      // Notification à l'auteur
       const post = posts.find(p => p.id === postId)
       if (post && post.user_id !== user.id) {
-        const { error: notifError } = await supabase.rpc('create_notification', {
+        await supabase.rpc('create_notification', {
           p_user_id: post.user_id,
           p_type: 'post_like',
           p_title: '❤️ Nouveau like',
@@ -202,9 +190,6 @@ function PostsTab({ user, profile, mode }) {
           p_reference_id: postId,
           p_reference_type: 'post',
         })
-        if (notifError) console.log('NOTIF RPC ERROR:', notifError)
-      } else {
-        console.log('CONDITION BLOQUÉE - même user ou post non trouvé')
       }
     }
     setPosts(prev => prev.map(p =>
@@ -715,14 +700,6 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
   const [sending, setSending]     = useState(false)
   const [likedComments, setLikedComments] = useState(new Set())
   const [expandedReplies, setExpandedReplies] = useState(new Set())
-
-  // Reset liked state when sheet opens for a new post
-  useEffect(() => {
-    if (open) {
-      setLikedComments(new Set())
-      setExpandedReplies(new Set())
-    }
-  }, [open, post.id])
   const inputRef = useRef()
   const bottomRef = useRef()
 
@@ -795,12 +772,10 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
     if (!user) return
     const isLiked = likedComments.has(commentId)
     if (isLiked) {
-      const { error } = await supabase.from('post_comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id)
-      if (error) { toast.error('Erreur'); return }
+      await supabase.from('post_comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id)
       setLikedComments(prev => { const s = new Set(prev); s.delete(commentId); return s })
     } else {
-      const { error } = await supabase.from('post_comment_likes').insert({ comment_id: commentId, user_id: user.id })
-      if (error) { toast.error('Erreur'); return }
+      await supabase.from('post_comment_likes').insert({ comment_id: commentId, user_id: user.id })
       setLikedComments(prev => new Set([...prev, commentId]))
     }
     // Mettre à jour le count localement
@@ -1002,7 +977,7 @@ function LikersSheet({ open, onClose, post }) {
 // ============================================================
 // ONGLET MEMBRES
 // ============================================================
-function MembersTab({ user }) {
+function MembersTab({ user, profile }) {
   const navigate = useNavigate()
   const [members, setMembers]     = useState([])
   const [loading, setLoading]     = useState(true)
@@ -1053,7 +1028,7 @@ function MembersTab({ user }) {
         p_user_id: memberId,
         p_type: 'user_follow',
         p_title: '👤 Nouveau follower',
-        p_body: `@${user?.username} vous suit maintenant`,
+        p_body: `@${profile?.username} vous suit maintenant`,
         p_reference_id: user.id,
         p_reference_type: 'profile',
       })
