@@ -353,7 +353,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
         payload => {
           setMessages(prev => [...prev, payload.new])
           if (payload.new.sender_id !== user.id) {
-            markRead(payload.new.id)
+            markRead(conv.id)
             onMarkRead?.(conv.id)
           }
         })
@@ -389,19 +389,22 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
       .order('created_at', { ascending: true })
       .limit(100)
     setMessages(data || [])
-    // Marquer comme lus
+    // Marquer comme lus via fonction SQL (contourne RLS)
     if (data?.length) {
-      const unread = data.filter(m => m.sender_id !== user.id && !m.is_read).map(m => m.id)
-      if (unread.length) {
-        supabase.from('messages').update({ is_read: true }).in('id', unread)
-        onMarkRead?.(conv.id)
-      }
+      const { error } = await supabase.rpc('mark_conversation_read', {
+        p_conv_id: conv.id,
+        p_user_id: user.id
+      })
+      if (!error) onMarkRead?.(conv.id)
     }
     setLoading(false)
   }
 
-  const markRead = async (id) => {
-    await supabase.from('messages').update({ is_read: true }).eq('id', id)
+  const markRead = async (convId) => {
+    await supabase.rpc('mark_conversation_read', {
+      p_conv_id: convId,
+      p_user_id: user.id
+    })
   }
 
   const broadcastTyping = () => {
@@ -940,7 +943,6 @@ export default function MessagesPage() {
         unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1
       })
 
-      console.log("unreadMap après loadConvs:", unreadMap)
       setConvs(data.map(c => ({
         ...c,
         unread_count: readConvsSet.current.has(c.id) ? 0 : (unreadMap[c.id] || 0)
@@ -1056,14 +1058,11 @@ export default function MessagesPage() {
                 // 1) Badge à 0 immédiatement + protéger contre reload realtime
                 readConvsSet.current.add(conv.id)
                 setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
-                // 2) Marquer en DB avec await (so realtime reload voit déjà is_read=true)
-                const { data: updated, error } = await supabase.from("messages")
-                  .update({ is_read: true })
-                  .eq("conversation_id", conv.id)
-                  .or("is_read.is.null,is_read.eq.false")
-                  .neq("sender_id", user.id)
-                  .select()
-                console.log("Mark read result:", updated, "Error:", error)
+                // 2) Marquer en DB via fonction SQL (contourne RLS)
+                await supabase.rpc('mark_conversation_read', {
+                  p_conv_id: conv.id,
+                  p_user_id: user.id
+                })
                 // 3) DB confirmée → nettoyer le verrou
                 readConvsSet.current.delete(conv.id)
                 setActive(conv)
