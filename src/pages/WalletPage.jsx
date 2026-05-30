@@ -262,7 +262,16 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [pinError, setPinError] = useState(false)
   // Solde RÉEL en FCFA
-  const balanceFCFA = (wallet?.balance_available || 0) / 100
+  const [realBalanceCents, setRealBalanceCents] = useState(wallet?.balance_available || 0)
+
+  useEffect(() => {
+    if (open && user) {
+      supabase.from("wallets").select("balance_available").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data) setRealBalanceCents(data.balance_available) })
+    }
+  }, [open, user])
+
+  const balanceFCFA = realBalanceCents / 100
 
   const reset = () => { setStep(1); setPin(''); setPinError(false); setOperator(''); setPhone(''); setAmount('') }
 
@@ -287,11 +296,22 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       const amt = parseInt(amount)
       const amtCents = amt * 100
 
-      // Débiter wallet
-      const newBalCents = wallet.balance_available - amtCents
+      // Récupérer le solde RÉEL depuis la DB (pas le store qui peut être périmé)
+      const { data: freshWallet } = await supabase
+        .from('wallets').select('balance_available, balance_total')
+        .eq('user_id', user.id).single()
+      if (!freshWallet) { setLoading(false); return toast.error('Erreur wallet') }
+
+      if (freshWallet.balance_available < amtCents) {
+        setLoading(false)
+        return toast.error(`Solde insuffisant. Disponible : ${(freshWallet.balance_available/100).toLocaleString('fr-FR')} FCFA`)
+      }
+
+      // Débiter wallet avec solde frais
+      const newBalCents = freshWallet.balance_available - amtCents
       await supabase.from('wallets').update({
         balance_available: newBalCents,
-        balance_total: wallet.balance_total - amtCents,
+        balance_total: freshWallet.balance_total - amtCents,
       }).eq('user_id', user.id)
 
       // Enregistrer transaction + notification
@@ -326,8 +346,8 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       if (!res.ok) {
         // Rembourser si FedaPay échoue
         await supabase.from('wallets').update({
-          balance_available: wallet.balance_available,
-          balance_total: wallet.balance_total,
+          balance_available: freshWallet.balance_available,
+          balance_total: freshWallet.balance_total,
         }).eq('user_id', user.id)
         throw new Error(data.error || data.message || 'Erreur FedaPay')
       }
@@ -418,7 +438,16 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
   const [step, setStep]               = useState(1)
   const [loading, setLoading]         = useState(false)
   const [pinError, setPinError]       = useState(false)
-  const balanceFCFA = (wallet?.balance_available || 0) / 100
+  const [realBalanceCents, setRealBalanceCents] = useState(wallet?.balance_available || 0)
+
+  useEffect(() => {
+    if (open && user) {
+      supabase.from("wallets").select("balance_available").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data) setRealBalanceCents(data.balance_available) })
+    }
+  }, [open, user])
+
+  const balanceFCFA = realBalanceCents / 100
   const timer = useRef(null)
 
   const reset = () => {
