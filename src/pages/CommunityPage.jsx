@@ -182,13 +182,13 @@ function PostsTab({ user, profile, mode }) {
       // Notification à l auteur du post
       const post = posts.find(p => p.id === postId)
       if (post && post.user_id !== user.id) {
-        await supabase.rpc('create_notification', {
-          p_user_id: post.user_id,
-          p_type: 'post_like',
-          p_title: '❤️ Nouveau like',
-          p_body: `@${profile?.username} a aimé votre publication`,
-          p_reference_id: postId,
-          p_reference_type: 'post',
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          type: 'post_like',
+          title: '❤️ Nouveau like',
+          body: `@${profile?.username} a aimé votre publication`,
+          reference_id: postId,
+          reference_type: 'post',
         })
       }
     }
@@ -747,13 +747,13 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
     if (error) { toast.error('Erreur envoi'); return }
     // Notification à l'auteur du post
     if (post.user_id !== user.id) {
-      await supabase.rpc('create_notification', {
-        p_user_id: post.user_id,
-        p_type: 'shop_comment',
-        p_title: '💬 Nouveau commentaire',
-        p_body: `@${profile?.username} a commenté votre publication`,
-        p_reference_id: post.id,
-        p_reference_type: 'post',
+      await supabase.from('notifications').insert({
+        user_id: post.user_id,
+        type: 'shop_comment',
+        title: '💬 Nouveau commentaire',
+        body: `@${profile?.username} a commenté votre publication`,
+        reference_id: post.id,
+        reference_type: 'post',
       })
     }
     setText('')
@@ -1024,13 +1024,11 @@ function MembersTab({ user }) {
       const { error } = await supabase.from('user_follows').insert({ follower_id: user.id, following_id: memberId })
       if (error) { toast.error('Erreur'); return }
       setFollowing(prev => new Set([...prev, memberId]))
-      await supabase.rpc('create_notification', {
-        p_user_id: memberId,
-        p_type: 'user_follow',
-        p_title: '👤 Nouveau follower',
-        p_body: `@${user?.username || 'Quelqu'un'} vous suit maintenant`,
-        p_reference_id: user.id,
-        p_reference_type: 'profile',
+      await supabase.from('notifications').insert({
+        user_id: memberId, type: 'user_follow',
+        title: '👤 Nouveau follower',
+        body: `@${user?.username || 'Quelquun'} vous suit maintenant`,
+        reference_id: user.id, reference_type: 'profile',
       })
       toast.success('Abonnement effectué !')
     }
