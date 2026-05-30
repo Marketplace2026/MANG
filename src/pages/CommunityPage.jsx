@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 // ============================================================
 // TABS
@@ -87,6 +87,18 @@ function PostsTab({ user, profile, mode }) {
   const [hasMore, setHasMore]           = useState(true)
   const [loadingMore, setLoadingMore]   = useState(false)
   const PAGE_SIZE = 20
+  const location = useLocation()
+
+  // Ouvrir automatiquement les commentaires si on vient d'une notification
+  useEffect(() => {
+    if (location.state?.openPostId && posts.length > 0) {
+      const post = posts.find(p => p.id === location.state.openPostId)
+      if (post) {
+        setCommentsPost(post)
+        window.history.replaceState({}, '') // reset state
+      }
+    }
+  }, [location.state?.openPostId, posts])
 
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
@@ -1041,7 +1053,7 @@ function MembersTab({ user }) {
         p_user_id: memberId,
         p_type: 'user_follow',
         p_title: '👤 Nouveau follower',
-        p_body: `@${user?.username || 'Quelquun'} vous suit maintenant`,
+        p_body: `@${user?.username} vous suit maintenant`,
         p_reference_id: user.id,
         p_reference_type: 'profile',
       })
