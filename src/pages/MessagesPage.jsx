@@ -922,12 +922,13 @@ export default function MessagesPage() {
 
     if (data?.length) {
       // Calculer unread_count pour chaque conversation
+      // is_read peut être NULL ou false pour les messages non lus
       const convIds = data.map(c => c.id)
       const { data: unreadData } = await supabase
         .from('messages')
         .select('conversation_id')
         .in('conversation_id', convIds)
-        .eq('is_read', false)
+        .or('is_read.is.null,is_read.eq.false')
         .neq('sender_id', user.id)
 
       const unreadMap = {}
@@ -935,6 +936,7 @@ export default function MessagesPage() {
         unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1
       })
 
+      console.log("unreadMap après loadConvs:", unreadMap)
       setConvs(data.map(c => ({
         ...c,
         unread_count: readConvsSet.current.has(c.id) ? 0 : (unreadMap[c.id] || 0)
@@ -1051,7 +1053,7 @@ export default function MessagesPage() {
                 const { data: updated, error } = await supabase.from("messages")
                   .update({ is_read: true })
                   .eq("conversation_id", conv.id)
-                  .eq("is_read", false)
+                  .or("is_read.is.null,is_read.eq.false")
                   .neq("sender_id", user.id)
                   .select()
                 console.log("Mark read result:", updated, "Error:", error)
