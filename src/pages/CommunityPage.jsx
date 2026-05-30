@@ -67,7 +67,7 @@ export default function CommunityPage() {
         {tab === 'feed'      && <PostsTab user={user} profile={profile} mode="feed"/>}
         {tab === 'following' && <PostsTab user={user} profile={profile} mode="following"/>}
         {tab === 'trending'  && <PostsTab user={user} profile={profile} mode="trending"/>}
-        {tab === 'members'   && <MembersTab user={user} profile={profile}/>}
+        {tab === 'members'   && <MembersTab user={user}/>}
       </div>
     </div>
   )
@@ -121,7 +121,7 @@ function PostsTab({ user, profile, mode }) {
     if (!data) { setLoading(false); return }
 
     if (user) {
-      const { data: myLikes } = await supabase.from('post_likes').select('post_id').eq('user_id', user.id)
+      const { data: myLikes } = await supabase.rpc('get_my_post_likes')
       setLikedPosts(new Set((myLikes || []).map(l => l.post_id)))
     }
 
@@ -179,7 +179,6 @@ function PostsTab({ user, profile, mode }) {
       const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
       if (error) { toast.error('Erreur'); return }
       setLikedPosts(prev => new Set([...prev, postId]))
-      // Notification à l'auteur
       const post = posts.find(p => p.id === postId)
       if (post && post.user_id !== user.id) {
         await supabase.rpc('create_notification', {
@@ -977,7 +976,7 @@ function LikersSheet({ open, onClose, post }) {
 // ============================================================
 // ONGLET MEMBRES
 // ============================================================
-function MembersTab({ user, profile }) {
+function MembersTab({ user }) {
   const navigate = useNavigate()
   const [members, setMembers]     = useState([])
   const [loading, setLoading]     = useState(true)
@@ -1024,12 +1023,13 @@ function MembersTab({ user, profile }) {
       const { error } = await supabase.from('user_follows').insert({ follower_id: user.id, following_id: memberId })
       if (error) { toast.error('Erreur'); return }
       setFollowing(prev => new Set([...prev, memberId]))
+      // Charger le username du follower pour la notification
       await supabase.rpc('create_notification', {
         p_user_id: memberId,
         p_type: 'user_follow',
         p_title: '👤 Nouveau follower',
         p_body: `@${profile?.username} vous suit maintenant`,
-        p_reference_id: user.id,
+        p_reference_id: profile?.username,
         p_reference_type: 'profile',
       })
       toast.success('Abonnement effectué !')

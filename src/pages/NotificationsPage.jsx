@@ -79,7 +79,7 @@ export default function NotificationsPage() {
     else if (WALLET_TYPES.includes(notif.type))        navigate('/portefeuille')
     else if (notif.type === 'new_message')             navigate('/messages')
     else if (notif.type === 'user_follow' && notif.reference_id)
-      navigate('/profil/' + (notif.reference_username || notif.reference_id))
+      navigate('/profil/' + notif.reference_id)
     else if (notif.type === 'post_like')
       navigate('/communaute', { state: { openPostId: notif.reference_id } })
     else if (notif.type === 'shop_comment')
