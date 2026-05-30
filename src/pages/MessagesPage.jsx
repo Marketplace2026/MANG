@@ -11,7 +11,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -972,10 +972,12 @@ export default function MessagesPage() {
 
   const unreadTotal = convs.reduce((s, c) => s + (c.unread_count || 0), 0)
 
+  const { fetchUnreadCount } = useMessagesStore()
+
   const handleMarkRead = (convId) => {
     readConvsSet.current.add(convId)
     setConvs(prev => prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c))
-    // Nettoyer après 5 secondes (largement le temps que la DB soit à jour)
+    if (user?.id) fetchUnreadCount(user.id)
     setTimeout(() => readConvsSet.current.delete(convId), 5000)
   }
 

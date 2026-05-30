@@ -169,6 +169,36 @@ export const useMessagesStore = create((set, get) => ({
 
   setActiveConversation: (conv) => set({ activeConversation: conv, messages: [] }),
 
+  fetchUnreadCount: async (userId) => {
+    const { data: convs } = await supabase
+      .from('conversations')
+      .select('id')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    if (!convs?.length) { set({ unreadCount: 0 }); return }
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .or('is_read.is.null,is_read.eq.false')
+      .neq('sender_id', userId)
+      .in('conversation_id', convs.map(c => c.id))
+    set({ unreadCount: count || 0 })
+  },
+
+  subscribeToUnread: (userId) => {
+    const channel = supabase
+      .channel(`msg-unread:${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        if (payload.new.sender_id !== userId) {
+          set(state => ({ unreadCount: state.unreadCount + 1 }))
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => {
+        get().fetchUnreadCount(userId)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  },
+
   fetchConversations: async (userId) => {
     const { data } = await supabase
       .from('conversations')

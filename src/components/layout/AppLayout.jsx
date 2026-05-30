@@ -4,7 +4,7 @@ import {
   Home, MessageCircle, Plus, Bell, User,
   Package, Wallet, Store, Globe, X, ChevronRight, Heart
 } from 'lucide-react'
-import { useAuthStore, useNotificationsStore } from '@/store'
+import { useAuthStore, useNotificationsStore, useMessagesStore } from '@/store'
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
@@ -28,13 +28,16 @@ export default function AppLayout() {
   const location  = useLocation()
   const { user }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
+  const { unreadCount: msgCount, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
     fetchNotifications(user.id)
-    const unsub = subscribeToNotifications(user.id)
-    return unsub
+    const unsubNotif = subscribeToNotifications(user.id)
+    fetchUnreadCount(user.id)
+    const unsubMsg = subscribeToUnread(user.id)
+    return () => { unsubNotif(); unsubMsg() }
   }, [user])
 
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
@@ -120,6 +123,11 @@ export default function AppLayout() {
                   {item.path === '/notifications' && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                  {item.path === '/messages' && msgCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {msgCount > 9 ? '9+' : msgCount}
                     </span>
                   )}
                 </div>
