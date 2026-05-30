@@ -182,14 +182,17 @@ function PostsTab({ user, profile, mode }) {
       // Notification à l auteur du post
       const post = posts.find(p => p.id === postId)
       if (post && post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
-          user_id: post.user_id,
-          type: 'post_like',
-          title: '❤️ Nouveau like',
-          body: `@${profile?.username} a aimé votre publication`,
-          reference_id: postId,
-          reference_type: 'post',
+        const { error: notifError } = await supabase.rpc('create_notification', {
+          p_user_id: post.user_id,
+          p_type: 'post_like',
+          p_title: '❤️ Nouveau like',
+          p_body: `@${profile?.username} a aimé votre publication`,
+          p_reference_id: postId,
+          p_reference_type: 'post',
         })
+        if (notifError) console.log('NOTIF RPC ERROR:', notifError)
+      } else {
+        console.log('CONDITION BLOQUÉE - même user ou post non trouvé')
       }
     }
     setPosts(prev => prev.map(p =>
@@ -700,6 +703,14 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
   const [sending, setSending]     = useState(false)
   const [likedComments, setLikedComments] = useState(new Set())
   const [expandedReplies, setExpandedReplies] = useState(new Set())
+
+  // Reset liked state when sheet opens for a new post
+  useEffect(() => {
+    if (open) {
+      setLikedComments(new Set())
+      setExpandedReplies(new Set())
+    }
+  }, [open, post.id])
   const inputRef = useRef()
   const bottomRef = useRef()
 
@@ -747,13 +758,13 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
     if (error) { toast.error('Erreur envoi'); return }
     // Notification à l'auteur du post
     if (post.user_id !== user.id) {
-      await supabase.from('notifications').insert({
-        user_id: post.user_id,
-        type: 'shop_comment',
-        title: '💬 Nouveau commentaire',
-        body: `@${profile?.username} a commenté votre publication`,
-        reference_id: post.id,
-        reference_type: 'post',
+      await supabase.rpc('create_notification', {
+        p_user_id: post.user_id,
+        p_type: 'shop_comment',
+        p_title: '💬 Nouveau commentaire',
+        p_body: `@${profile?.username} a commenté votre publication`,
+        p_reference_id: post.id,
+        p_reference_type: 'post',
       })
     }
     setText('')
@@ -772,10 +783,12 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
     if (!user) return
     const isLiked = likedComments.has(commentId)
     if (isLiked) {
-      await supabase.from('post_comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id)
+      const { error } = await supabase.from('post_comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id)
+      if (error) { toast.error('Erreur'); return }
       setLikedComments(prev => { const s = new Set(prev); s.delete(commentId); return s })
     } else {
-      await supabase.from('post_comment_likes').insert({ comment_id: commentId, user_id: user.id })
+      const { error } = await supabase.from('post_comment_likes').insert({ comment_id: commentId, user_id: user.id })
+      if (error) { toast.error('Erreur'); return }
       setLikedComments(prev => new Set([...prev, commentId]))
     }
     // Mettre à jour le count localement
@@ -1024,11 +1037,13 @@ function MembersTab({ user }) {
       const { error } = await supabase.from('user_follows').insert({ follower_id: user.id, following_id: memberId })
       if (error) { toast.error('Erreur'); return }
       setFollowing(prev => new Set([...prev, memberId]))
-      await supabase.from('notifications').insert({
-        user_id: memberId, type: 'user_follow',
-        title: '👤 Nouveau follower',
-        body: `@${user?.username || 'Quelquun'} vous suit maintenant`,
-        reference_id: user.id, reference_type: 'profile',
+      await supabase.rpc('create_notification', {
+        p_user_id: memberId,
+        p_type: 'user_follow',
+        p_title: '👤 Nouveau follower',
+        p_body: `@${user?.username || 'Quelquun'} vous suit maintenant`,
+        p_reference_id: user.id,
+        p_reference_type: 'profile',
       })
       toast.success('Abonnement effectué !')
     }
