@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 // ============================================================
 // TABS
@@ -67,7 +67,7 @@ export default function CommunityPage() {
         {tab === 'feed'      && <PostsTab user={user} profile={profile} mode="feed"/>}
         {tab === 'following' && <PostsTab user={user} profile={profile} mode="following"/>}
         {tab === 'trending'  && <PostsTab user={user} profile={profile} mode="trending"/>}
-        {tab === 'members'   && <MembersTab user={user}/>}
+        {tab === 'members'   && <MembersTab user={user} profile={profile}/>}
       </div>
     </div>
   )
@@ -87,6 +87,18 @@ function PostsTab({ user, profile, mode }) {
   const [hasMore, setHasMore]           = useState(true)
   const [loadingMore, setLoadingMore]   = useState(false)
   const PAGE_SIZE = 20
+  const location = useLocation()
+
+  // Ouvrir commentaires automatiquement depuis notification
+  useEffect(() => {
+    if (location.state?.openPostId && posts.length > 0) {
+      const target = posts.find(p => p.id === location.state.openPostId)
+      if (target) {
+        setCommentsPost(target)
+        window.history.replaceState({}, '')
+      }
+    }
+  }, [location.state?.openPostId, posts])
 
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
@@ -976,7 +988,7 @@ function LikersSheet({ open, onClose, post }) {
 // ============================================================
 // ONGLET MEMBRES
 // ============================================================
-function MembersTab({ user }) {
+function MembersTab({ user, profile }) {
   const navigate = useNavigate()
   const [members, setMembers]     = useState([])
   const [loading, setLoading]     = useState(true)
