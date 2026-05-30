@@ -133,8 +133,13 @@ function PostsTab({ user, profile, mode }) {
     if (!data) { setLoading(false); return }
 
     if (user) {
-      const { data: myLikes } = await supabase.rpc('get_my_post_likes')
-      setLikedPosts(new Set((myLikes || []).map(l => l.post_id)))
+      if (user?.id) {
+        const { data: myLikes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+        setLikedPosts(new Set((myLikes || []).map(l => l.post_id)))
+      }
     }
 
     setPosts(data)
