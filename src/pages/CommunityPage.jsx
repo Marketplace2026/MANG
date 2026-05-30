@@ -176,7 +176,11 @@ function PostsTab({ user, profile, mode }) {
         if (p) setPosts(prev => [p, ...prev])
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
-        setPosts(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
+        // Only update counts, never overwrite the full post object (would break liked state)
+        setPosts(prev => prev.map(p => p.id === payload.new.id
+          ? { ...p, likes_count: payload.new.likes_count, comments_count: payload.new.comments_count }
+          : p
+        ))
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
         setPosts(prev => prev.filter(p => p.id !== payload.old.id))
