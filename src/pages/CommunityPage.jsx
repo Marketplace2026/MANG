@@ -7,7 +7,7 @@ import {
   Smile, MapPin, ChevronRight, Sparkles
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import toast from 'react-hot-toast'é
+import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
