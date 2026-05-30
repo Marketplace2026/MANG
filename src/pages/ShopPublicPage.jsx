@@ -44,6 +44,8 @@ export default function ShopPublicPage() {
   const [isLiked, setIsLiked] = useState(false)
   const [likers, setLikers] = useState([])
   const [showLikers, setShowLikers] = useState(false)
+  const [showFollowers, setShowFollowers] = useState(false)
+  const [followers, setFollowers] = useState([])
   const [linkCopied, setLinkCopied] = useState(false)
 
   // Modals
@@ -78,6 +80,13 @@ export default function ShopPublicPage() {
       .eq('shop_id', data.id)
     setLikers(likerData || [])
 
+    // Followers
+    const { data: followerData } = await supabase
+      .from('shop_followers')
+      .select('user:profiles(id, username, avatar_url, city)')
+      .eq('shop_id', data.id)
+    setFollowers(followerData || [])
+
     // Mon état follow/like
     if (user) {
       const [fRes, lRes] = await Promise.all([
@@ -95,20 +104,26 @@ export default function ShopPublicPage() {
   const toggleFollow = async () => {
     if (!user) { toast.error('Connectez-vous d\'abord'); return }
     if (isFollowing) {
-      await supabase.from('shop_followers').delete().eq('shop_id', shop.id).eq('user_id', user.id)
+      const { error } = await supabase.from('shop_followers').delete().eq('shop_id', shop.id).eq('user_id', user.id)
+      if (error) { toast.error('Erreur'); return }
       setIsFollowing(false)
       setShop(s => ({ ...s, followers_count: Math.max(0, s.followers_count - 1) }))
+      setFollowers(prev => prev.filter(f => f.user?.id !== user.id))
     } else {
-      await supabase.from('shop_followers').insert({ shop_id: shop.id, user_id: user.id })
+      const { error } = await supabase.from('shop_followers').insert({ shop_id: shop.id, user_id: user.id })
+      if (error) { toast.error('Erreur'); return }
       setIsFollowing(true)
       setShop(s => ({ ...s, followers_count: s.followers_count + 1 }))
+      setFollowers(prev => [...prev, { user: { id: user.id, username: profile?.username, avatar_url: profile?.avatar_url } }])
       // Notification
       if (shop.owner_id !== user.id) {
-        await supabase.from('notifications').insert({
-          user_id: shop.owner_id, type: 'shop_follow',
-          title: '👥 Nouvelle boutique suivie',
-          body: `@${profile?.username} suit maintenant votre boutique "${shop.name}"`,
-          reference_id: shop.id, reference_type: 'shop',
+        await supabase.rpc('create_notification', {
+          p_user_id: shop.owner_id,
+          p_type: 'shop_follow',
+          p_title: '👥 Nouvelle boutique suivie',
+          p_body: `@${profile?.username} suit maintenant votre boutique "${shop.name}"`,
+          p_reference_id: shop.id,
+          p_reference_type: 'shop',
         })
       }
       toast.success('Boutique suivie !')
@@ -118,7 +133,8 @@ export default function ShopPublicPage() {
   const toggleLike = async () => {
     if (!user) { toast.error('Connectez-vous d\'abord'); return }
     if (isLiked) {
-      await supabase.from('shop_likes').delete().eq('shop_id', shop.id).eq('user_id', user.id)
+      const { error } = await supabase.from('shop_likes').delete().eq('shop_id', shop.id).eq('user_id', user.id)
+      if (error) { toast.error('Erreur'); return }
       setIsLiked(false)
       setShop(s => ({ ...s, likes_count: Math.max(0, s.likes_count - 1) }))
       setLikers(prev => prev.filter(l => l.user?.id !== user.id))
@@ -128,11 +144,13 @@ export default function ShopPublicPage() {
       setShop(s => ({ ...s, likes_count: s.likes_count + 1 }))
       setLikers(prev => [...prev, { user: { id: user.id, username: profile?.username, avatar_url: profile?.avatar_url } }])
       if (shop.owner_id !== user.id) {
-        await supabase.from('notifications').insert({
-          user_id: shop.owner_id, type: 'shop_like',
-          title: '❤️ Nouveau like sur votre boutique',
-          body: `@${profile?.username} aime votre boutique "${shop.name}"`,
-          reference_id: shop.id, reference_type: 'shop',
+        await supabase.rpc('create_notification', {
+          p_user_id: shop.owner_id,
+          p_type: 'shop_like',
+          p_title: '❤️ Nouveau like sur votre boutique',
+          p_body: `@${profile?.username} aime votre boutique "${shop.name}"`,
+          p_reference_id: shop.id,
+          p_reference_type: 'shop',
         })
       }
     }
@@ -145,14 +163,16 @@ export default function ShopPublicPage() {
     // Créer ou récupérer la conversation
     const { data: existing } = await supabase
       .from('conversations').select('id')
-      .eq('shop_id', shop.id).eq('buyer_id', user.id).single()
+      .eq('shop_id', shop.id).eq('buyer_id', user.id).maybeSingle()
 
-    if (!existing) {
-      await supabase.from('conversations').insert({
+    let convId = existing?.id
+    if (!convId) {
+      const { data: newConv } = await supabase.from('conversations').insert({
         shop_id: shop.id, buyer_id: user.id, seller_id: shop.owner_id,
-      })
+      }).select('id').single()
+      convId = newConv?.id
     }
-    navigate(`/messages?conv=${existing?.id || ''}`)
+    navigate(`/messages?conv=${convId || ''}`)
     toast.success('Conversation ouverte !')
   }
 
@@ -276,10 +296,10 @@ export default function ShopPublicPage() {
             <span className="text-dark-600/60 text-sm font-semibold">{shop.likes_count || 0} J'aimes</span>
           </button>
           <span className="text-dark-600/30">·</span>
-          <span className="text-dark-600/60 text-sm font-semibold">
-            <Users size={13} className="inline mr-1 text-primary-500"/>
-            {shop.followers_count || 0} abonnés
-          </span>
+          <button onClick={() => setShowFollowers(true)} className="flex items-center gap-1.5 active:scale-95">
+            <Users size={13} className="text-primary-500"/>
+            <span className="text-dark-600/60 text-sm font-semibold">{shop.followers_count || 0} abonnés</span>
+          </button>
         </div>
 
         {/* Description avec texte défilant */}
@@ -447,6 +467,23 @@ export default function ShopPublicPage() {
           ))}
         </div>
       </BottomSheet>
+
+      {/* ===== MODAL FOLLOWERS ===== */}
+      <BottomSheet open={showFollowers} onClose={() => setShowFollowers(false)} title="👥 Abonnés">
+        <div className="px-4 pt-2 pb-8 space-y-3">
+          {followers.length === 0 ? (
+            <p className="text-center text-dark-600/50 py-8">Aucun abonné pour l'instant</p>
+          ) : followers.map((f, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Avatar src={f.user?.avatar_url} name={f.user?.username} size="md"/>
+              <div>
+                <p className="font-semibold text-dark-800 text-sm">@{f.user?.username}</p>
+                {f.user?.city && <p className="text-dark-600/40 text-xs">📍 {f.user.city}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </BottomSheet>
     </div>
   )
 }
@@ -575,11 +612,13 @@ function CommentsSection({ shop, user, profile }) {
     })
     // Notification
     if (shop.owner_id !== user.id && !replyTo) {
-      await supabase.from('notifications').insert({
-        user_id: shop.owner_id, type: 'shop_comment',
-        title: '💬 Nouveau commentaire',
-        body: `@${profile?.username} a commenté votre boutique "${shop.name}"`,
-        reference_id: shop.id, reference_type: 'shop',
+      await supabase.rpc('create_notification', {
+        p_user_id: shop.owner_id,
+        p_type: 'shop_comment',
+        p_title: '💬 Nouveau commentaire',
+        p_body: `@${profile?.username} a commenté votre boutique "${shop.name}"`,
+        p_reference_id: shop.id,
+        p_reference_type: 'shop',
       })
     }
     setText(''); setReplyTo(null); setSending(false)
