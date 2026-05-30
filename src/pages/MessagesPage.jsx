@@ -337,7 +337,11 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
   const online      = isOnline(other?.last_seen_at)
 
   // Charger messages
-  useEffect(() => { loadMessages() }, [conv.id])
+  useEffect(() => { 
+    // Réinitialiser le badge immédiatement à l'ouverture
+    onMarkRead?.(conv.id)
+    loadMessages() 
+  }, [conv.id])
 
   // Scroll bas
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -967,7 +971,10 @@ export default function MessagesPage() {
   const unreadTotal = convs.reduce((s, c) => s + (c.unread_count || 0), 0)
 
   const handleMarkRead = (convId) => {
+    readConvsSet.current.add(convId)
     setConvs(prev => prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c))
+    // Nettoyer après 5 secondes (largement le temps que la DB soit à jour)
+    setTimeout(() => readConvsSet.current.delete(convId), 5000)
   }
 
   if (active) return <ChatWindow conv={active} user={user} onBack={() => { setActive(null); loadConvs() }} onMarkRead={handleMarkRead}/>
