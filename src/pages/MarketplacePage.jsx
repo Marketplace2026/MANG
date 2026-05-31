@@ -107,8 +107,39 @@ export default function MarketplacePage() {
   }, [user])
 
   const getUserLocation = async () => {
-    if (!profile?.latitude) return
-    setUserLocation({ lat: profile.latitude, lon: profile.longitude })
+    // 1. Utiliser immédiatement la position sauvegardée (affichage instantané)
+    if (profile?.latitude && profile?.longitude) {
+      setUserLocation({ lat: profile.latitude, lon: profile.longitude })
+    }
+    // 2. Toujours re-détecter en arrière-plan pour mettre à jour si l'user a bougé
+    if (!navigator.geolocation) return
+    let done = false
+    let watchId = null
+    watchId = navigator.geolocation.watchPosition(
+      async ({ coords: { latitude, longitude, accuracy } }) => {
+        if (done) return
+        if (accuracy < 500) {
+          done = true
+          navigator.geolocation.clearWatch(watchId)
+          setUserLocation({ lat: latitude, lon: longitude })
+          // Mettre à jour en DB seulement si position a changé significativement
+          if (user?.id) {
+            const oldLat = profile?.latitude
+            const oldLon = profile?.longitude
+            const moved = !oldLat || !oldLon ||
+              distanceKm(oldLat, oldLon, latitude, longitude) > 0.5 // > 500m
+            if (moved) {
+              await supabase.from('profiles').update({ latitude, longitude }).eq('id', user.id)
+            }
+          }
+        }
+      },
+      () => { done = true },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 300000 } // accepte position < 5min
+    )
+    setTimeout(() => {
+      if (!done) { done = true; navigator.geolocation.clearWatch(watchId) }
+    }, 25000)
   }
 
   const loadUserInteractions = async () => {
@@ -146,7 +177,7 @@ export default function MarketplacePage() {
               ? distanceKm(userLocation.lat, userLocation.lon, s.latitude, s.longitude)
               : null
           }))
-          .filter(s => s.distance !== null && s.distance <= 1500)
+          .filter(s => s.distance !== null && s.distance <= 50)
           .sort((a, b) => a.distance - b.distance)
       }
 
@@ -206,21 +237,50 @@ export default function MarketplacePage() {
   }
 
   const handleNearby = async () => {
+    // Si on a déjà la position → activer directement
+    if (userLocation) {
+      setFilters(f => ({ ...f, nearby: true }))
+      return
+    }
     if (!navigator.geolocation) { toast.error('GPS non disponible'); return }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude }
-        setUserLocation(loc)
-        setFilters(f => ({ ...f, nearby: true }))
-        toast.success('📍 Boutiques proches chargées')
+    toast('📍 Détection en cours...', { duration: 3000 })
+
+    let done = false
+    let watchId = null
+    const timeout = setTimeout(() => {
+      if (!done) {
+        done = true
+        navigator.geolocation.clearWatch(watchId)
+        toast.error('GPS trop lent — réessayez en extérieur')
+      }
+    }, 20000)
+
+    watchId = navigator.geolocation.watchPosition(
+      async ({ coords: { latitude, longitude, accuracy } }) => {
+        if (done) return
+        if (accuracy < 500) {
+          done = true
+          clearTimeout(timeout)
+          navigator.geolocation.clearWatch(watchId)
+          const loc = { lat: latitude, lon: longitude }
+          setUserLocation(loc)
+          setFilters(f => ({ ...f, nearby: true }))
+          if (user?.id) {
+            await supabase.from('profiles').update({ latitude, longitude }).eq('id', user.id)
+          }
+          toast.success('📍 Boutiques proches chargées')
+        }
       },
       () => {
+        clearTimeout(timeout)
         if (userLocation) {
           setFilters(f => ({ ...f, nearby: true }))
         } else {
-          toast.error('Impossible d\'accéder au GPS')
+          toast.error('Impossible d\'accéder au GPS — autorisez la localisation')
         }
-      }
+        done = true
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
     )
   }
 

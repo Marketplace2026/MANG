@@ -42,9 +42,9 @@ function getTxCfg(tx) {
   return { label: 'Transaction', icon: '💳', color: 'text-gray-600', bg: 'bg-gray-50' }
 }
 
-// Afficher le montant RÉEL en FCFA (le DB stocke en centimes)
-function toFCFA(cents) {
-  return Math.abs(Number(cents)) / 100
+// Montant déjà en FCFA dans la DB
+function toFCFA(amount) {
+  return Math.abs(Number(amount))
 }
 
 async function sha256(text) {
@@ -118,12 +118,12 @@ function PinInput({ value, onChange, error, label }) {
 }
 
 // ── Enregistrer transaction + notification ───────────────
-async function recordTx({ walletId, userId, type, amountCents, balanceAfterCents, description }) {
+async function recordTx({ walletId, userId, type, amountCents: amount, balanceAfterCents: balanceAfter, description }) {
   const year = new Date().getFullYear()
   const receiptNum = `MANG-${year}-${Math.floor(Math.random()*999999+1).toString().padStart(6,'0')}`
   await supabase.from('wallet_transactions').insert({
     wallet_id: walletId, user_id: userId, type,
-    amount: amountCents, balance_after: balanceAfterCents,
+    amount: amount, balance_after: balanceAfter,
     description, receipt_number: receiptNum,
   })
   const notifMap = {
@@ -262,16 +262,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [pinError, setPinError] = useState(false)
   // Solde RÉEL en FCFA
-  const [realBalanceCents, setRealBalanceCents] = useState(wallet?.balance_available || 0)
-
-  useEffect(() => {
-    if (open && user) {
-      supabase.from("wallets").select("balance_available").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data) setRealBalanceCents(data.balance_available) })
-    }
-  }, [open, user])
-
-  const balanceFCFA = realBalanceCents / 100
+  const balanceFCFA = (wallet?.balance_available || 0)
 
   const reset = () => { setStep(1); setPin(''); setPinError(false); setOperator(''); setPhone(''); setAmount('') }
 
@@ -294,30 +285,18 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       if (wd.pin_hash !== pinHash) { setPinError(true); setPin(''); setLoading(false); return }
 
       const amt = parseInt(amount)
-      const amtCents = amt * 100
 
-      // Récupérer le solde RÉEL depuis la DB (pas le store qui peut être périmé)
-      const { data: freshWallet } = await supabase
-        .from('wallets').select('balance_available, balance_total')
-        .eq('user_id', user.id).single()
-      if (!freshWallet) { setLoading(false); return toast.error('Erreur wallet') }
-
-      if (freshWallet.balance_available < amtCents) {
-        setLoading(false)
-        return toast.error(`Solde insuffisant. Disponible : ${(freshWallet.balance_available/100).toLocaleString('fr-FR')} FCFA`)
-      }
-
-      // Débiter wallet avec solde frais
-      const newBalCents = freshWallet.balance_available - amtCents
+      // Débiter wallet
+      const newBal = wallet.balance_available - amt
       await supabase.from('wallets').update({
-        balance_available: newBalCents,
-        balance_total: freshWallet.balance_total - amtCents,
+        balance_available: newBal,
+        balance_total: wallet.balance_total - amt,
       }).eq('user_id', user.id)
 
       // Enregistrer transaction + notification
       await recordTx({
         walletId: wd.id, userId: user.id, type: 'withdraw',
-        amountCents: -amtCents, balanceAfterCents: newBalCents,
+        amountCents: -amt, balanceAfterCents: newBal,
         description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${OPERATORS.find(o=>o.id===operator)?.label} → ${phone}`,
       })
 
@@ -346,8 +325,8 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       if (!res.ok) {
         // Rembourser si FedaPay échoue
         await supabase.from('wallets').update({
-          balance_available: freshWallet.balance_available,
-          balance_total: freshWallet.balance_total,
+          balance_available: wallet.balance_available,
+          balance_total: wallet.balance_total,
         }).eq('user_id', user.id)
         throw new Error(data.error || data.message || 'Erreur FedaPay')
       }
@@ -438,16 +417,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
   const [step, setStep]               = useState(1)
   const [loading, setLoading]         = useState(false)
   const [pinError, setPinError]       = useState(false)
-  const [realBalanceCents, setRealBalanceCents] = useState(wallet?.balance_available || 0)
-
-  useEffect(() => {
-    if (open && user) {
-      supabase.from("wallets").select("balance_available").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data) setRealBalanceCents(data.balance_available) })
-    }
-  }, [open, user])
-
-  const balanceFCFA = realBalanceCents / 100
+  const balanceFCFA = (wallet?.balance_available || 0)
   const timer = useRef(null)
 
   const reset = () => {
@@ -515,7 +485,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
       const { data, error } = await supabase.rpc('transfer_money', {
         sender_uuid:             user.id,
         receiver_wallet_number:  receiverNum.trim(),
-        amount_fcfa:             amt,      // FCFA direct — SQL * 100
+        amount_fcfa:             amt,      // FCFA direct
         user_pin:                pinHash,
       })
 
@@ -926,7 +896,7 @@ export default function WalletPage() {
         if (wd) {
           await recordTx({
             walletId: wd.id, userId: user.id, type: 'deposit',
-            amountCents: amt * 100, balanceAfterCents: wd.balance_available,
+            amountCents: amt, balanceAfterCents: wd.balance_available,
             description: `Rechargement ${amt.toLocaleString('fr-FR')} FCFA via ${params.get('op') || 'Mobile Money'}`,
           })
           loadTx(); refreshWallet()
@@ -976,8 +946,8 @@ export default function WalletPage() {
   const onSuccess = () => { loadTx(); refreshWallet() }
 
   // Montants RÉELS en FCFA
-  const balanceFCFA  = (wallet?.balance_available || 0) / 100
-  const reservedFCFA = (wallet?.balance_reserved  || 0) / 100
+  const balanceFCFA = (wallet?.balance_available || 0)
+  const reservedFCFA = (wallet?.balance_reserved || 0)
   const now = new Date()
   const monthTx  = transactions.filter(t => { const d=new Date(t.created_at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear() })
   const monthIn  = monthTx.filter(t=>Number(t.amount)>0).reduce((s,t)=>s+toFCFA(t.amount),0)

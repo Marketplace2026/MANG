@@ -392,36 +392,55 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
   const handleLocate = () => {
     if (!navigator.geolocation) { toast.error('GPS non disponible'); return }
     setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords: { latitude, longitude, accuracy } }) => {
-        try {
-          const geo = await reverseGeocode(latitude, longitude)
-          setForm(p => ({
-            ...p,
-            city:          geo.city,
-            neighbourhood: geo.neighbourhood,
-          }))
-          setLocInfo({ label: geo.label, accuracy: Math.round(accuracy), country: geo.country })
+    toast('📍 Détection en cours...', { duration: 3000 })
 
-          // Sauvegarde immédiate des coordonnées GPS brutes
-          await supabase.from('profiles')
-            .update({ latitude, longitude })
-            .eq('id', profile.id)
+    let watchId = null
+    let done = false
 
-          toast.success(`📍 ${geo.label || 'Position détectée'}`)
-        } catch {
-          toast.error('Impossible de récupérer la ville')
-        }
+    const finish = async (latitude, longitude, accuracy) => {
+      if (done) return
+      done = true
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId)
+      try {
+        const geo = await reverseGeocode(latitude, longitude)
+        setForm(p => ({ ...p, city: geo.city, neighbourhood: geo.neighbourhood }))
+        setLocInfo({ label: geo.label, accuracy: Math.round(accuracy), country: geo.country })
+        await supabase.from('profiles').update({ latitude, longitude }).eq('id', profile.id)
+        toast.success(`📍 ${geo.label || 'Position détectée'} (±${Math.round(accuracy)}m)`)
+      } catch {
+        toast.error('Impossible de récupérer la ville')
+      }
+      setLocating(false)
+    }
+
+    // Timeout global 25 secondes
+    const globalTimeout = setTimeout(() => {
+      if (!done) {
+        done = true
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId)
         setLocating(false)
+        toast.error('Position introuvable — vérifie que le GPS est activé')
+      }
+    }, 25000)
+
+    watchId = navigator.geolocation.watchPosition(
+      ({ coords: { latitude, longitude, accuracy } }) => {
+        // Accepter dès que précision < 500m (réseau) ou attendre < 100m (GPS)
+        if (accuracy < 100 || (accuracy < 500 && !done)) {
+          clearTimeout(globalTimeout)
+          finish(latitude, longitude, accuracy)
+        }
       },
       (err) => {
-        const msg = err.code === 1 ? 'Permission GPS refusée'
+        clearTimeout(globalTimeout)
+        const msg = err.code === 1 ? 'Permission GPS refusée — autorisez la localisation'
                   : err.code === 2 ? 'GPS indisponible'
-                  : 'Délai GPS dépassé'
+                  : 'Délai dépassé'
         toast.error(msg)
         setLocating(false)
+        done = true
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
     )
   }
 
