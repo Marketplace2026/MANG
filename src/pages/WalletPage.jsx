@@ -294,21 +294,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       if (!freshWallet) { setLoading(false); return toast.error('Wallet introuvable') }
       if (amt > freshWallet.balance_available) { setLoading(false); return toast.error(`Solde insuffisant. Disponible : ${freshWallet.balance_available.toLocaleString('fr-FR')} FCFA`) }
 
-      // Débiter wallet
-      const newBal = freshWallet.balance_available - amt
-      await supabase.from('wallets').update({
-        balance_available: newBal,
-        balance_total: freshWallet.balance_total - amt,
-      }).eq('user_id', user.id)
-
-      // Enregistrer transaction + notification
-      await recordTx({
-        walletId: wd.id, userId: user.id, type: 'withdraw',
-        amountCents: -amt, balanceAfterCents: newBal,
-        description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${OPERATORS.find(o=>o.id===operator)?.label} → ${phone}`,
-      })
-
-      // Appel FedaPay
+      // Appel FedaPay D'ABORD — ne débiter qu'après confirmation
       const { data: { session } } = await supabase.auth.getSession()
       const meta = user.user_metadata || {}
       const fname = meta.full_name?.split(' ')[0] || meta.username || 'Client'
@@ -330,14 +316,21 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
         }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        // Rembourser si FedaPay échoue
-        await supabase.from('wallets').update({
-          balance_available: wallet.balance_available,
-          balance_total: wallet.balance_total,
-        }).eq('user_id', user.id)
-        throw new Error(data.error || data.message || 'Erreur FedaPay')
-      }
+      if (!res.ok) throw new Error(data.error || data.message || 'Erreur FedaPay')
+
+      // FedaPay OK → débiter maintenant
+      const newBal = freshWallet.balance_available - amt
+      await supabase.from('wallets').update({
+        balance_available: newBal,
+        balance_total: freshWallet.balance_total - amt,
+      }).eq('user_id', user.id)
+
+      // Enregistrer transaction
+      await recordTx({
+        walletId: wd.id, userId: user.id, type: 'withdraw',
+        amountCents: -amt, balanceAfterCents: newBal,
+        description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${OPERATORS.find(o=>o.id===operator)?.label} → ${phone}`,
+      })
 
       toast.success(`✅ Retrait de ${amt.toLocaleString('fr-FR')} FCFA initié !`)
       onSuccess(); onClose(); reset()
