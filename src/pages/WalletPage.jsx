@@ -266,12 +266,15 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
 
   const reset = () => { setStep(1); setPin(''); setPinError(false); setOperator(''); setPhone(''); setAmount('') }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!operator) return toast.error('Sélectionnez un opérateur')
     if (!phone.trim()) return toast.error('Entrez votre numéro')
     const amt = parseInt(amount)
     if (!amt || amt < 500) return toast.error('Minimum 500 FCFA')
-    if (amt > balanceFCFA) return toast.error(`Solde insuffisant. Disponible : ${balanceFCFA.toLocaleString('fr-FR')} FCFA`)
+    // Recharger le solde frais depuis la DB
+    const { data: freshWallet } = await supabase.from('wallets').select('balance_available').eq('user_id', user.id).single()
+    const freshBalance = freshWallet?.balance_available || 0
+    if (amt > freshBalance) return toast.error(`Solde insuffisant. Disponible : ${freshBalance.toLocaleString('fr-FR')} FCFA`)
     setStep(2)
   }
 
@@ -286,11 +289,16 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
 
       const amt = parseInt(amount)
 
+      // Recharger solde frais depuis DB
+      const { data: freshWallet } = await supabase.from('wallets').select('balance_available, balance_total').eq('user_id', user.id).single()
+      if (!freshWallet) { setLoading(false); return toast.error('Wallet introuvable') }
+      if (amt > freshWallet.balance_available) { setLoading(false); return toast.error(`Solde insuffisant. Disponible : ${freshWallet.balance_available.toLocaleString('fr-FR')} FCFA`) }
+
       // Débiter wallet
-      const newBal = wallet.balance_available - amt
+      const newBal = freshWallet.balance_available - amt
       await supabase.from('wallets').update({
         balance_available: newBal,
-        balance_total: wallet.balance_total - amt,
+        balance_total: freshWallet.balance_total - amt,
       }).eq('user_id', user.id)
 
       // Enregistrer transaction + notification
@@ -467,11 +475,13 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
     timer.current = setTimeout(() => lookupWallet(clean), 700)
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!receiver) return toast.error('Destinataire introuvable')
     const amt = parseInt(amount)
     if (!amt || amt < 100) return toast.error('Minimum 100 FCFA')
-    if (amt > balanceFCFA) return toast.error(`Solde insuffisant. Disponible : ${balanceFCFA.toLocaleString('fr-FR')} FCFA`)
+    const { data: freshWallet } = await supabase.from('wallets').select('balance_available').eq('user_id', user.id).single()
+    const freshBalance = freshWallet?.balance_available || 0
+    if (amt > freshBalance) return toast.error(`Solde insuffisant. Disponible : ${freshBalance.toLocaleString('fr-FR')} FCFA`)
     setStep(2)
   }
 
@@ -802,7 +812,7 @@ function TxDetailSheet({ open, onClose, tx }) {
             ['📅 Date', new Date(tx.created_at).toLocaleString('fr-FR')],
             ['🏷️ Type', cfg.label],
             ['💵 Montant', `${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`],
-            tx.balance_after !== undefined && ['💰 Solde après', `${((Number(tx.balance_after))/100).toLocaleString('fr-FR')} FCFA`],
+            tx.balance_after !== undefined && ['💰 Solde après', `${Number(tx.balance_after).toLocaleString('fr-FR')} FCFA`],
             tx.description && ['📌 Note', tx.description],
           ].filter(Boolean).map(([lbl, val]) => (
             <div key={lbl} className="flex items-start justify-between px-4 py-3 gap-3">
