@@ -5,7 +5,7 @@ import {
   LogOut, ChevronRight, Shield, Bell, HelpCircle,
   Wallet, Coins, Copy, Check, Settings, Star,
   Lock, Eye, EyeOff, Globe, ChevronDown, ChevronUp,
-  AlertCircle, CheckCircle2, ToggleLeft, ToggleRight,
+  AlertCircle, CheckCircle2, XCircle, ToggleLeft, ToggleRight,
   Navigation, X
 } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -357,7 +357,9 @@ function ProfileMenu({ onSignOut, onSecurity, onNotif, onHelp }) {
 // ─── EditProfileSheet ─────────────────────────────────────────────────────────
 
 function EditProfileSheet({ open, onClose, profile, onUpdated }) {
-  const [form,     setForm]     = useState({ full_name: '', phone: '', city: '', neighbourhood: '' })
+  const [form,     setForm]     = useState({ full_name: '', username: '', phone: '', city: '', neighbourhood: '' })
+  const [usernameStatus, setUsernameStatus] = useState(null) // null | 'checking' | 'available' | 'taken' | 'invalid'
+  const usernameDebounce = useRef(null)
   const [loading,  setLoading]  = useState(false)
   const [locating, setLocating] = useState(false)
   const [locInfo,  setLocInfo]  = useState(null)
@@ -366,13 +368,26 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
     if (profile && open) {
       setForm({
         full_name:     profile.full_name     || '',
+        username:      profile.username      || '',
         phone:         profile.phone         || '',
         city:          profile.city          || '',
         neighbourhood: profile.neighbourhood || '',
       })
       setLocInfo(null)
+      setUsernameStatus(null)
     }
   }, [profile, open])
+
+  const checkUsername = (value) => {
+    clearTimeout(usernameDebounce.current)
+    if (!value || value === profile.username) { setUsernameStatus(null); return }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(value)) { setUsernameStatus('invalid'); return }
+    setUsernameStatus('checking')
+    usernameDebounce.current = setTimeout(async () => {
+      const { data } = await supabase.from('profiles').select('id').eq('username', value.toLowerCase()).neq('id', profile.id).maybeSingle()
+      setUsernameStatus(data ? 'taken' : 'available')
+    }, 500)
+  }
 
   const handleLocate = () => {
     if (!navigator.geolocation) { toast.error('GPS non disponible'); return }
@@ -421,14 +436,22 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
       }
     }
     setLoading(true)
+    if (usernameStatus === 'taken') { toast.error("Ce nom d'utilisateur est déjà pris"); return }
+    if (usernameStatus === 'invalid') { toast.error('Username invalide (3-20 caractères, lettres/chiffres/_)'); return }
+    if (usernameStatus === 'checking') { toast.error('Vérification du username en cours...'); return }
     const { error } = await supabase.from('profiles').update({
       full_name:     form.full_name.trim()     || null,
+      username:      form.username.trim().toLowerCase() || null,
       phone:         form.phone.trim()         || null,
       city:          form.city.trim()          || null,
       neighbourhood: form.neighbourhood.trim() || null,
     }).eq('id', profile.id)
     setLoading(false)
-    if (error) { toast.error('Erreur lors de la sauvegarde'); return }
+    if (error) {
+      console.error('Save error:', error)
+      toast.error('Erreur lors de la sauvegarde: ' + (error.message || 'inconnue'))
+      return
+    }
     await onUpdated()
     onClose()
     toast.success('Profil mis à jour ✅')
@@ -439,6 +462,33 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
       <div className="px-5 pt-4 pb-6 space-y-4">
         <InputField label="Nom complet" icon={User} placeholder="Votre nom complet"
           value={form.full_name} onChange={e => setForm(p => ({...p, full_name: e.target.value}))}/>
+
+        {/* Username avec vérification temps réel */}
+        <div>
+          <div className="relative">
+            <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>
+            <input
+              type="text"
+              placeholder="Nom d'utilisateur"
+              value={form.username}
+              onChange={e => { setForm(p => ({...p, username: e.target.value})); checkUsername(e.target.value) }}
+              className={clsx('input-field pl-9 pr-9 text-sm w-full',
+                usernameStatus === 'available' ? 'border-emerald-400' :
+                usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400' : ''
+              )}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {usernameStatus === 'checking' && <div className="w-3.5 h-3.5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"/>}
+              {usernameStatus === 'available' && <CheckCircle2 size={14} className="text-emerald-500"/>}
+              {usernameStatus === 'taken'     && <XCircle size={14} className="text-red-500"/>}
+              {usernameStatus === 'invalid'   && <AlertCircle size={14} className="text-orange-400"/>}
+            </div>
+          </div>
+          {usernameStatus === 'available' && <p className="text-xs text-emerald-500 mt-1 pl-1 font-medium">Disponible ✓</p>}
+          {usernameStatus === 'taken'     && <p className="text-xs text-red-500 mt-1 pl-1 font-medium">Déjà pris</p>}
+          {usernameStatus === 'invalid'   && <p className="text-xs text-orange-400 mt-1 pl-1 font-medium">3-20 caractères, lettres/chiffres/_</p>}
+        </div>
+
         <InputField label="Téléphone" icon={Phone} placeholder="+229 XX XX XX XX" type="tel"
           value={form.phone} onChange={e => setForm(p => ({...p, phone: e.target.value}))}/>
 
@@ -877,11 +927,11 @@ function HelpSheet({ open, onClose }) {
       <div className="px-5 pt-2 pb-6 space-y-3">
         {/* Bouton contact rapide */}
         <div className="flex gap-2">
-          <a href="tel:+22961000000" // TODO: remplacer par ton numéro support réel
+          <a href="tel:+2290197293196"
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary-50 text-primary-700 font-semibold text-sm active:scale-95 transition-transform">
             <Phone size={15}/> Appeler
           </a>
-          <a href="https://wa.me/22961000000" target="_blank" rel="noreferrer" // TODO: remplacer par ton numéro WhatsApp réel
+          <a href="https://wa.me/2290197293196" target="_blank" rel="noreferrer"
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 text-emerald-700 font-semibold text-sm active:scale-95 transition-transform">
             <span className="text-base">💬</span> WhatsApp
           </a>
