@@ -127,10 +127,10 @@ async function recordTx({ walletId, userId, type, amountCents: amount, balanceAf
     description, receipt_number: receiptNum,
   })
   const notifMap = {
-    deposit:      ['wallet_credit', '💰 Rechargement réussi !',  `+${toFCFA(amountCents).toLocaleString('fr-FR')} FCFA crédités.`],
-    withdraw:     ['wallet_debit',  '💸 Retrait effectué !',     `-${toFCFA(Math.abs(amountCents)).toLocaleString('fr-FR')} FCFA retirés.`],
-    transfer_out: ['wallet_debit',  '📤 Transfert envoyé !',     `-${toFCFA(Math.abs(amountCents)).toLocaleString('fr-FR')} FCFA transférés.`],
-    transfer_in:  ['wallet_credit', '📥 Transfert reçu !',       `+${toFCFA(amountCents).toLocaleString('fr-FR')} FCFA reçus.`],
+    deposit:      ['wallet_credit', '💰 Rechargement réussi !',  `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA crédités.`],
+    withdraw:     ['wallet_debit',  '💸 Retrait effectué !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA retirés.`],
+    transfer_out: ['wallet_debit',  '📤 Transfert envoyé !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA transférés.`],
+    transfer_in:  ['wallet_credit', '📥 Transfert reçu !',       `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA reçus.`],
   }
   const n = notifMap[type]
   if (n) await supabase.from('notifications').insert({ user_id: userId, type: n[0], title: n[1], body: n[2] })
