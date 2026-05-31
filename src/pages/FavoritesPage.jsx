@@ -32,17 +32,11 @@ const SORT_PRODUCTS = [
 function SkeletonShopCard() {
   return (
     <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden animate-pulse">
-      <div className="h-28 bg-surface-100" />
-      <div className="p-3 flex items-center gap-3">
-        <div className="flex-1 space-y-2">
-          <div className="h-3.5 bg-surface-100 rounded-full w-2/3" />
-          <div className="h-3 bg-surface-100 rounded-full w-1/3" />
-          <div className="h-2.5 bg-surface-100 rounded-full w-1/4" />
-        </div>
-        <div className="flex gap-2">
-          <div className="w-14 h-7 bg-surface-100 rounded-xl" />
-          <div className="w-8 h-8 bg-surface-100 rounded-xl" />
-        </div>
+      <div className="aspect-square bg-surface-100" />
+      <div className="p-2.5 space-y-2">
+        <div className="h-3 bg-surface-100 rounded-full w-3/4" />
+        <div className="h-2.5 bg-surface-100 rounded-full w-1/2" />
+        <div className="h-2 bg-surface-100 rounded-full w-1/3" />
       </div>
     </div>
   )
@@ -51,18 +45,11 @@ function SkeletonShopCard() {
 function SkeletonProductCard() {
   return (
     <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden animate-pulse">
-      <div className="flex gap-3 p-3">
-        <div className="w-20 h-20 rounded-xl bg-surface-100 flex-shrink-0" />
-        <div className="flex-1 space-y-2 pt-1">
-          <div className="h-3.5 bg-surface-100 rounded-full w-3/4" />
-          <div className="h-3.5 bg-surface-100 rounded-full w-1/3" />
-          <div className="h-3 bg-surface-100 rounded-full w-1/2" />
-          <div className="h-3 bg-surface-100 rounded-full w-2/3" />
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="w-8 h-8 bg-surface-100 rounded-xl" />
-          <div className="w-12 h-6 bg-surface-100 rounded-lg" />
-        </div>
+      <div className="aspect-square bg-surface-100" />
+      <div className="p-2.5 space-y-2">
+        <div className="h-3 bg-surface-100 rounded-full w-3/4" />
+        <div className="h-3 bg-surface-100 rounded-full w-1/2" />
+        <div className="h-2.5 bg-surface-100 rounded-full w-2/3" />
       </div>
     </div>
   )
@@ -91,13 +78,14 @@ function AnimatedCount({ value }) {
   )
 }
 
-// ── Carte boutique favorite ────────────────────────────────
+// ── Carte boutique favorite (2 colonnes) ──────────────────
 function ShopFavoriteCard({ item, onUnfollow, index }) {
   const navigate = useNavigate()
   const shop = item.shop
   const [removing, setRemoving] = useState(false)
 
-  const handleUnfollow = () => {
+  const handleUnfollow = (e) => {
+    e.stopPropagation()
     setRemoving(true)
     setTimeout(() => onUnfollow(item), 280)
   }
@@ -105,66 +93,52 @@ function ShopFavoriteCard({ item, onUnfollow, index }) {
   return (
     <div
       className={clsx(
-        'bg-white rounded-2xl border border-surface-100 overflow-hidden transition-all duration-300',
+        'bg-white rounded-2xl border border-surface-100 overflow-hidden transition-all duration-300 flex flex-col',
         removing
-          ? 'opacity-0 scale-95 -translate-x-4 pointer-events-none'
-          : 'opacity-100 scale-100 translate-x-0 active:scale-[0.98]'
+          ? 'opacity-0 scale-95 pointer-events-none'
+          : 'opacity-100 scale-100 active:scale-[0.97]'
       )}
-      style={{
-        animation: `slideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 60}ms both`
-      }}
+      style={{ animation: `slideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 60}ms both` }}
+      onClick={() => navigate(`/boutique/${shop?.slug}`)}
     >
       {/* Image */}
-      <div
-        className="relative h-28 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden cursor-pointer"
-        onClick={() => navigate(`/boutique/${shop?.slug}`)}
-      >
+      <div className="relative aspect-square bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop?.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-4xl">🌿</div>
         }
         {shop?.has_delivery && (
-          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            <Truck size={10} className="text-primary-600" />
-            <span className="text-[10px] font-bold text-primary-700">Livraison</span>
+          <div className="absolute top-2 left-2 bg-primary-700/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full flex items-center gap-1">
+            <Truck size={9} className="text-white" />
+            <span className="text-[9px] font-bold text-white">Livraison</span>
           </div>
         )}
-        {/* Gradient overlay bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/20 to-transparent" />
+        {/* Bouton retirer */}
+        <button
+          onClick={handleUnfollow}
+          className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+        >
+          <Heart size={13} className="text-red-400 fill-red-400" />
+        </button>
+        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent" />
       </div>
 
       {/* Infos */}
-      <div className="p-3 flex items-center gap-3">
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/boutique/${shop?.slug}`)}>
-          <p className="font-bold text-dark-800 text-sm truncate">{shop?.name}</p>
-          <p className="text-xs text-dark-400 truncate">@{shop?.owner?.username}</p>
-          {shop?.city && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <MapPin size={9} className="text-dark-300" />
-              <span className="text-[10px] text-dark-400">{shop.city}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => navigate(`/boutique/${shop?.slug}`)}
-            className="px-3 py-1.5 bg-primary-600 text-white text-xs font-bold rounded-xl active:scale-95 transition-transform shadow-sm shadow-primary-200"
-          >
-            Voir
-          </button>
-          <button
-            onClick={handleUnfollow}
-            className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center active:scale-95 transition-all hover:bg-red-100"
-          >
-            <Trash2 size={14} className="text-red-400" />
-          </button>
-        </div>
+      <div className="p-2.5 flex-1">
+        <p className="font-bold text-dark-800 text-xs truncate">{shop?.name}</p>
+        <p className="text-[10px] text-dark-400 truncate">@{shop?.owner?.username}</p>
+        {shop?.city && (
+          <div className="flex items-center gap-1 mt-1">
+            <MapPin size={8} className="text-dark-300" />
+            <span className="text-[9px] text-dark-400 truncate">{shop.city}</span>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-// ── Carte produit favori ───────────────────────────────────
+// ── Carte produit favori (2 colonnes) ─────────────────────
 function ProductFavoriteCard({ item, onUnfavorite, index }) {
   const navigate = useNavigate()
   const product = item.product
@@ -172,7 +146,8 @@ function ProductFavoriteCard({ item, onUnfavorite, index }) {
   const [removing, setRemoving] = useState(false)
   const unavailable = product?.is_available === false
 
-  const handleUnfavorite = () => {
+  const handleUnfavorite = (e) => {
+    e.stopPropagation()
     setRemoving(true)
     setTimeout(() => onUnfavorite(item), 280)
   }
@@ -180,87 +155,56 @@ function ProductFavoriteCard({ item, onUnfavorite, index }) {
   return (
     <div
       className={clsx(
-        'bg-white rounded-2xl border overflow-hidden transition-all duration-300',
-        unavailable ? 'border-surface-200 opacity-80' : 'border-surface-100',
+        'bg-white rounded-2xl border overflow-hidden transition-all duration-300 flex flex-col',
+        unavailable ? 'border-surface-200 opacity-75' : 'border-surface-100',
         removing
-          ? 'opacity-0 scale-95 -translate-x-4 pointer-events-none'
-          : 'opacity-100 scale-100 translate-x-0 active:scale-[0.98]'
+          ? 'opacity-0 scale-95 pointer-events-none'
+          : 'opacity-100 scale-100 active:scale-[0.97]'
       )}
-      style={{
-        animation: `slideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 60}ms both`
-      }}
+      style={{ animation: `slideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 60}ms both` }}
+      onClick={() => shop?.slug && navigate(`/boutique/${shop.slug}`)}
     >
-      <div className="flex gap-3 p-3">
-        {/* Image produit */}
-        <div
-          className="relative w-20 h-20 rounded-xl bg-surface-100 overflow-hidden flex-shrink-0 cursor-pointer"
-          onClick={() => shop?.slug && navigate(`/boutique/${shop.slug}`)}
-        >
-          {product?.image_url
-            ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex items-center justify-center"><Package size={24} className="text-dark-300" /></div>
-          }
-          {/* Badge indisponible */}
-          {unavailable && (
-            <div className="absolute inset-0 bg-dark-900/50 flex items-center justify-center">
-              <span className="text-white text-[9px] font-bold text-center leading-tight px-1">Indispo</span>
-            </div>
-          )}
-        </div>
-
-        {/* Infos */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-1">
-            <p className={clsx(
-              'font-bold text-sm truncate flex-1',
-              unavailable ? 'text-dark-400 line-through' : 'text-dark-800'
-            )}>
-              {product?.name}
-            </p>
+      {/* Image */}
+      <div className="relative aspect-square bg-surface-100 overflow-hidden">
+        {product?.image_url
+          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center"><Package size={28} className="text-dark-300" /></div>
+        }
+        {unavailable && (
+          <div className="absolute inset-0 bg-dark-900/50 flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold bg-dark-800/80 px-2 py-0.5 rounded-full">Indisponible</span>
           </div>
-          <p className={clsx(
-            'font-bold text-sm',
-            unavailable ? 'text-dark-300' : 'text-primary-600'
-          )}>
-            {product?.price?.toLocaleString('fr-FR')} FCFA
-          </p>
-          {unavailable && (
-            <span className="inline-block text-[9px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full mt-0.5">
-              Indisponible
-            </span>
-          )}
-          {shop && (
-            <div
-              className="flex items-center gap-1 mt-1 cursor-pointer"
-              onClick={() => navigate(`/boutique/${shop.slug}`)}
-            >
-              <Store size={10} className="text-dark-400" />
-              <span className="text-xs text-dark-400 hover:text-primary-600 transition-colors">{shop.name}</span>
-              <ChevronRight size={10} className="text-dark-300" />
-            </div>
-          )}
-          {product?.description && (
-            <p className="text-xs text-dark-400 mt-0.5 line-clamp-1">{product.description}</p>
-          )}
-        </div>
+        )}
+        {/* Bouton retirer */}
+        <button
+          onClick={handleUnfavorite}
+          className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+        >
+          <Heart size={13} className="text-red-400 fill-red-400" />
+        </button>
+        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/30 to-transparent" />
+      </div>
 
-        {/* Actions */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <button
-            onClick={handleUnfavorite}
-            className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center active:scale-95 transition-all hover:bg-red-100"
-          >
-            <Heart size={14} className="text-red-400 fill-red-400" />
-          </button>
-          {shop?.slug && !unavailable && (
-            <button
-              onClick={() => navigate(`/boutique/${shop.slug}`)}
-              className="px-2 py-1 bg-primary-600 text-white text-[10px] font-bold rounded-lg active:scale-95 transition-transform shadow-sm shadow-primary-200"
-            >
-              Voir
-            </button>
-          )}
-        </div>
+      {/* Infos */}
+      <div className="p-2.5 flex-1 flex flex-col gap-0.5">
+        <p className={clsx(
+          'font-bold text-xs truncate',
+          unavailable ? 'text-dark-400 line-through' : 'text-dark-800'
+        )}>
+          {product?.name}
+        </p>
+        <p className={clsx(
+          'font-bold text-xs',
+          unavailable ? 'text-dark-300' : 'text-primary-600'
+        )}>
+          {product?.price?.toLocaleString('fr-FR')} FCFA
+        </p>
+        {shop && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <Store size={8} className="text-dark-300" />
+            <span className="text-[9px] text-dark-400 truncate">{shop.name}</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -639,10 +583,10 @@ export default function FavoritesPage() {
         {/* Contenu */}
         <div className="px-4 pt-4">
           {loading ? (
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {tab === 'shops'
-                ? [1, 2, 3].map(i => <SkeletonShopCard key={i} />)
-                : [1, 2, 3].map(i => <SkeletonProductCard key={i} />)
+                ? [1, 2, 3, 4].map(i => <SkeletonShopCard key={i} />)
+                : [1, 2, 3, 4].map(i => <SkeletonProductCard key={i} />)
               }
             </div>
           ) : hasError ? (
@@ -659,7 +603,7 @@ export default function FavoritesPage() {
                 <SortDropdown tab={tab} sort={currentSort} setSort={setCurrentSort} />
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 {tab === 'shops'
                   ? sortedShops.map((item, i) => (
                     <ShopFavoriteCard key={item.id} item={item} onUnfollow={handleUnfollow} index={i} />
