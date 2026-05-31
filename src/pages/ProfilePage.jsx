@@ -83,7 +83,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* Hero header */}
-      <div className="relative bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 pb-20 pt-12">
+      <div className="relative bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 pb-20 pt-4">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>
           <div className="absolute bottom-0 left-0 w-64 h-32 rounded-full bg-primary-400/10 blur-2xl"/>
@@ -91,7 +91,7 @@ export default function ProfilePage() {
             style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'24px 24px'}}/>
         </div>
 
-        <div className="relative flex justify-between items-center px-5 mb-6">
+        <div className="relative flex justify-between items-center px-5 mb-3">
           <h1 className="font-display text-xl text-white font-bold">Mon Profil</h1>
           <button onClick={() => setSettingsOpen(true)}
             className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform">
