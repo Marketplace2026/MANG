@@ -145,7 +145,7 @@ export default function VendorPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER */}
-      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-24 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-3 pb-24 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5"
           style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>

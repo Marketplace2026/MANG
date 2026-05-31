@@ -197,19 +197,19 @@ export default function FavoritesPage() {
     <div className="min-h-screen bg-surface-50 pb-28">
 
       {/* Header */}
-      <div className="bg-white pt-14 pb-0 px-4 border-b border-surface-100 shadow-sm sticky top-0 z-20">
+      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-3 pb-0 px-4 sticky top-0 z-20">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center">
-            <Heart size={20} className="text-red-500 fill-red-500"/>
+          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+            <Heart size={20} className="text-white fill-white"/>
           </div>
           <div>
-            <h1 className="font-display font-bold text-dark-800 text-xl">Mes Favoris</h1>
-            <p className="text-xs text-dark-400">{count} {tab === 'shops' ? 'boutique' : 'produit'}{count > 1 ? 's' : ''}</p>
+            <h1 className="font-display font-bold text-white text-xl">Mes Favoris</h1>
+            <p className="text-xs text-primary-200">{count} {tab === 'shops' ? 'boutique' : 'produit'}{count > 1 ? 's' : ''}</p>
           </div>
         </div>
 
         {/* Onglets */}
-        <div className="flex border-b border-surface-100">
+        <div className="flex border-b border-white/10">
           {TABS.map(t => {
             const Icon = t.icon
             const isActive = tab === t.key
@@ -218,14 +218,14 @@ export default function FavoritesPage() {
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={clsx(
                   'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors border-b-2',
-                  isActive ? 'text-primary-600 border-primary-600' : 'text-dark-400 border-transparent'
+                  isActive ? 'text-white border-white' : 'text-white/60 border-transparent'
                 )}>
                 <Icon size={15}/>
                 {t.label}
                 {c > 0 && (
                   <span className={clsx(
                     'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-                    isActive ? 'bg-primary-100 text-primary-700' : 'bg-surface-100 text-dark-400'
+                    isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-white/60'
                   )}>{c}</span>
                 )}
               </button>
