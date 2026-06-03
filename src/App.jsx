@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from '@/store'
+import { useGoogleReferral } from '@/hooks/useGoogleReferral'
 
 import AppLayout          from '@/components/layout/AppLayout'
 import AuthLayout         from '@/components/layout/AuthLayout'
@@ -76,6 +77,8 @@ function PublicRoute({ children }) {
 export default function App() {
   const { initialize, loading } = useAuthStore()
   const [splashDone, setSplashDone] = useState(false)
+
+  useGoogleReferral() // Traite le parrainage après retour OAuth Google
 
   useEffect(() => { initialize() }, [])
 
