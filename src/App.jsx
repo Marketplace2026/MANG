@@ -21,6 +21,8 @@ import MessagesPage       from '@/pages/MessagesPage'
 import NotificationsPage  from '@/pages/NotificationsPage'
 import FavoritesPage      from '@/pages/FavoritesPage'
 import PublicProfilePage  from '@/pages/PublicProfilePage'
+import ReferralPage       from '@/pages/ReferralPage'
+
 
 // ── Splash screen (photo existante) ──────────────────────
 function SplashScreen() {
@@ -124,6 +126,7 @@ export default function App() {
           <Route path="/messages"      element={<MessagesPage />} />
           <Route path="/communaute"    element={<CommunityPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/parrainage"         element={<ReferralPage />} />
           <Route path="/profil/:username" element={<PublicProfilePage />} />
         </Route>
 
