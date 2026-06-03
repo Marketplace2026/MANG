@@ -2,9 +2,9 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   Home, MessageCircle, Plus, Bell, User,
-  Package, Wallet, Store, Globe, X, ChevronRight, Heart
+  Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift
 } from 'lucide-react'
-import { useAuthStore, useNotificationsStore, useMessagesStore } from '@/store'
+import { useAuthStore, useNotificationsStore } from '@/store'
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
@@ -21,6 +21,7 @@ const CENTER_MENU = [
   { icon: Wallet,  label: 'Mon Wallet',     path: '/portefeuille',  color: 'bg-dark-800'    },
   { icon: Heart,   label: 'Mes Favoris',    path: '/favoris',       color: 'bg-red-500'     },
   { icon: Globe,   label: 'Communauté',     path: '/communaute',    color: 'bg-violet-500'  },
+  { icon: Gift,    label: 'Parrainage',     path: '/parrainage',    color: 'bg-gold-500'    },
 ]
 
 export default function AppLayout() {
@@ -28,16 +29,13 @@ export default function AppLayout() {
   const location  = useLocation()
   const { user }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
-  const { unreadCount: msgCount, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
     fetchNotifications(user.id)
-    const unsubNotif = subscribeToNotifications(user.id)
-    fetchUnreadCount(user.id)
-    const unsubMsg = subscribeToUnread(user.id)
-    return () => { unsubNotif(); unsubMsg() }
+    const unsub = subscribeToNotifications(user.id)
+    return unsub
   }, [user])
 
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
@@ -123,11 +121,6 @@ export default function AppLayout() {
                   {item.path === '/notifications' && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                  {item.path === '/messages' && msgCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                      {msgCount > 9 ? '9+' : msgCount}
                     </span>
                   )}
                 </div>
