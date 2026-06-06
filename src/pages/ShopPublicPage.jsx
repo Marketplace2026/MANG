@@ -43,6 +43,10 @@ export default function ShopPublicPage() {
   const [linkCopied, setLinkCopied] = useState(false)
   const [zoomImage, setZoomImage] = useState(null)
   const [orderModal, setOrderModal] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [showReviews, setShowReviews] = useState(false)
+  const [reviewModal, setReviewModal] = useState(false)
+  const [myReview, setMyReview] = useState(null)
 
   const loadShop = useCallback(async () => {
     setLoading(true)
@@ -65,13 +69,23 @@ export default function ShopPublicPage() {
       .select('user:profiles(id, username, avatar_url, city)').eq('shop_id', data.id)
     setFollowers(followerData || [])
 
+    // Reviews
+    const { data: reviewData } = await supabase
+      .from('shop_reviews')
+      .select('*, user:profiles(id, username, avatar_url)')
+      .eq('shop_id', data.id)
+      .order('created_at', { ascending: false })
+    setReviews(reviewData || [])
+
     if (user) {
-      const [fRes, lRes] = await Promise.all([
+      const [fRes, lRes, myRevRes] = await Promise.all([
         supabase.from('shop_followers').select('id').eq('shop_id', data.id).eq('user_id', user.id).single(),
         supabase.from('shop_likes').select('id').eq('shop_id', data.id).eq('user_id', user.id).single(),
+        supabase.from('shop_reviews').select('*').eq('shop_id', data.id).eq('user_id', user.id).single(),
       ])
       setIsFollowing(!!fRes.data)
       setIsLiked(!!lRes.data)
+      setMyReview(myRevRes.data || null)
     }
     setLoading(false)
   }, [slug, user])
@@ -225,12 +239,38 @@ export default function ShopPublicPage() {
             </div>
 
             <div className="flex-1 min-w-0 pt-8">
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-dark-900 text-lg leading-tight truncate">{shop.name}</h1>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="font-black text-dark-900 text-lg leading-tight">{shop.name}</h1>
+                {shop.is_verified && (
+                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 rounded-full flex-shrink-0">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-blue-600 text-[10px] font-bold">Vérifié</span>
+                  </span>
+                )}
               </div>
-              <p className="text-gray-400 text-xs">@{shop.owner?.username}
-                {shop.city && <span className="text-gray-300 ml-1.5">· 📍 {shop.city}</span>}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-400 text-xs">@{shop.owner?.username}
+                  {shop.city && <span className="text-gray-300 ml-1">· 📍 {shop.city}</span>}
+                </p>
+                {shop.reviews_count > 0 && (
+                  <button onClick={() => setShowReviews(true)}
+                    className="flex items-center gap-0.5 active:scale-95">
+                    <div className="flex">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} width="10" height="10" viewBox="0 0 24 24"
+                          fill={s <= Math.round(shop.rating_avg) ? '#f59e0b' : 'none'}
+                          stroke="#f59e0b" strokeWidth="1.5">
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                        </svg>
+                      ))}
+                    </div>
+                    <span className="text-amber-600 text-[11px] font-bold">{Number(shop.rating_avg).toFixed(1)}</span>
+                    <span className="text-gray-400 text-[10px]">({shop.reviews_count})</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -301,6 +341,14 @@ export default function ShopPublicPage() {
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-bold text-sm bg-blue-600 text-white shadow-md active:scale-[0.97]">
               <MessageCircle size={14}/> Discuter
             </button>
+            {shop.whatsapp && (
+              <a href={`https://wa.me/${shop.whatsapp.replace(/\s+/g,'')}`} target="_blank" rel="noreferrer"
+                className="w-11 flex items-center justify-center rounded-2xl font-bold text-sm bg-[#25D366] text-white shadow-md active:scale-[0.97]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </a>
+            )}
           </div>
 
           {/* Actions sociales inline */}
@@ -366,10 +414,70 @@ export default function ShopPublicPage() {
         )}
       </div>
 
+      {/* ══════ AVIS & NOTES ══════ */}
+      <div className="mt-4 mx-4">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-dark-900 text-base">Avis clients</h3>
+              {shop.reviews_count > 0 && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded-full">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b" stroke="none">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                  </svg>
+                  <span className="text-amber-700 text-[11px] font-black">{Number(shop.rating_avg).toFixed(1)}</span>
+                  <span className="text-gray-400 text-[10px]">· {shop.reviews_count} avis</span>
+                </div>
+              )}
+            </div>
+            {user && user.id !== shop.owner_id && (
+              <button onClick={() => setReviewModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold active:scale-95 shadow-sm">
+                {myReview ? '✏️ Modifier' : '⭐ Donner un avis'}
+              </button>
+            )}
+          </div>
+
+          {/* Liste des avis */}
+          <div className="px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
+            {reviews.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-3xl mb-1">⭐</p>
+                <p className="text-gray-400 text-sm">Aucun avis pour l'instant</p>
+                <p className="text-gray-300 text-xs">Soyez le premier à donner votre avis</p>
+              </div>
+            ) : (
+              reviews.map(review => (
+                <div key={review.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold text-dark-800 text-xs">@{review.user?.username}</span>
+                      <div className="flex">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} width="10" height="10" viewBox="0 0 24 24"
+                            fill={s <= review.rating ? '#f59e0b' : '#e5e7eb'} stroke="none">
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && <p className="text-gray-600 text-xs leading-relaxed">{review.comment}</p>}
+                    <p className="text-gray-300 text-[10px] mt-0.5">
+                      {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ══════════════════════════════════════
           COMMENTAIRES
       ══════════════════════════════════════ */}
-      <div id="comments-section" className="mt-5 mx-4">
+      <div id="comments-section" className="mt-4 mx-4">
         <CommentsSection shop={shop} user={user} profile={profile}/>
       </div>
 
@@ -418,6 +526,21 @@ export default function ShopPublicPage() {
             ))}
         </div>
       </BottomSheet>
+
+      {/* ══════ REVIEW MODAL ══════ */}
+      <ReviewModal
+        open={reviewModal}
+        onClose={() => setReviewModal(false)}
+        shop={shop}
+        user={user}
+        myReview={myReview}
+        onSaved={(rev) => {
+          setMyReview(rev)
+          setReviewModal(false)
+          loadShop()
+          toast.success(rev ? 'Avis mis à jour !' : 'Avis publié ⭐')
+        }}
+      />
     </div>
   )
 }
@@ -733,6 +856,92 @@ function OrderModal({ open, product, shop, user, onClose }) {
         </Button>
       </div>
     </Modal>
+  )
+}
+
+// ══════════════════════════════════════
+// REVIEW MODAL
+// ══════════════════════════════════════
+function ReviewModal({ open, onClose, shop, user, myReview, onSaved }) {
+  const [rating, setRating] = useState(myReview?.rating || 0)
+  const [hovered, setHovered] = useState(0)
+  const [comment, setComment] = useState(myReview?.comment || '')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setRating(myReview?.rating || 0)
+      setComment(myReview?.comment || '')
+    }
+  }, [open, myReview])
+
+  const save = async () => {
+    if (rating === 0) { toast.error('Choisissez une note'); return }
+    setSaving(true)
+    if (myReview?.id) {
+      const { error } = await supabase.from('shop_reviews')
+        .update({ rating, comment: comment.trim() || null })
+        .eq('id', myReview.id)
+      setSaving(false)
+      if (error) { toast.error('Erreur'); return }
+    } else {
+      const { error } = await supabase.from('shop_reviews')
+        .insert({ shop_id: shop.id, user_id: user.id, rating, comment: comment.trim() || null })
+      setSaving(false)
+      if (error) { toast.error('Vous avez déjà laissé un avis'); return }
+    }
+    onSaved(myReview)
+  }
+
+  const labels = ['', 'Très mauvais', 'Mauvais', 'Correct', 'Bien', 'Excellent !']
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title={myReview ? '✏️ Modifier votre avis' : '⭐ Donner un avis'}>
+      <div className="px-5 pt-2 pb-8 space-y-5">
+        {/* Stars */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex gap-2">
+            {[1,2,3,4,5].map(s => (
+              <button key={s}
+                onClick={() => setRating(s)}
+                onMouseEnter={() => setHovered(s)}
+                onMouseLeave={() => setHovered(0)}
+                className="active:scale-90 transition-transform">
+                <svg width="40" height="40" viewBox="0 0 24 24"
+                  fill={(hovered || rating) >= s ? '#f59e0b' : 'none'}
+                  stroke={(hovered || rating) >= s ? '#f59e0b' : '#d1d5db'}
+                  strokeWidth="1.5" className="transition-colors">
+                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                </svg>
+              </button>
+            ))}
+          </div>
+          {(hovered || rating) > 0 && (
+            <span className="text-amber-600 font-bold text-sm">{labels[hovered || rating]}</span>
+          )}
+        </div>
+
+        {/* Comment */}
+        <div>
+          <label className="text-sm font-bold text-dark-700 mb-1.5 block">Commentaire (optionnel)</label>
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Partagez votre expérience avec cette boutique..."
+            rows={3}
+            className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-amber-300 resize-none transition-colors"
+          />
+        </div>
+
+        <button onClick={save} disabled={rating === 0 || saving}
+          className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-black text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
+          {saving
+            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+            : <><svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+              {myReview ? 'Mettre à jour' : 'Publier mon avis'}</>}
+        </button>
+      </div>
+    </BottomSheet>
   )
 }
 
