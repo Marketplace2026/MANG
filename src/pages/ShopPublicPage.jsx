@@ -177,197 +177,151 @@ export default function ShopPublicPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
 
-      {/* ══════════════════════════════════════
-          HERO COVER — plein écran immersif
-      ══════════════════════════════════════ */}
-      <div className="relative w-full h-52 overflow-hidden">
-        {shop.cover_url ? (
-          <img src={shop.cover_url} alt={shop.name}
-            className="w-full h-full object-cover"
-            onClick={() => setZoomImage(shop.cover_url)}/>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center">
-            <span className="text-8xl opacity-20">🌿</span>
-          </div>
-        )}
-        {/* Gradient dégradé vers le bas */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
+      {/* ══════ HEADER COMPACT ══════ */}
+      <div className="relative">
+        {/* Cover image */}
+        <div className="relative w-full h-44 overflow-hidden bg-gradient-to-br from-primary-700 to-primary-900"
+          onClick={() => shop.cover_url && setZoomImage(shop.cover_url)}>
+          {shop.cover_url && (
+            <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30"/>
 
-        {/* Nav bar */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-12 pb-3">
-          <button onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/10">
-            <ArrowLeft size={18} className="text-white"/>
-          </button>
-          <div className="flex gap-2">
-            <button onClick={handleShare}
-              className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/10">
-              {linkCopied ? <Check size={16} className="text-emerald-400"/> : <Share2 size={16} className="text-white"/>}
+          {/* Nav */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-10 pb-2">
+            <button onClick={e => { e.stopPropagation(); navigate(-1) }}
+              className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center active:scale-90">
+              <ArrowLeft size={16} className="text-white"/>
             </button>
-            {shop.cover_url && (
-              <button onClick={() => setZoomImage(shop.cover_url)}
-                className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/10">
-                <ZoomIn size={16} className="text-white"/>
+            <div className="flex gap-1.5">
+              {premiumConfig && (
+                <div className={clsx('flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black text-white',
+                  `bg-gradient-to-r ${premiumConfig.gradient}`)}>
+                  {'⭐'.repeat(premiumConfig.stars)} {premiumConfig.label}
+                </div>
+              )}
+              <button onClick={e => { e.stopPropagation(); handleShare() }}
+                className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center active:scale-90">
+                {linkCopied ? <Check size={14} className="text-emerald-400"/> : <Share2 size={14} className="text-white"/>}
               </button>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Premium badge */}
-        {premiumConfig && (
-          <div className={clsx(
-            'absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full',
-            `bg-gradient-to-r ${premiumConfig.gradient}`,
-            'shadow-lg border border-white/20'
-          )}>
-            {Array.from({length: premiumConfig.stars}).map((_, i) => (
-              <Star key={i} size={10} className="text-white fill-white"/>
-            ))}
-            <span className="text-white text-[11px] font-bold tracking-wide">{premiumConfig.label}</span>
-          </div>
-        )}
-
-        {/* Nom boutique sur la cover */}
-        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
-          <div className="flex items-end gap-3">
+        {/* Profil info — overlap sur la cover */}
+        <div className="bg-white px-4 pt-3 pb-4 shadow-sm">
+          <div className="flex items-center gap-3 -mt-8 mb-3">
+            {/* Avatar rond comme les cartes */}
             <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-gray-100">
                 {shop.owner?.avatar_url
                   ? <img src={shop.owner.avatar_url} className="w-full h-full object-cover"/>
-                  : <div className="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-2xl">
+                  : <div className="w-full h-full flex items-center justify-center font-black text-2xl text-white"
+                      style={{ background: `hsl(${(shop.name?.charCodeAt(0) || 0) * 137 % 360}, 60%, 45%)` }}>
                       {(shop.owner?.username || shop.name || '?')[0].toUpperCase()}
                     </div>}
               </div>
-              {isOnline && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white"/>
-              )}
+              {isOnline && <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white"/>}
             </div>
-            <div className="flex-1 min-w-0 pb-0.5">
-              <h1 className="text-white font-black text-xl leading-tight truncate drop-shadow-sm">{shop.name}</h1>
-              <p className="text-white/60 text-xs font-medium">@{shop.owner?.username}
-                {shop.city && <span className="ml-2">📍 {shop.city}</span>}
+
+            <div className="flex-1 min-w-0 pt-8">
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-black text-dark-900 text-lg leading-tight truncate">{shop.name}</h1>
+              </div>
+              <p className="text-gray-400 text-xs">@{shop.owner?.username}
+                {shop.city && <span className="text-gray-300 ml-1.5">· 📍 {shop.city}</span>}
               </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════
-          STATS CARD — flottante
-      ══════════════════════════════════════ */}
-      <div className="mx-4 -mt-1">
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100/50 p-4">
-
-          {/* Stats cliquables */}
-          <div className="flex items-center divide-x divide-gray-100 mb-4">
-            <button onClick={() => setShowLikers(true)}
-              className="flex-1 flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
-              <span className="text-xl font-black text-dark-900">{shop.likes_count || 0}</span>
-              <span className="text-dark-500/60 text-[11px] font-medium">J'aimes</span>
-              {likers.length > 0 && (
-                <div className="flex -space-x-1 mt-0.5">
-                  {likers.slice(0, 3).map((l, i) => (
-                    <Avatar key={i} src={l.user?.avatar_url} name={l.user?.username} size="xs" className="ring-1 ring-white"/>
-                  ))}
-                </div>
-              )}
-            </button>
-            <button onClick={() => setShowFollowers(true)}
-              className="flex-1 flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
-              <span className="text-xl font-black text-dark-900">{shop.followers_count || 0}</span>
-              <span className="text-dark-500/60 text-[11px] font-medium">Abonnés</span>
-              {followers.length > 0 && (
-                <div className="flex -space-x-1 mt-0.5">
-                  {followers.slice(0, 3).map((f, i) => (
-                    <Avatar key={i} src={f.user?.avatar_url} name={f.user?.username} size="xs" className="ring-1 ring-white"/>
-                  ))}
-                </div>
-              )}
-            </button>
-            <div className="flex-1 flex flex-col items-center gap-0.5">
-              <span className="text-xl font-black text-dark-900">{products.length}</span>
-              <span className="text-dark-500/60 text-[11px] font-medium">Produits</span>
             </div>
           </div>
 
           {/* Description */}
           {shop.description && (
-            <div className="mb-4 px-3 py-2 bg-gray-50 rounded-2xl overflow-hidden">
+            <div className="mb-3 overflow-hidden">
               <div className="overflow-hidden whitespace-nowrap">
-                <span className="inline-block text-dark-700 text-sm"
-                  style={{
-                    animation: shop.description.length > 40
-                      ? `scrollLoop ${Math.max(12, shop.description.length * 0.35)}s linear infinite` : 'none'
-                  }}>
-                  {shop.description}
-                  {shop.description.length > 40 && <>&nbsp;&nbsp;&nbsp;{shop.description}</>}
+                <span className="inline-block text-gray-600 text-[13px] leading-relaxed"
+                  style={{ animation: shop.description.length > 35 ? `scrollLoop ${Math.max(10, shop.description.length * 0.3)}s linear infinite` : 'none' }}>
+                  {shop.description}{shop.description.length > 35 && <>&nbsp;&nbsp;&nbsp;{shop.description}</>}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Badges infos */}
-          <div className="flex flex-wrap gap-1.5 mb-4">
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <button onClick={() => setShowLikers(true)} className="flex items-center gap-1.5 active:scale-95">
+              <span className="font-black text-dark-900 text-base">{shop.likes_count || 0}</span>
+              <span className="text-gray-400 text-xs">J'aimes</span>
+              <div className="flex -space-x-1 ml-0.5">
+                {likers.slice(0,3).map((l,i) => <Avatar key={i} src={l.user?.avatar_url} name={l.user?.username} size="xs" className="ring-1 ring-white"/>)}
+              </div>
+            </button>
+            <span className="text-gray-200">|</span>
+            <button onClick={() => setShowFollowers(true)} className="flex items-center gap-1.5 active:scale-95">
+              <span className="font-black text-dark-900 text-base">{shop.followers_count || 0}</span>
+              <span className="text-gray-400 text-xs">Abonnés</span>
+              <div className="flex -space-x-1 ml-0.5">
+                {followers.slice(0,3).map((f,i) => <Avatar key={i} src={f.user?.avatar_url} name={f.user?.username} size="xs" className="ring-1 ring-white"/>)}
+              </div>
+            </button>
+            <span className="text-gray-200">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-dark-900 text-base">{products.length}</span>
+              <span className="text-gray-400 text-xs">Produits</span>
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {shop.has_delivery && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-100">
-                <Truck size={11}/> Livraison
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-100">
+                <Truck size={10}/> Livraison
               </span>
             )}
             {shop.whatsapp && (
-              <a href={`https://wa.me/${shop.whatsapp.replace(/\s+/g, '')}`} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[11px] font-bold border border-green-100">
-                <Phone size={11}/> {shop.whatsapp}
+              <a href={`https://wa.me/${shop.whatsapp.replace(/\s+/g,'')}`} target="_blank" rel="noreferrer"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[11px] font-bold border border-green-100">
+                <Phone size={10}/> {shop.whatsapp}
               </a>
             )}
             {isOnline && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 text-primary-700 text-[11px] font-bold border border-primary-100">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"/> En ligne
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-bold border border-primary-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"/> En ligne
               </span>
             )}
           </div>
 
           {/* CTA Buttons */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex gap-2 mb-3">
             <button onClick={toggleFollow}
-              className={clsx(
-                'flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.97]',
-                isFollowing
-                  ? 'bg-gray-100 text-gray-600 border-2 border-gray-200'
-                  : 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-200'
-              )}>
-              {isFollowing
-                ? <><BellOff size={15}/> Abonné</>
-                : <><Bell size={15}/> Suivre</>}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.97]',
+                isFollowing ? 'bg-gray-100 text-gray-600 border border-gray-200' : 'bg-primary-600 text-white shadow-md')}>
+              {isFollowing ? <><BellOff size={14}/> Abonné</> : <><Bell size={14}/> Suivre</>}
             </button>
             <button onClick={handleContact}
-              className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-200 active:scale-[0.97]">
-              <MessageCircle size={15}/> Discuter
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-bold text-sm bg-blue-600 text-white shadow-md active:scale-[0.97]">
+              <MessageCircle size={14}/> Discuter
             </button>
+          </div>
+
+          {/* Actions sociales inline */}
+          <div className="flex border-t border-gray-100 -mx-4 px-4 pt-3">
+            {[
+              { icon: Heart, label: "J'aime", action: toggleLike, active: isLiked, color: 'text-red-500' },
+              { icon: MessageCircle, label: 'Commenter', action: () => document.getElementById('comments-section')?.scrollIntoView({behavior:'smooth'}), active: false, color: 'text-gray-400' },
+              { icon: Share2, label: 'Partager', action: handleShare, active: linkCopied, color: 'text-primary-500' },
+            ].map((btn, i) => (
+              <button key={i} onClick={btn.action}
+                className={clsx('flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold active:scale-95 transition-all',
+                  btn.active ? btn.color : 'text-gray-400')}>
+                <btn.icon size={16} className={clsx(btn.active && btn.color, btn.active && 'fill-current')} strokeWidth={btn.active ? 0 : 1.8}/>
+                {btn.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          ACTIONS SOCIALES
-      ══════════════════════════════════════ */}
-      <div className="mx-4 mt-3">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex overflow-hidden">
-          {[
-            { icon: Heart, label: "J'aime", action: toggleLike, active: isLiked, color: 'text-red-500', bg: 'bg-red-50' },
-            { icon: MessageCircle, label: 'Commenter', action: () => document.getElementById('comments-section')?.scrollIntoView({behavior:'smooth'}), active: false, color: 'text-blue-500', bg: '' },
-            { icon: Share2, label: 'Partager', action: handleShare, active: linkCopied, color: 'text-primary-600', bg: '' },
-          ].map((btn, i) => (
-            <button key={i} onClick={btn.action}
-              className={clsx(
-                'flex-1 flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-semibold transition-all active:scale-95 border-r border-gray-100 last:border-0',
-                btn.active ? `${btn.color} ${btn.bg}` : 'text-gray-500'
-              )}>
-              <btn.icon size={18} className={clsx(btn.active && btn.color, btn.active && 'fill-current')} strokeWidth={btn.active ? 0 : 1.8}/>
-              {btn.label}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* ══════════════════════════════════════
           PRODUITS
@@ -419,13 +373,7 @@ export default function ShopPublicPage() {
         <CommentsSection shop={shop} user={user} profile={profile}/>
       </div>
 
-      {/* Copier lien */}
-      <div className="mx-4 mt-3">
-        <button onClick={handleShare}
-          className="w-full py-3 rounded-2xl bg-white border border-gray-200 text-gray-600 font-semibold text-sm active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm">
-          {linkCopied ? <><Check size={14} className="text-emerald-500"/> Copié !</> : <><Copy size={14}/> Copier le lien de la boutique</>}
-        </button>
-      </div>
+
 
       {/* ══════ ZOOM IMAGE ══════ */}
       {zoomImage && (
