@@ -73,6 +73,18 @@ function slugify(text) {
 // ============================================================
 export default function VendorPage() {
   const { user, profile, wallet, pieces, refreshWallet } = useAuthStore()
+
+  // Fonction pour recharger les pièces depuis Supabase directement
+  const refreshPieces = async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase.from('pieces').select('balance').eq('user_id', user.id).single()
+      if (data) {
+        // Forcer le rechargement du store via refreshWallet qui charge aussi les pièces
+        if (refreshWallet) await refreshWallet()
+      }
+    } catch {}
+  }
   const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeShop, setActiveShop] = useState(null)
@@ -145,7 +157,7 @@ export default function VendorPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER */}
-      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-3 pb-24 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-24 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5"
           style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>
@@ -270,7 +282,7 @@ export default function VendorPage() {
         onClose={() => setCreateShopOpen(false)}
         user={user}
         pieces={pieces}
-        refreshWallet={refreshWallet}
+        refreshWallet={refreshPieces}
         onCreated={() => { loadShops(); setCreateShopOpen(false) }}
       />
 
@@ -281,7 +293,7 @@ export default function VendorPage() {
         shop={activeShop}
         user={user}
         pieces={pieces}
-        refreshWallet={refreshWallet}
+        refreshWallet={refreshPieces}
         onAdded={() => loadShops()}
       />
 
@@ -479,7 +491,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
           {[
             { label: 'Produits', value: `${products.length}/${limit === Infinity ? '∞' : limit}`, color: 'bg-primary-50 text-primary-700' },
             { label: 'Abonnés',  value: shop.followers_count || 0, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Pièces',   value: `${pieces?.balance || 0} 🪙`, color: 'bg-gold-50 text-gold-700' },
+            { label: 'Mes pièces', value: `🪙 ${pieces?.balance || 0}`, color: 'bg-gold-50 text-gold-700' },
           ].map((s, i) => (
             <div key={i} className={clsx('rounded-xl p-2 text-center text-xs font-bold', s.color)}>
               <p className="font-display text-base">{s.value}</p>
@@ -651,7 +663,8 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
 
       toast.success('Boutique créée avec succès ! 🎉')
       reset()
-      if (refreshWallet) refreshWallet()
+      // Recharger les pièces depuis Supabase
+      if (refreshWallet) await refreshWallet()
       onCreated()
     } catch (err) {
       toast.error(err.message?.includes('23505') ? 'Ce nom de boutique existe déjà' : 'Erreur lors de la création')
@@ -871,7 +884,8 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
 
       toast.success('Produit ajouté ! 📦')
       reset()
-      if (refreshWallet) refreshWallet()
+      // Recharger les pièces depuis Supabase
+      if (refreshWallet) await refreshWallet()
       onAdded()
       onClose()
     } catch { toast.error('Erreur lors de l\'ajout') }
@@ -951,7 +965,8 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
   const handleBuy = async (plan) => {
     if (!user) return
     const balance = wallet ? wallet.balance_available / 100 : 0
-    if (balance < plan.price) { toast.error(`Solde insuffisant. Disponible : ${balance.toLocaleString()} FCFA`); return }
+    const balanceFCFA = balance
+    if (balanceFCFA < plan.price) { toast.error(`Solde insuffisant. Disponible : ${balanceFCFA.toLocaleString('fr-FR')} FCFA`); return }
 
     if (!confirm(`Confirmer le paiement de ${plan.price.toLocaleString()} FCFA pour Premium ${plan.name} (30 jours) ?`)) return
 
@@ -971,7 +986,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
         user_id: user.id,
         shop_id: shops[0]?.id || null,
         level: plan.level,
-        amount: plan.price * 100,
+        amount: plan.price * 100, // stocké en centimes
         expires_at: expiresAt.toISOString(),
       })
 
@@ -987,6 +1002,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
   }
 
   const balance = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '0'
+  // balance_available est en centimes → diviser par 100 pour FCFA
 
   return (
     <BottomSheet open={open} onClose={onClose} title="⭐ Devenir Premium">
@@ -1084,15 +1100,17 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
         balance_total: wallet.balance_total - pack.price * 100,
       }).eq('user_id', user.id)
 
-      await supabase.from('pieces').update({ balance: (pieces?.balance || 0) + pack.coins }).eq('user_id', user.id)
+      // Récupérer le vrai solde pieces depuis Supabase avant d'incrémenter
+      const { data: realPieces } = await supabase.from('pieces').select('balance').eq('user_id', user.id).single()
+      await supabase.from('pieces').update({ balance: (realPieces?.balance || 0) + pack.coins }).eq('user_id', user.id)
 
       await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
         wallet_id: wallet.id,
-        type: 'pieces_purchase',
+        transaction_type: 'pieces_purchase',
         amount: -pack.price * 100,
-        balance_after: wallet.balance_available - pack.price * 100,
-        description: `Achat de ${pack.coins} pièces`,
-        receipt_number: `MANG-${new Date().getFullYear()}-${Math.floor(Math.random()*999999).toString().padStart(6,'0')}`,
+        status: 'completed',
+        description: `Achat de ${pack.coins} pièces 🪙`,
       })
 
       toast.success(`🪙 ${pack.coins} pièces achetées !`)
@@ -1102,7 +1120,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
     finally { setLoading(null) }
   }
 
-  const balance = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '0'
+  const balance = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '0' // centimes → FCFA
   const currentPieces = pieces?.balance || 0
 
   return (
