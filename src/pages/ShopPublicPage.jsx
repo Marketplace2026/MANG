@@ -180,7 +180,7 @@ export default function ShopPublicPage() {
       {/* ══════════════════════════════════════
           HERO COVER — plein écran immersif
       ══════════════════════════════════════ */}
-      <div className="relative w-full h-72 overflow-hidden">
+      <div className="relative w-full h-52 overflow-hidden">
         {shop.cover_url ? (
           <img src={shop.cover_url} alt={shop.name}
             className="w-full h-full object-cover"
@@ -231,10 +231,12 @@ export default function ShopPublicPage() {
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
           <div className="flex items-end gap-3">
             <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/50 shadow-xl">
-                {shop.cover_url
-                  ? <img src={shop.cover_url} className="w-full h-full object-cover"/>
-                  : <div className="w-full h-full bg-primary-200 flex items-center justify-center text-2xl">🌿</div>}
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl">
+                {shop.owner?.avatar_url
+                  ? <img src={shop.owner.avatar_url} className="w-full h-full object-cover"/>
+                  : <div className="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-2xl">
+                      {(shop.owner?.username || shop.name || '?')[0].toUpperCase()}
+                    </div>}
               </div>
               {isOnline && (
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white"/>
@@ -254,7 +256,7 @@ export default function ShopPublicPage() {
           STATS CARD — flottante
       ══════════════════════════════════════ */}
       <div className="mx-4 -mt-1">
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100/50 p-4">
 
           {/* Stats cliquables */}
           <div className="flex items-center divide-x divide-gray-100 mb-4">
@@ -331,14 +333,14 @@ export default function ShopPublicPage() {
                 'flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.97]',
                 isFollowing
                   ? 'bg-gray-100 text-gray-600 border-2 border-gray-200'
-                  : 'bg-primary-600 text-white shadow-md shadow-primary-200'
+                  : 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-200'
               )}>
               {isFollowing
                 ? <><BellOff size={15}/> Abonné</>
                 : <><Bell size={15}/> Suivre</>}
             </button>
             <button onClick={handleContact}
-              className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm bg-blue-600 text-white shadow-md shadow-blue-200 active:scale-[0.97]">
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-200 active:scale-[0.97]">
               <MessageCircle size={15}/> Discuter
             </button>
           </div>
@@ -489,7 +491,7 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
   const isAvailable = product.availability === 'now'
 
   return (
-    <div className="flex-shrink-0 w-48 bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.97] transition-transform">
+    <div className="flex-shrink-0 w-48 bg-white rounded-3xl overflow-hidden shadow-md border border-gray-100 active:scale-[0.96] transition-all duration-150">
       <div className="relative h-40 overflow-hidden bg-gray-100">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" onClick={onZoom}/>
