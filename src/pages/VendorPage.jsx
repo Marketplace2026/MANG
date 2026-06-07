@@ -964,7 +964,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
 
   const handleBuy = async (plan) => {
     if (!user) return
-    const balance = wallet ? wallet.balance_available / 100 : 0
+    const balance = wallet ? wallet.balance_available : 0
     const balanceFCFA = balance
     if (balanceFCFA < plan.price) { toast.error(`Solde insuffisant. Disponible : ${balanceFCFA.toLocaleString('fr-FR')} FCFA`); return }
 
@@ -977,8 +977,8 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
 
       // Déduire wallet
       await supabase.from('wallets').update({
-        balance_available: wallet.balance_available - plan.price * 100,
-        balance_total: wallet.balance_total - plan.price * 100,
+        balance_available: wallet.balance_available - plan.price,
+        balance_total: (wallet.balance_total || wallet.balance_available) - plan.price,
       }).eq('user_id', user.id)
 
       // Créer abonnement
@@ -986,7 +986,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
         user_id: user.id,
         shop_id: shops[0]?.id || null,
         level: plan.level,
-        amount: plan.price * 100, // stocké en centimes
+        amount: plan.price, // en FCFA directement
         expires_at: expiresAt.toISOString(),
       })
 
@@ -1001,7 +1001,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
     finally { setLoading(null) }
   }
 
-  const balance = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '0'
+  const balance = wallet ? (wallet.balance_available).toLocaleString('fr-FR') : '0'
   // balance_available est en centimes → diviser par 100 pour FCFA
 
   return (
@@ -1088,7 +1088,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
   const [loading, setLoading] = useState(null)
 
   const handleBuy = async (pack) => {
-    const balance = wallet ? wallet.balance_available / 100 : 0
+    const balance = wallet ? wallet.balance_available : 0
     if (balance < pack.price) { toast.error(`Solde insuffisant. Disponible : ${balance.toLocaleString()} FCFA`); return }
 
     if (!confirm(`Acheter ${pack.coins} pièces pour ${pack.price} FCFA ?`)) return
@@ -1096,8 +1096,8 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
     setLoading(pack.coins)
     try {
       await supabase.from('wallets').update({
-        balance_available: wallet.balance_available - pack.price * 100,
-        balance_total: wallet.balance_total - pack.price * 100,
+        balance_available: wallet.balance_available - pack.price,
+        balance_total: wallet.balance_total - pack.price,
       }).eq('user_id', user.id)
 
       // Récupérer le vrai solde pieces depuis Supabase avant d'incrémenter
@@ -1108,7 +1108,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
         user_id: user.id,
         wallet_id: wallet.id,
         transaction_type: 'pieces_purchase',
-        amount: -pack.price * 100,
+        amount: -pack.price,
         status: 'completed',
         description: `Achat de ${pack.coins} pièces 🪙`,
       })
@@ -1120,7 +1120,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
     finally { setLoading(null) }
   }
 
-  const balance = wallet ? (wallet.balance_available / 100).toLocaleString('fr-FR') : '0' // centimes → FCFA
+  const balance = wallet ? (wallet.balance_available).toLocaleString('fr-FR') : '0' // centimes → FCFA
   const currentPieces = pieces?.balance || 0
 
   return (
