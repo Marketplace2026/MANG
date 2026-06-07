@@ -355,7 +355,7 @@ export default function ShopPublicPage() {
           <div className="flex border-t border-gray-100 -mx-4 px-4 pt-3">
             {[
               { icon: Heart, label: "J'aime", action: toggleLike, active: isLiked, color: 'text-red-500' },
-              { icon: MessageCircle, label: 'Commenter', action: () => document.getElementById('comments-section')?.scrollIntoView({behavior:'smooth'}), active: false, color: 'text-gray-400' },
+  
               { icon: Share2, label: 'Partager', action: handleShare, active: linkCopied, color: 'text-primary-500' },
             ].map((btn, i) => (
               <button key={i} onClick={btn.action}
@@ -414,72 +414,137 @@ export default function ShopPublicPage() {
         )}
       </div>
 
-      {/* ══════ AVIS & NOTES ══════ */}
+      {/* ══════ AVIS & NOTES — NIVEAU AMAZON ══════ */}
       <div className="mt-4 mx-4">
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
-            <div className="flex items-center gap-2">
-              <h3 className="font-black text-dark-900 text-base">Avis clients</h3>
-              {shop.reviews_count > 0 && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded-full">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b" stroke="none">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                  </svg>
-                  <span className="text-amber-700 text-[11px] font-black">{Number(shop.rating_avg).toFixed(1)}</span>
-                  <span className="text-gray-400 text-[10px]">· {shop.reviews_count} avis</span>
-                </div>
-              )}
-            </div>
+
+          {/* Header */}
+          <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+            <h3 className="font-black text-dark-900 text-base">Avis clients</h3>
             {user && user.id !== shop.owner_id && (
               <button onClick={() => setReviewModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold active:scale-95 shadow-sm">
-                {myReview ? '✏️ Modifier' : '⭐ Donner un avis'}
+                className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 shadow-sm transition-all',
+                  myReview ? 'bg-gray-100 text-gray-600' : 'bg-amber-500 text-white')}>
+                {myReview ? '✏️ Modifier mon avis' : '✍️ Donner un avis'}
               </button>
             )}
           </div>
 
-          {/* Liste des avis */}
-          <div className="px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
-            {reviews.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-3xl mb-1">⭐</p>
-                <p className="text-gray-400 text-sm">Aucun avis pour l'instant</p>
-                <p className="text-gray-300 text-xs">Soyez le premier à donner votre avis</p>
+          {/* Score global — style Amazon */}
+          {shop.reviews_count > 0 ? (
+            <div className="px-4 pb-4">
+              <div className="flex gap-5 items-center p-4 bg-amber-50 rounded-2xl mb-4">
+                {/* Note globale */}
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <span className="text-5xl font-black text-amber-500 leading-none">{Number(shop.rating_avg).toFixed(1)}</span>
+                  <div className="flex mt-1">
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} width="14" height="14" viewBox="0 0 24 24"
+                        fill={s <= Math.round(shop.rating_avg) ? '#f59e0b' : '#d1d5db'} stroke="none">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-gray-400 text-[10px] mt-0.5">{shop.reviews_count} avis</span>
+                </div>
+
+                {/* Barres de répartition */}
+                <div className="flex-1 space-y-1">
+                  {[5,4,3,2,1].map(star => {
+                    const count = reviews.filter(r => r.rating === star).length
+                    const pct = shop.reviews_count > 0 ? (count / shop.reviews_count) * 100 : 0
+                    return (
+                      <div key={star} className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 w-2 text-right flex-shrink-0">{star}</span>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="none" className="flex-shrink-0">
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                        </svg>
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}/>
+                        </div>
+                        <span className="text-[10px] text-gray-400 w-4 flex-shrink-0">{count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            ) : (
-              reviews.map(review => (
-                <div key={review.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="font-bold text-dark-800 text-xs">@{review.user?.username}</span>
-                      <div className="flex">
+
+              {/* Liste des avis */}
+              <div className="space-y-4">
+                {reviews.map((review, idx) => (
+                  <div key={review.id} className={clsx('pb-4', idx < reviews.length - 1 && 'border-b border-gray-100')}>
+                    {/* En-tête avis */}
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-dark-800 text-xs block">@{review.user?.username}</span>
+                        <span className="text-gray-400 text-[10px]">
+                          {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
+                        </span>
+                      </div>
+                      {/* Étoiles */}
+                      <div className="flex gap-0.5 flex-shrink-0">
                         {[1,2,3,4,5].map(s => (
-                          <svg key={s} width="10" height="10" viewBox="0 0 24 24"
+                          <svg key={s} width="12" height="12" viewBox="0 0 24 24"
                             fill={s <= review.rating ? '#f59e0b' : '#e5e7eb'} stroke="none">
                             <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                           </svg>
                         ))}
                       </div>
                     </div>
-                    {review.comment && <p className="text-gray-600 text-xs leading-relaxed">{review.comment}</p>}
-                    <p className="text-gray-300 text-[10px] mt-0.5">
-                      {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
-                    </p>
+
+                    {/* Label note */}
+                    <div className="mb-1.5">
+                      <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full',
+                        review.rating >= 4 ? 'bg-green-50 text-green-700' :
+                        review.rating === 3 ? 'bg-yellow-50 text-yellow-700' :
+                        'bg-red-50 text-red-600')}>
+                        {review.rating === 5 ? '😍 Excellent' :
+                         review.rating === 4 ? '😊 Bien' :
+                         review.rating === 3 ? '😐 Correct' :
+                         review.rating === 2 ? '😕 Mauvais' : '😞 Très mauvais'}
+                      </span>
+                    </div>
+
+                    {/* Commentaire */}
+                    {review.comment && (
+                      <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
+                    )}
+
+                    {/* Utile ? */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-gray-400 text-[10px]">Cet avis vous a été utile ?</span>
+                      <button className="text-[10px] text-primary-600 font-semibold active:scale-95">👍 Oui</button>
+                      <button className="text-[10px] text-gray-400 active:scale-95">👎 Non</button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 px-4">
+              <div className="flex justify-center gap-1 mb-3">
+                {[1,2,3,4,5].map(s => (
+                  <svg key={s} width="28" height="28" viewBox="0 0 24 24" fill="#e5e7eb" stroke="none">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                  </svg>
+                ))}
+              </div>
+              <p className="font-bold text-dark-800 text-sm">Pas encore d'avis</p>
+              <p className="text-gray-400 text-xs mt-1">Soyez le premier à partager votre expérience</p>
+              {user && user.id !== shop.owner_id && (
+                <button onClick={() => setReviewModal(true)}
+                  className="mt-4 px-5 py-2.5 rounded-2xl bg-amber-500 text-white text-sm font-bold active:scale-95 shadow-md">
+                  ✍️ Écrire un avis
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          COMMENTAIRES
-      ══════════════════════════════════════ */}
-      <div id="comments-section" className="mt-4 mx-4">
-        <CommentsSection shop={shop} user={user} profile={profile}/>
-      </div>
+
 
 
 
