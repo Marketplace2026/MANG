@@ -70,16 +70,8 @@ export default function MarketplacePage() {
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const [filters, setFilters] = useState({
-    category: null, categoryName: null,
-    hasDelivery: null, nearby: false,
-    minRating: null,     // 0-5
-    isVerified: null,    // true/false
-    priceRange: null,    // 'low' | 'mid' | 'high'
-    sortBy: 'recent',    // 'recent' | 'rating' | 'followers' | 'likes'
-  })
+  const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false })
   const [filterOpen, setFilterOpen] = useState(false)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
 
@@ -172,14 +164,6 @@ export default function MarketplacePage() {
 
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
-      if (filters.isVerified) query = query.eq('is_verified', true)
-      if (filters.minRating) query = query.gte('rating_avg', filters.minRating)
-
-      // Tri
-      if (filters.sortBy === 'rating') query = query.order('rating_avg', { ascending: false })
-      else if (filters.sortBy === 'followers') query = query.order('followers_count', { ascending: false })
-      else if (filters.sortBy === 'likes') query = query.order('likes_count', { ascending: false })
-      else query = query.order('created_at', { ascending: false })
 
       const { data } = await query
       let result = data || []
@@ -344,20 +328,12 @@ export default function MarketplacePage() {
   }
 
   const resetFilters = () => {
-    setFilters({
-      category: null, categoryName: null, hasDelivery: null,
-      nearby: false, minRating: null, isVerified: null,
-      priceRange: null, sortBy: 'recent',
-    })
+    setFilters({ category: null, categoryName: null, hasDelivery: null, nearby: false })
     setSearch('')
     setSuggestions([])
   }
 
-  const activeFiltersCount = [
-    filters.category, filters.hasDelivery, filters.nearby,
-    filters.minRating, filters.isVerified, filters.priceRange,
-    filters.sortBy !== 'recent' ? filters.sortBy : null
-  ].filter(Boolean).length
+  const activeFiltersCount = [filters.category, filters.hasDelivery, filters.nearby].filter(Boolean).length
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -456,7 +432,6 @@ export default function MarketplacePage() {
             { label: '📂 Catégories', action: () => setFilterOpen(true), active: !!filters.category },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
-            { label: '✅ Vérifiés', action: () => setFilters(f => ({ ...f, isVerified: !f.isVerified })), active: !!filters.isVerified },
           ].map((btn, i) => (
             <button key={i} onClick={btn.action}
               className={clsx(
@@ -468,22 +443,6 @@ export default function MarketplacePage() {
               {btn.label}
             </button>
           ))}
-          {/* Filtres avancés */}
-          <button onClick={() => setAdvancedOpen(true)}
-            className={clsx(
-              'flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-95',
-              activeFiltersCount > 0
-                ? 'bg-primary-600 text-white shadow-green'
-                : 'bg-white text-dark-700 shadow-card'
-            )}>
-            <SlidersHorizontal size={14}/>
-            Filtres
-            {activeFiltersCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-white text-primary-600 text-[10px] font-black flex items-center justify-center">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* FILTRE ACTIF LABEL */}
@@ -526,15 +485,6 @@ export default function MarketplacePage() {
           </div>
         )}
       </div>
-
-      {/* FILTRES AVANCÉS */}
-      <AdvancedFilterSheet
-        open={advancedOpen}
-        onClose={() => setAdvancedOpen(false)}
-        filters={filters}
-        onApply={(newFilters) => { setFilters(f => ({ ...f, ...newFilters })); setAdvancedOpen(false) }}
-        onReset={resetFilters}
-      />
 
       {/* MODAL FILTRES CATÉGORIES */}
       <CategoryModal
@@ -623,27 +573,6 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             <h3 className="font-bold text-dark-800 text-xs leading-tight truncate">{shop.name}</h3>
             <p className="text-dark-600/40 text-[10px] truncate">@{shop.owner?.username}</p>
           </div>
-        </div>
-
-        {/* Rating + Verified */}
-        <div className="flex items-center gap-1.5 mb-1">
-          {shop.reviews_count > 0 && (
-            <div className="flex items-center gap-0.5">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="#f59e0b" stroke="none">
-                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-              </svg>
-              <span className="text-[10px] font-bold text-amber-600">{Number(shop.rating_avg).toFixed(1)}</span>
-              <span className="text-[9px] text-dark-600/40">({shop.reviews_count})</span>
-            </div>
-          )}
-          {shop.is_verified && (
-            <span className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 rounded-full">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              <span className="text-blue-600 text-[9px] font-bold">Vérifié</span>
-            </span>
-          )}
         </div>
 
         {/* Description */}
