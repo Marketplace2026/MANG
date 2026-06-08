@@ -357,7 +357,7 @@ export default function VendorPage() {
 
       {/* Vérification boutique */}
       <VerificationSheet
-        open={!!verifyOpen && verifyOpen !== 'select'}
+        open={!!verifyOpen}
         onClose={() => setVerifyOpen(null)}
         shop={verifyOpen !== 'select' ? verifyOpen : null}
         shops={shops}
