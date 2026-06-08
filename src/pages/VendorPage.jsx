@@ -100,8 +100,22 @@ export default function VendorPage() {
   const [shopDetailOpen, setShopDetailOpen]     = useState(null)
 
   const [premiumStatus, setPremiumStatus] = useState(null)
+  const [verifyOpen, setVerifyOpen] = useState(null) // shop
+  const [verifyRequests, setVerifyRequests] = useState({}) // shopId -> request
 
-  useEffect(() => { if (user) { loadShops(); checkPremium() } }, [user])
+  useEffect(() => { if (user) { loadShops(); checkPremium(); loadVerifyRequests() } }, [user])
+
+  const loadVerifyRequests = async () => {
+    const { data } = await supabase
+      .from('verification_requests')
+      .select('*')
+      .eq('user_id', user.id)
+    if (data) {
+      const map = {}
+      data.forEach(r => { map[r.shop_id] = r })
+      setVerifyRequests(map)
+    }
+  }
 
   const checkPremium = async () => {
     const { data } = await supabase
@@ -241,6 +255,25 @@ export default function VendorPage() {
           </button>
         </div>
 
+        {/* VERIFICATION BANNER — si au moins une boutique non vérifiée */}
+        {shops.length > 0 && shops.some(s => !s.is_verified) && (
+          <div className="bg-blue-50 rounded-3xl p-4 border border-blue-100 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-blue-800 text-sm">Obtenez le badge Vérifié ✅</p>
+              <p className="text-blue-600 text-xs">Gagnez la confiance des acheteurs</p>
+            </div>
+            <button onClick={() => setVerifyOpen('select')}
+              className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold active:scale-95">
+              Demander
+            </button>
+          </div>
+        )}
+
         {/* MES BOUTIQUES */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -263,10 +296,12 @@ export default function VendorPage() {
                   key={shop.id}
                   shop={shop}
                   premiumStatus={premiumStatus}
+                  verifyRequest={verifyRequests[shop.id]}
                   onOpen={() => setShopDetailOpen(shop)}
                   onEdit={() => setEditShopOpen(shop)}
                   onDelete={() => setDeleteShopModal(shop)}
                   onAddProduct={() => { setActiveShop(shop); setAddProductOpen(true) }}
+                  onVerify={() => setVerifyOpen(shop)}
                 />
               ))}
             </div>
@@ -320,6 +355,21 @@ export default function VendorPage() {
         onPurchased={() => { checkPremium(); refreshWallet(); setPremiumOpen(false) }}
       />
 
+      {/* Vérification boutique */}
+      <VerificationSheet
+        open={!!verifyOpen && verifyOpen !== 'select'}
+        onClose={() => setVerifyOpen(null)}
+        shop={verifyOpen !== 'select' ? verifyOpen : null}
+        shops={shops}
+        user={user}
+        profile={profile}
+        verifyRequests={verifyRequests}
+        existingRequest={verifyOpen && verifyOpen !== 'select' ? verifyRequests[verifyOpen.id] : null}
+        onSubmitted={() => { setVerifyOpen(null); loadVerifyRequests() }}
+        onSelectShop={(shop) => setVerifyOpen(shop)}
+        showSelector={verifyOpen === 'select'}
+      />
+
       {/* Acheter pièces */}
       <CoinsSheet
         open={coinsOpen}
@@ -349,7 +399,7 @@ export default function VendorPage() {
 // ============================================================
 // SHOP CARD
 // ============================================================
-function ShopCard({ shop, premiumStatus, onOpen, onEdit, onDelete, onAddProduct }) {
+function ShopCard({ shop, premiumStatus, verifyRequest, onOpen, onEdit, onDelete, onAddProduct, onVerify }) {
   const prodCount = shop.products?.[0]?.count || 0
   const premiumLevel = shop.premium_level || 0
   const limit = PRODUCT_LIMITS[premiumLevel]
@@ -645,9 +695,13 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
 
       if (error) throw error
 
-      // Déduire 10 pièces via RPC sécurisé
-      const { error: pieceErr } = await supabase.rpc('deduct_pieces', { user_uuid: user.id, amount: 10 })
-      if (pieceErr) throw new Error(pieceErr.message || 'Pièces insuffisantes')
+      // Déduire pièces (récupérer le vrai solde depuis Supabase)
+      const { data: piecesData } = await supabase
+        .from('pieces').select('balance').eq('user_id', user.id).single()
+      const currentBalance = piecesData?.balance || 0
+      await supabase.from('pieces')
+        .update({ balance: currentBalance - 10 })
+        .eq('user_id', user.id)
 
       // Notification
       await supabase.from('notifications').insert({
@@ -871,9 +925,12 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
       })
       if (error) throw error
 
-      // Déduire 5 pièces via RPC sécurisé
-      const { error: pieceErr2 } = await supabase.rpc('deduct_pieces', { user_uuid: user.id, amount: 5 })
-      if (pieceErr2) throw new Error(pieceErr2.message || 'Pièces insuffisantes')
+      const { data: piecesData2 } = await supabase
+        .from('pieces').select('balance').eq('user_id', user.id).single()
+      const currentBalance2 = piecesData2?.balance || 0
+      await supabase.from('pieces')
+        .update({ balance: currentBalance2 - 5 })
+        .eq('user_id', user.id)
 
       toast.success('Produit ajouté ! 📦')
       reset()
@@ -1094,8 +1151,8 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
       }).eq('user_id', user.id)
 
       // Récupérer le vrai solde pieces depuis Supabase avant d'incrémenter
-      const { error: addErr } = await supabase.rpc('add_pieces', { user_uuid: user.id, amount: pack.coins })
-      if (addErr) throw new Error(addErr.message || 'Erreur ajout pièces')
+      const { data: realPieces } = await supabase.from('pieces').select('balance').eq('user_id', user.id).single()
+      await supabase.from('pieces').update({ balance: (realPieces?.balance || 0) + pack.coins }).eq('user_id', user.id)
 
       await supabase.from('wallet_transactions').insert({
         user_id: user.id,
@@ -1195,5 +1252,390 @@ function ShopCardSkeleton() {
         </div>
       </div>
     </div>
+  )
+}
+
+// ============================================================
+// VERIFICATION SHEET
+// ============================================================
+
+// ============================================================
+// VERIFICATION SHEET — Multi-étapes + Sélecteur boutique
+// ============================================================
+function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRequests, existingRequest, onSubmitted, onSelectShop, showSelector }) {
+  const [step, setStep] = useState(1)
+  const [sending, setSending] = useState(false)
+
+  // Étape 1 — Identité
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [idType, setIdType] = useState('CNI')
+
+  // Étape 2 — Boutique & activité
+  const [activityType, setActivityType] = useState('')
+  const [yearsExperience, setYearsExperience] = useState('')
+  const [location, setLocation] = useState('')
+
+  // Étape 3 — Conditions de production
+  const [productionMethod, setProductionMethod] = useState('')
+  const [usePesticides, setUsePesticides] = useState(null)
+  const [monthlyCapacity, setMonthlyCapacity] = useState('')
+  const [deliveryScope, setDeliveryScope] = useState('')
+  const [certifications, setCertifications] = useState('')
+  const [additionalInfo, setAdditionalInfo] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setStep(1)
+      setFullName(profile?.full_name || '')
+      setPhone(profile?.phone || '')
+      setIdType('CNI')
+      setActivityType('')
+      setYearsExperience('')
+      setLocation(profile?.city || '')
+      setProductionMethod('')
+      setUsePesticides(null)
+      setMonthlyCapacity('')
+      setDeliveryScope('')
+      setCertifications('')
+      setAdditionalInfo('')
+    }
+  }, [open, profile])
+
+  const isPending = existingRequest?.status === 'pending'
+  const isRejected = existingRequest?.status === 'rejected'
+
+  const ACTIVITY_TYPES = ['Maraîchage', 'Élevage', 'Céréales', 'Fruits', 'Transformation alimentaire', 'Pêche', 'Apiculture', 'Autre']
+  const PRODUCTION_METHODS = ['Bio / Naturel', 'Conventionnel', 'Traditionnel', 'Mixte']
+  const DELIVERY_SCOPES = ['Locale (ville)', 'Régionale', 'Nationale', 'Non disponible']
+
+  const canGoStep2 = fullName.trim() && phone.trim()
+  const canGoStep3 = activityType && location.trim()
+  const canSubmit = productionMethod && deliveryScope
+
+  const submit = async () => {
+    if (!canSubmit) return
+    setSending(true)
+
+    const formData = {
+      user_id: user.id,
+      shop_id: shop.id,
+      shop_name: shop.name,
+      // Étape 1
+      full_name: fullName.trim(),
+      phone: phone.trim(),
+      id_type: idType,
+      // Étape 2
+      activity_type: activityType,
+      years_experience: yearsExperience || null,
+      location: location.trim(),
+      // Étape 3
+      production_method: productionMethod,
+      use_pesticides: usePesticides,
+      monthly_capacity: monthlyCapacity || null,
+      delivery_scope: deliveryScope,
+      certifications: certifications.trim() || null,
+      additional_info: additionalInfo.trim() || null,
+      status: 'pending',
+    }
+
+    const { error } = await supabase.from('verification_requests').insert(formData)
+    setSending(false)
+
+    if (error) {
+      if (error.code === '23505') toast.error('Demande déjà envoyée pour cette boutique')
+      else toast.error('Erreur : ' + error.message)
+      return
+    }
+
+    await supabase.rpc('create_notification', {
+      p_user_id: 'd9f97369-ae78-4da2-844c-1c9c97b12445',
+      p_type: 'verification_request',
+      p_title: '🔔 Nouvelle demande de vérification',
+      p_body: `@${profile?.username} (${fullName}) demande la vérification de "${shop.name}" — ${activityType}`,
+      p_reference_id: shop.id,
+      p_reference_type: 'shop',
+    })
+
+    toast.success('Demande envoyée ! Réponse sous 24-48h ✅')
+    onSubmitted()
+  }
+
+  // ── SÉLECTEUR DE BOUTIQUE ──
+  if (showSelector) {
+    const unverifiedShops = shops.filter(s => !s.is_verified)
+    return (
+      <BottomSheet open={open} onClose={onClose} title="🏪 Quelle boutique vérifier ?">
+        <div className="px-4 pt-2 pb-8 space-y-3">
+          <p className="text-gray-500 text-sm">Sélectionnez la boutique pour laquelle vous souhaitez demander la vérification.</p>
+          {unverifiedShops.map(s => {
+            const req = verifyRequests[s.id]
+            return (
+              <button key={s.id} onClick={() => req?.status !== 'pending' && onSelectShop(s)}
+                className={clsx('w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all',
+                  req?.status === 'pending' ? 'border-yellow-200 bg-yellow-50 opacity-70' : 'border-gray-100 bg-white active:scale-[0.98]')}>
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-primary-100 flex-shrink-0">
+                  {s.cover_url
+                    ? <img src={s.cover_url} className="w-full h-full object-cover"/>
+                    : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-dark-800 text-sm truncate">{s.name}</p>
+                  <p className="text-gray-400 text-xs">{s.city || 'Localisation non définie'}</p>
+                </div>
+                {req?.status === 'pending'
+                  ? <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold flex-shrink-0">⏳ En attente</span>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>}
+              </button>
+            )
+          })}
+        </div>
+      </BottomSheet>
+    )
+  }
+
+  if (!shop) return null
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="✅ Demande de vérification">
+      <div style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+        <div className="px-4 pt-2 pb-8 space-y-5">
+
+          {/* Boutique sélectionnée */}
+          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100">
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-100 flex-shrink-0">
+              {shop.cover_url
+                ? <img src={shop.cover_url} className="w-full h-full object-cover"/>
+                : <div className="w-full h-full flex items-center justify-center">🌿</div>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-blue-800 text-sm truncate">{shop.name}</p>
+              <p className="text-blue-500 text-xs">Boutique à vérifier</p>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+
+          {/* Statut existant */}
+          {isPending && (
+            <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
+              <p className="text-4xl mb-2">⏳</p>
+              <p className="font-bold text-yellow-800 text-sm">Demande en cours d'examen</p>
+              <p className="text-yellow-600 text-xs mt-1">Nous traitons votre demande sous 24-48h</p>
+            </div>
+          )}
+
+          {isRejected && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+              <p className="font-bold text-red-700 text-sm mb-1">❌ Demande refusée</p>
+              {existingRequest?.admin_note && <p className="text-red-600 text-xs">{existingRequest.admin_note}</p>}
+              <p className="text-red-500 text-xs mt-1">Vous pouvez soumettre une nouvelle demande.</p>
+            </div>
+          )}
+
+          {!isPending && (
+            <>
+              {/* Indicateur d'étapes */}
+              <div className="flex items-center gap-2">
+                {[1,2,3].map(s => (
+                  <div key={s} className="flex items-center gap-2 flex-1">
+                    <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all',
+                      step === s ? 'bg-blue-600 text-white shadow-md' :
+                      step > s ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500')}>
+                      {step > s ? '✓' : s}
+                    </div>
+                    {s < 3 && <div className={clsx('flex-1 h-1 rounded-full transition-all', step > s ? 'bg-green-400' : 'bg-gray-200')}/>}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400 -mt-2">
+                <span>Identité</span>
+                <span className="ml-4">Activité</span>
+                <span>Production</span>
+              </div>
+
+              {/* ── ÉTAPE 1 : Identité ── */}
+              {step === 1 && (
+                <div className="space-y-4">
+                  <p className="font-black text-dark-900 text-base">👤 Votre identité</p>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Nom complet *</label>
+                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
+                      placeholder="Prénom et Nom"
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Téléphone *</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                      placeholder="+229 XX XX XX XX"
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Type de pièce d'identité</label>
+                    <div className="flex gap-2">
+                      {['CNI', 'Passeport', 'Permis'].map(t => (
+                        <button key={t} onClick={() => setIdType(t)}
+                          className={clsx('flex-1 py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                            idType === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
+                    <p className="text-amber-700 text-xs font-semibold">📋 Note : Vous devrez peut-être envoyer une photo de votre pièce via WhatsApp après soumission.</p>
+                  </div>
+
+                  <button onClick={() => setStep(2)} disabled={!canGoStep2}
+                    className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98] flex items-center justify-center gap-2">
+                    Suivant →
+                  </button>
+                </div>
+              )}
+
+              {/* ── ÉTAPE 2 : Boutique & Activité ── */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <p className="font-black text-dark-900 text-base">🏪 Votre activité</p>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Type d'activité *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ACTIVITY_TYPES.map(t => (
+                        <button key={t} onClick={() => setActivityType(t)}
+                          className={clsx('py-2.5 px-3 rounded-2xl border-2 text-xs font-bold text-left transition-all active:scale-95',
+                            activityType === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Localisation exacte *</label>
+                    <input type="text" value={location} onChange={e => setLocation(e.target.value)}
+                      placeholder="Ex: Cotonou, Quartier Fidjrossè"
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Années d'expérience</label>
+                    <div className="flex gap-2">
+                      {['< 1 an', '1-3 ans', '3-5 ans', '5-10 ans', '10+ ans'].map(y => (
+                        <button key={y} onClick={() => setYearsExperience(y)}
+                          className={clsx('flex-1 py-2 rounded-xl border-2 text-[10px] font-bold transition-all active:scale-95',
+                            yearsExperience === y ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => setStep(1)}
+                      className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">
+                      ← Retour
+                    </button>
+                    <button onClick={() => setStep(3)} disabled={!canGoStep3}
+                      className="flex-[2] py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98]">
+                      Suivant →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── ÉTAPE 3 : Conditions de production ── */}
+              {step === 3 && (
+                <div className="space-y-4">
+                  <p className="font-black text-dark-900 text-base">🌱 Production & Livraison</p>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Méthode de production *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PRODUCTION_METHODS.map(m => (
+                        <button key={m} onClick={() => setProductionMethod(m)}
+                          className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                            productionMethod === m ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600')}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-2">Utilisation de pesticides / engrais chimiques ?</label>
+                    <div className="flex gap-2">
+                      {[{v: false, l:'Non ✅'},{v: true, l:'Oui'},{v: null, l:'Parfois'}].map(opt => (
+                        <button key={String(opt.v)} onClick={() => setUsePesticides(opt.v)}
+                          className={clsx('flex-1 py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                            usePesticides === opt.v && opt.v !== null || (usePesticides === null && opt.v === null)
+                              ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
+                          {opt.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Zone de livraison *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {DELIVERY_SCOPES.map(d => (
+                        <button key={d} onClick={() => setDeliveryScope(d)}
+                          className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                            deliveryScope === d ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Capacité mensuelle (optionnel)</label>
+                    <input type="text" value={monthlyCapacity} onChange={e => setMonthlyCapacity(e.target.value)}
+                      placeholder="Ex: 500 kg/mois, 20 lapins/semaine..."
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Certifications (optionnel)</label>
+                    <input type="text" value={certifications} onChange={e => setCertifications(e.target.value)}
+                      placeholder="Ex: Certification bio, label qualité..."
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Informations supplémentaires</label>
+                    <textarea value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)}
+                      placeholder="Tout ce que vous souhaitez nous dire sur votre activité..."
+                      rows={3}
+                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300 resize-none"/>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => setStep(2)}
+                      className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">
+                      ← Retour
+                    </button>
+                    <button onClick={submit} disabled={!canSubmit || sending}
+                      className="flex-[2] py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
+                      {sending
+                        ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                        : '✅ Envoyer la demande'}
+                    </button>
+                  </div>
+
+                  <p className="text-center text-gray-400 text-xs">Réponse sous 24-48h après examen</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </BottomSheet>
   )
 }
