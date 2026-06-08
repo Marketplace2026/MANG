@@ -72,6 +72,10 @@ export default function MarketplacePage() {
 
   const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false })
   const [filterOpen, setFilterOpen] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [sortBy, setSortBy] = useState('recent')
+  const [minRating, setMinRating] = useState(null)
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
 
@@ -98,7 +102,7 @@ export default function MarketplacePage() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => { loadShops() }, [filters])
+  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly])
 
   useEffect(() => {
     if (!user) return
@@ -164,6 +168,11 @@ export default function MarketplacePage() {
 
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
+      if (verifiedOnly) query = query.eq('is_verified', true)
+      if (minRating) query = query.gte('rating_avg', minRating)
+      if (sortBy === 'rating') query = query.order('rating_avg', { ascending: false })
+      else if (sortBy === 'followers') query = query.order('followers_count', { ascending: false })
+      else if (sortBy === 'likes') query = query.order('likes_count', { ascending: false })
 
       const { data } = await query
       let result = data || []
@@ -329,11 +338,18 @@ export default function MarketplacePage() {
 
   const resetFilters = () => {
     setFilters({ category: null, categoryName: null, hasDelivery: null, nearby: false })
+    setSortBy('recent')
+    setMinRating(null)
+    setVerifiedOnly(false)
     setSearch('')
     setSuggestions([])
   }
 
-  const activeFiltersCount = [filters.category, filters.hasDelivery, filters.nearby].filter(Boolean).length
+  const activeFiltersCount = [
+    filters.category, filters.hasDelivery, filters.nearby,
+    minRating, verifiedOnly || null,
+    sortBy !== 'recent' ? sortBy : null
+  ].filter(Boolean).length
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -432,6 +448,7 @@ export default function MarketplacePage() {
             { label: '📂 Catégories', action: () => setFilterOpen(true), active: !!filters.category },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
+            { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
           ].map((btn, i) => (
             <button key={i} onClick={btn.action}
               className={clsx(
@@ -443,6 +460,19 @@ export default function MarketplacePage() {
               {btn.label}
             </button>
           ))}
+          <button onClick={() => setAdvancedOpen(true)}
+            className={clsx(
+              'flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-95',
+              activeFiltersCount > 0 ? 'bg-primary-600 text-white shadow-green' : 'bg-white text-dark-700 shadow-card'
+            )}>
+            <SlidersHorizontal size={14}/>
+            Filtres
+            {activeFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-white text-primary-600 text-[10px] font-black flex items-center justify-center ml-0.5">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* FILTRE ACTIF LABEL */}
@@ -487,6 +517,15 @@ export default function MarketplacePage() {
       </div>
 
       {/* MODAL FILTRES CATÉGORIES */}
+      <AdvancedFilterSheet
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        sortBy={sortBy} setSortBy={setSortBy}
+        minRating={minRating} setMinRating={setMinRating}
+        verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
+        onReset={resetFilters}
+      />
+
       <CategoryModal
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
@@ -574,6 +613,29 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             <p className="text-dark-600/40 text-[10px] truncate">@{shop.owner?.username}</p>
           </div>
         </div>
+
+        {/* Rating + Verified */}
+        {(shop.reviews_count > 0 || shop.is_verified) && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {shop.reviews_count > 0 && (
+              <div className="flex items-center gap-0.5">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="none">
+                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                </svg>
+                <span className="text-[10px] font-bold text-amber-600">{Number(shop.rating_avg||0).toFixed(1)}</span>
+                <span className="text-[9px] text-dark-600/40">({shop.reviews_count})</span>
+              </div>
+            )}
+            {shop.is_verified && (
+              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 rounded-full">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span className="text-blue-600 text-[9px] font-bold">Vérifié</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         {shop.description && (
@@ -769,3 +831,90 @@ function ShopSkeleton() {
     </div>
   )
 }
+
+// ============================================================
+// ADVANCED FILTER SHEET
+// ============================================================
+function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setMinRating, verifiedOnly, setVerifiedOnly, onReset }) {
+  const SORT_OPTIONS = [
+    { key: 'recent',    label: '🕐 Plus récentes' },
+    { key: 'rating',    label: '⭐ Meilleures notes' },
+    { key: 'followers', label: '👥 Plus suivies' },
+    { key: 'likes',     label: '❤️ Plus aimées' },
+  ]
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="🎛️ Filtres avancés">
+      <div className="px-4 pt-2 pb-8 space-y-6" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+
+        {/* Trier par */}
+        <div>
+          <p className="font-black text-dark-800 text-sm mb-3">Trier par</p>
+          <div className="grid grid-cols-2 gap-2">
+            {SORT_OPTIONS.map(opt => (
+              <button key={opt.key} onClick={() => setSortBy(opt.key)}
+                className={clsx(
+                  'py-3 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95',
+                  sortBy === opt.key ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-100 bg-white text-dark-700'
+                )}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Note minimale */}
+        <div>
+          <p className="font-black text-dark-800 text-sm mb-3">Note minimale</p>
+          <div className="flex gap-2">
+            {[null, 4, 3, 2].map((val, i) => (
+              <button key={i} onClick={() => setMinRating(val)}
+                className={clsx(
+                  'flex-1 py-2.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95',
+                  minRating === val ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-100 text-gray-500'
+                )}>
+                {val === null ? 'Toutes' : `${val}⭐+`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Options */}
+        <div>
+          <p className="font-black text-dark-800 text-sm mb-3">Options</p>
+          <button onClick={() => setVerifiedOnly(v => !v)}
+            className={clsx(
+              'w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all active:scale-[0.98] text-left',
+              verifiedOnly ? 'border-primary-500 bg-primary-50' : 'border-gray-100 bg-white'
+            )}>
+            <div className={clsx('w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+              verifiedOnly ? 'border-primary-500 bg-primary-500' : 'border-gray-300')}>
+              {verifiedOnly && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-dark-800">✅ Boutiques vérifiées seulement</p>
+              <p className="text-[10px] text-gray-400">Vendeurs officiellement vérifiés par MANG</p>
+            </div>
+          </button>
+        </div>
+
+        {/* Boutons action */}
+        <div className="flex gap-3">
+          <button onClick={() => { onReset(); onClose() }}
+            className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">
+            Réinitialiser
+          </button>
+          <button onClick={onClose}
+            className="flex-[2] py-3 rounded-2xl bg-primary-600 text-white font-bold text-sm shadow-md active:scale-95">
+            Appliquer ✓
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
