@@ -100,22 +100,8 @@ export default function VendorPage() {
   const [shopDetailOpen, setShopDetailOpen]     = useState(null)
 
   const [premiumStatus, setPremiumStatus] = useState(null)
-  const [verifyOpen, setVerifyOpen] = useState(null) // shop
-  const [verifyRequests, setVerifyRequests] = useState({}) // shopId -> request
 
-  useEffect(() => { if (user) { loadShops(); checkPremium(); loadVerifyRequests() } }, [user])
-
-  const loadVerifyRequests = async () => {
-    const { data } = await supabase
-      .from('verification_requests')
-      .select('*')
-      .eq('user_id', user.id)
-    if (data) {
-      const map = {}
-      data.forEach(r => { map[r.shop_id] = r })
-      setVerifyRequests(map)
-    }
-  }
+  useEffect(() => { if (user) { loadShops(); checkPremium() } }, [user])
 
   const checkPremium = async () => {
     const { data } = await supabase
@@ -255,25 +241,6 @@ export default function VendorPage() {
           </button>
         </div>
 
-        {/* VERIFICATION BANNER — si au moins une boutique non vérifiée */}
-        {shops.length > 0 && shops.some(s => !s.is_verified) && (
-          <div className="bg-blue-50 rounded-3xl p-4 border border-blue-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-blue-800 text-sm">Obtenez le badge Vérifié ✅</p>
-              <p className="text-blue-600 text-xs">Gagnez la confiance des acheteurs</p>
-            </div>
-            <button onClick={() => setVerifyOpen(shops.find(s => !s.is_verified))}
-              className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold active:scale-95">
-              Demander
-            </button>
-          </div>
-        )}
-
         {/* MES BOUTIQUES */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -296,12 +263,10 @@ export default function VendorPage() {
                   key={shop.id}
                   shop={shop}
                   premiumStatus={premiumStatus}
-                  verifyRequest={verifyRequests[shop.id]}
                   onOpen={() => setShopDetailOpen(shop)}
                   onEdit={() => setEditShopOpen(shop)}
                   onDelete={() => setDeleteShopModal(shop)}
                   onAddProduct={() => { setActiveShop(shop); setAddProductOpen(true) }}
-                  onVerify={() => setVerifyOpen(shop)}
                 />
               ))}
             </div>
@@ -355,17 +320,6 @@ export default function VendorPage() {
         onPurchased={() => { checkPremium(); refreshWallet(); setPremiumOpen(false) }}
       />
 
-      {/* Vérification boutique */}
-      <VerificationSheet
-        open={!!verifyOpen}
-        onClose={() => setVerifyOpen(null)}
-        shop={verifyOpen}
-        user={user}
-        profile={profile}
-        existingRequest={verifyOpen ? verifyRequests[verifyOpen.id] : null}
-        onSubmitted={() => { setVerifyOpen(null); loadVerifyRequests() }}
-      />
-
       {/* Acheter pièces */}
       <CoinsSheet
         open={coinsOpen}
@@ -395,7 +349,7 @@ export default function VendorPage() {
 // ============================================================
 // SHOP CARD
 // ============================================================
-function ShopCard({ shop, premiumStatus, verifyRequest, onOpen, onEdit, onDelete, onAddProduct, onVerify }) {
+function ShopCard({ shop, premiumStatus, onOpen, onEdit, onDelete, onAddProduct }) {
   const prodCount = shop.products?.[0]?.count || 0
   const premiumLevel = shop.premium_level || 0
   const limit = PRODUCT_LIMITS[premiumLevel]
@@ -691,13 +645,9 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
 
       if (error) throw error
 
-      // Déduire pièces (récupérer le vrai solde depuis Supabase)
-      const { data: piecesData } = await supabase
-        .from('pieces').select('balance').eq('user_id', user.id).single()
-      const currentBalance = piecesData?.balance || 0
-      await supabase.from('pieces')
-        .update({ balance: currentBalance - 10 })
-        .eq('user_id', user.id)
+      // Déduire 10 pièces via RPC sécurisé
+      const { error: pieceErr } = await supabase.rpc('deduct_pieces', { user_uuid: user.id, amount: 10 })
+      if (pieceErr) throw new Error(pieceErr.message || 'Pièces insuffisantes')
 
       // Notification
       await supabase.from('notifications').insert({
@@ -921,12 +871,9 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
       })
       if (error) throw error
 
-      const { data: piecesData2 } = await supabase
-        .from('pieces').select('balance').eq('user_id', user.id).single()
-      const currentBalance2 = piecesData2?.balance || 0
-      await supabase.from('pieces')
-        .update({ balance: currentBalance2 - 5 })
-        .eq('user_id', user.id)
+      // Déduire 5 pièces via RPC sécurisé
+      const { error: pieceErr2 } = await supabase.rpc('deduct_pieces', { user_uuid: user.id, amount: 5 })
+      if (pieceErr2) throw new Error(pieceErr2.message || 'Pièces insuffisantes')
 
       toast.success('Produit ajouté ! 📦')
       reset()
@@ -1147,8 +1094,8 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
       }).eq('user_id', user.id)
 
       // Récupérer le vrai solde pieces depuis Supabase avant d'incrémenter
-      const { data: realPieces } = await supabase.from('pieces').select('balance').eq('user_id', user.id).single()
-      await supabase.from('pieces').update({ balance: (realPieces?.balance || 0) + pack.coins }).eq('user_id', user.id)
+      const { error: addErr } = await supabase.rpc('add_pieces', { user_uuid: user.id, amount: pack.coins })
+      if (addErr) throw new Error(addErr.message || 'Erreur ajout pièces')
 
       await supabase.from('wallet_transactions').insert({
         user_id: user.id,
@@ -1248,157 +1195,5 @@ function ShopCardSkeleton() {
         </div>
       </div>
     </div>
-  )
-}
-
-// ============================================================
-// VERIFICATION SHEET
-// ============================================================
-function VerificationSheet({ open, onClose, shop, user, profile, existingRequest, onSubmitted }) {
-  const [phone, setPhone] = useState('')
-  const [reason, setReason] = useState('')
-  const [sending, setSending] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setPhone(profile?.phone || '')
-      setReason('')
-    }
-  }, [open, profile])
-
-  const submit = async () => {
-    if (!phone.trim()) { toast.error('Numéro de téléphone requis'); return }
-    setSending(true)
-
-    const { error } = await supabase.from('verification_requests').insert({
-      user_id: user.id,
-      shop_id: shop.id,
-      shop_name: shop.name,
-      phone: phone.trim(),
-      reason: reason.trim() || null,
-      status: 'pending',
-    })
-
-    setSending(false)
-
-    if (error) {
-      if (error.code === '23505') toast.error('Demande déjà envoyée pour cette boutique')
-      else toast.error('Erreur lors de l\'envoi')
-      return
-    }
-
-    // Notification admin (user MANG)
-    await supabase.rpc('create_notification', {
-      p_user_id: 'd9f97369-ae78-4da2-844c-1c9c97b12445', // ton user_id admin
-      p_type: 'verification_request',
-      p_title: '🔔 Demande de vérification',
-      p_body: `@${profile?.username} demande la vérification de "${shop.name}"`,
-      p_reference_id: shop.id,
-      p_reference_type: 'shop',
-    })
-
-    toast.success('Demande envoyée ! Nous reviendrons vers vous.')
-    onSubmitted()
-  }
-
-  const isPending = existingRequest?.status === 'pending'
-  const isRejected = existingRequest?.status === 'rejected'
-
-  return (
-    <BottomSheet open={open} onClose={onClose} title="✅ Demande de vérification">
-      <div className="px-4 pt-2 pb-8 space-y-4">
-
-        {/* Avantages */}
-        <div className="bg-blue-50 rounded-2xl p-4">
-          <p className="font-bold text-blue-800 text-sm mb-2">Pourquoi se faire vérifier ?</p>
-          <div className="space-y-1.5">
-            {[
-              '✅ Badge vérifié visible sur votre boutique',
-              '🔍 Apparaître dans le filtre "Vérifiés"',
-              '💪 Gagnez la confiance des acheteurs',
-              '📈 Plus de ventes et de followers',
-            ].map((item, i) => (
-              <p key={i} className="text-blue-700 text-xs">{item}</p>
-            ))}
-          </div>
-        </div>
-
-        {/* Statut existant */}
-        {isPending && (
-          <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
-            <p className="text-4xl mb-2">⏳</p>
-            <p className="font-bold text-yellow-800 text-sm">Demande en cours d'examen</p>
-            <p className="text-yellow-600 text-xs mt-1">Nous traitons votre demande sous 48h</p>
-          </div>
-        )}
-
-        {isRejected && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-            <p className="font-bold text-red-700 text-sm mb-1">❌ Demande refusée</p>
-            {existingRequest?.admin_note && (
-              <p className="text-red-600 text-xs">{existingRequest.admin_note}</p>
-            )}
-            <p className="text-red-500 text-xs mt-2">Vous pouvez soumettre une nouvelle demande.</p>
-          </div>
-        )}
-
-        {/* Formulaire */}
-        {!isPending && (
-          <>
-            <div>
-              <label className="text-sm font-bold text-dark-700 block mb-1.5">
-                Boutique concernée
-              </label>
-              <div className="px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200">
-                <p className="font-semibold text-dark-800 text-sm">{shop?.name}</p>
-                <p className="text-gray-400 text-xs">@{profile?.username}</p>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-dark-700 block mb-1.5">
-                Téléphone de contact *
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="+229 XX XX XX XX"
-                className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-dark-700 block mb-1.5">
-                Décrivez votre activité (optionnel)
-              </label>
-              <textarea
-                value={reason}
-                onChange={e => setReason(e.target.value)}
-                placeholder="Ex: Je suis agriculteur depuis 5 ans, je vends des tomates et légumes à Cotonou..."
-                rows={3}
-                className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300 resize-none transition-colors"
-              />
-            </div>
-
-            <button onClick={submit} disabled={!phone.trim() || sending}
-              className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
-              {sending
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                : <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Envoyer la demande
-                  </>}
-            </button>
-
-            <p className="text-center text-gray-400 text-xs">
-              Réponse sous 24-48h après examen de votre dossier
-            </p>
-          </>
-        )}
-      </div>
-    </BottomSheet>
   )
 }
