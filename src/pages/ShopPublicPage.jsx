@@ -866,16 +866,25 @@ function OrderModal({ open, product, shop, user, onClose }) {
     if (!user) { toast.error('Connectez-vous d\'abord'); return }
     setLoading(true)
     try {
-      const { error } = await supabase.rpc('place_order', {
+      const { data, error } = await supabase.rpc('place_order', {
         p_buyer_id: user.id, p_product_id: product.id,
         p_quantity: form.quantity, p_delivery_address: form.address,
         p_delivery_phone: form.phone, p_note: form.note || null,
       })
+
+      // Erreur réseau Supabase
       if (error) {
-        toast.error(error.message?.includes('insufficient') ? 'Solde insuffisant' : error.message || 'Erreur')
+        toast.error(error.message || 'Erreur lors de la commande')
         return
       }
-      toast.success('Commande créée ! 📦')
+
+      // Erreur métier (solde insuffisant, produit indispo, etc.)
+      if (!data?.success) {
+        toast.error(data?.error || 'Erreur lors de la commande')
+        return
+      }
+
+      toast.success(data?.message || '📦 Commande créée ! Le vendeur a été notifié.')
       setForm({ address: '', phone: '', note: '', quantity: 1 })
       onClose()
     } finally { setLoading(false) }
