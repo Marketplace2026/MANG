@@ -1330,12 +1330,14 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
 
   const uploadPhoto = async (file, path) => {
     if (!file) return null
-    const ext = file.name.split('.').pop()
-    const fullPath = `${path}.${ext}`
-    const { error } = await supabase.storage.from('verification-docs').upload(fullPath, file, { upsert: true })
-    if (error) return null
-    const { data } = supabase.storage.from('verification-docs').getPublicUrl(fullPath)
-    return data.publicUrl
+    try {
+      const ext = file.name.split('.').pop()
+      const fullPath = `${path}.${ext}`
+      const { error } = await supabase.storage.from('verification-docs').upload(fullPath, file, { upsert: true })
+      if (error) { console.log('Upload error:', error); return null }
+      const { data } = supabase.storage.from('verification-docs').getPublicUrl(fullPath)
+      return data.publicUrl
+    } catch (e) { console.log('Upload exception:', e); return null }
   }
 
   const PROFILE_TYPES = [
@@ -1350,7 +1352,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
     service: ['Formation agricole', 'Conseil & Accompagnement', 'Transport & Logistique', 'Location de matériel', 'Analyse de sol', 'Vétérinaire', 'Autre'],
   }
 
-  const canGoStep2 = fullName.trim() && phone.trim() && idPhoto
+  const canGoStep2 = fullName.trim() && phone.trim()
   const canGoStep3 = profileType && activityType && location.trim()
   const canSubmit = deliveryScope && (
     profileType === 'producteur' ? productionMethod : productsType
