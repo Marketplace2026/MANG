@@ -88,6 +88,8 @@ export default function NotificationsPage() {
       navigate('/communaute', { state: { openPostId: notif.reference_id } })
     else if (notif.type === 'shop_follow' && notif.reference_id)
       navigate('/boutique/' + notif.reference_id)
+    else if (notif.type === 'verification_request')
+      navigate('/admin/verifications')
   }
 
   const handleDelete = async (e, notifId) => {
