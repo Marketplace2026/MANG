@@ -1256,30 +1256,39 @@ function ShopCardSkeleton() {
 }
 
 // ============================================================
-// VERIFICATION SHEET
-// ============================================================
-
-// ============================================================
-// VERIFICATION SHEET — Multi-étapes + Sélecteur boutique
+// VERIFICATION SHEET — Multi-étapes + Photo ID + Types adaptés
 // ============================================================
 function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRequests, existingRequest, onSubmitted, onSelectShop, showSelector }) {
   const [step, setStep] = useState(1)
   const [sending, setSending] = useState(false)
 
-  // Étape 1 — Identité
+  // Étape 1 — Identité + Photo
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [idType, setIdType] = useState('CNI')
+  const [idPhoto, setIdPhoto] = useState(null)
+  const [idPhotoPreview, setIdPhotoPreview] = useState(null)
+  const [selfiePhoto, setSelfiePhoto] = useState(null)
+  const [selfiePreview, setSelfiePreview] = useState(null)
+  const idPhotoRef = useRef()
+  const selfieRef = useRef()
 
-  // Étape 2 — Boutique & activité
+  // Étape 2 — Type d'activité
+  const [profileType, setProfileType] = useState('') // 'producteur' | 'commercant' | 'service'
   const [activityType, setActivityType] = useState('')
   const [yearsExperience, setYearsExperience] = useState('')
   const [location, setLocation] = useState('')
 
-  // Étape 3 — Conditions de production
+  // Étape 3 — Selon profileType
+  // Producteur
   const [productionMethod, setProductionMethod] = useState('')
   const [usePesticides, setUsePesticides] = useState(null)
   const [monthlyCapacity, setMonthlyCapacity] = useState('')
+  const [farmSize, setFarmSize] = useState('')
+  // Commerçant
+  const [productsType, setProductsType] = useState('')
+  const [supplySource, setSupplySource] = useState('')
+  // Commun
   const [deliveryScope, setDeliveryScope] = useState('')
   const [certifications, setCertifications] = useState('')
   const [additionalInfo, setAdditionalInfo] = useState('')
@@ -1290,12 +1299,18 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
       setFullName(profile?.full_name || '')
       setPhone(profile?.phone || '')
       setIdType('CNI')
+      setIdPhoto(null); setIdPhotoPreview(null)
+      setSelfiePhoto(null); setSelfiePreview(null)
+      setProfileType('')
       setActivityType('')
       setYearsExperience('')
       setLocation(profile?.city || '')
       setProductionMethod('')
       setUsePesticides(null)
       setMonthlyCapacity('')
+      setFarmSize('')
+      setProductsType('')
+      setSupplySource('')
       setDeliveryScope('')
       setCertifications('')
       setAdditionalInfo('')
@@ -1305,60 +1320,85 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
   const isPending = existingRequest?.status === 'pending'
   const isRejected = existingRequest?.status === 'rejected'
 
-  const ACTIVITY_TYPES = ['Maraîchage', 'Élevage', 'Céréales', 'Fruits', 'Transformation alimentaire', 'Pêche', 'Apiculture', 'Autre']
-  const PRODUCTION_METHODS = ['Bio / Naturel', 'Conventionnel', 'Traditionnel', 'Mixte']
-  const DELIVERY_SCOPES = ['Locale (ville)', 'Régionale', 'Nationale', 'Non disponible']
+  const handlePhoto = (e, setFile, setPreview) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image trop lourde (max 5 Mo)'); return }
+    setFile(file)
+    setPreview(URL.createObjectURL(file))
+  }
 
-  const canGoStep2 = fullName.trim() && phone.trim()
-  const canGoStep3 = activityType && location.trim()
-  const canSubmit = productionMethod && deliveryScope
+  const uploadPhoto = async (file, path) => {
+    if (!file) return null
+    const ext = file.name.split('.').pop()
+    const fullPath = `${path}.${ext}`
+    const { error } = await supabase.storage.from('verification-docs').upload(fullPath, file, { upsert: true })
+    if (error) return null
+    const { data } = supabase.storage.from('verification-docs').getPublicUrl(fullPath)
+    return data.publicUrl
+  }
+
+  const PROFILE_TYPES = [
+    { key: 'producteur', label: '🌱 Producteur', desc: 'Agriculteur, éleveur, pêcheur...' },
+    { key: 'commercant', label: '🏪 Commerçant', desc: 'Machines, intrants, produits finis...' },
+    { key: 'service', label: '🎓 Prestataire', desc: 'Formation, conseil, transport...' },
+  ]
+
+  const ACTIVITY_TYPES = {
+    producteur: ['Maraîchage', 'Élevage', 'Céréales & Légumineuses', 'Fruits & Cultures pérennes', 'Pêche & Aquaculture', 'Apiculture', 'Transformation alimentaire', 'Autre'],
+    commercant: ['Machines & Équipements', 'Semences & Plants', 'Engrais & Intrants', 'Alimentation animale', 'Produits transformés', 'Emballages agricoles', 'Autre'],
+    service: ['Formation agricole', 'Conseil & Accompagnement', 'Transport & Logistique', 'Location de matériel', 'Analyse de sol', 'Vétérinaire', 'Autre'],
+  }
+
+  const canGoStep2 = fullName.trim() && phone.trim() && idPhoto
+  const canGoStep3 = profileType && activityType && location.trim()
+  const canSubmit = deliveryScope && (
+    profileType === 'producteur' ? productionMethod : productsType
+  )
 
   const submit = async () => {
     if (!canSubmit) return
     setSending(true)
+    try {
+      // Upload photos
+      const idPhotoUrl = await uploadPhoto(idPhoto, `${user.id}/${shop.id}/id`)
+      const selfieUrl = await uploadPhoto(selfiePhoto, `${user.id}/${shop.id}/selfie`)
 
-    const formData = {
-      user_id: user.id,
-      shop_id: shop.id,
-      shop_name: shop.name,
-      // Étape 1
-      full_name: fullName.trim(),
-      phone: phone.trim(),
-      id_type: idType,
-      // Étape 2
-      activity_type: activityType,
-      years_experience: yearsExperience || null,
-      location: location.trim(),
-      // Étape 3
-      production_method: productionMethod,
-      use_pesticides: usePesticides,
-      monthly_capacity: monthlyCapacity || null,
-      delivery_scope: deliveryScope,
-      certifications: certifications.trim() || null,
-      additional_info: additionalInfo.trim() || null,
-      status: 'pending',
-    }
+      const formData = {
+        user_id: user.id, shop_id: shop.id, shop_name: shop.name,
+        full_name: fullName.trim(), phone: phone.trim(), id_type: idType,
+        id_photo_url: idPhotoUrl, selfie_url: selfieUrl,
+        profile_type: profileType, activity_type: activityType,
+        years_experience: yearsExperience || null, location: location.trim(),
+        production_method: profileType === 'producteur' ? productionMethod : null,
+        use_pesticides: profileType === 'producteur' ? usePesticides : null,
+        monthly_capacity: monthlyCapacity || null,
+        farm_size: profileType === 'producteur' ? farmSize || null : null,
+        products_type: profileType !== 'producteur' ? productsType || null : null,
+        supply_source: profileType === 'commercant' ? supplySource || null : null,
+        delivery_scope: deliveryScope,
+        certifications: certifications.trim() || null,
+        additional_info: additionalInfo.trim() || null,
+        status: 'pending',
+      }
 
-    const { error } = await supabase.from('verification_requests').insert(formData)
-    setSending(false)
+      const { error } = await supabase.from('verification_requests').insert(formData)
+      if (error) {
+        toast.error(error.code === '23505' ? 'Demande déjà envoyée' : 'Erreur : ' + error.message)
+        return
+      }
 
-    if (error) {
-      if (error.code === '23505') toast.error('Demande déjà envoyée pour cette boutique')
-      else toast.error('Erreur : ' + error.message)
-      return
-    }
+      await supabase.rpc('create_notification', {
+        p_user_id: 'd9f97369-ae78-4da2-844c-1c9c97b12445',
+        p_type: 'verification_request',
+        p_title: '🔔 Nouvelle demande de vérification',
+        p_body: `@${profile?.username} (${fullName}) — ${profileType} — ${activityType} — "${shop.name}"`,
+        p_reference_id: shop.id, p_reference_type: 'shop',
+      })
 
-    await supabase.rpc('create_notification', {
-      p_user_id: 'd9f97369-ae78-4da2-844c-1c9c97b12445',
-      p_type: 'verification_request',
-      p_title: '🔔 Nouvelle demande de vérification',
-      p_body: `@${profile?.username} (${fullName}) demande la vérification de "${shop.name}" — ${activityType}`,
-      p_reference_id: shop.id,
-      p_reference_type: 'shop',
-    })
-
-    toast.success('Demande envoyée ! Réponse sous 24-48h ✅')
-    onSubmitted()
+      toast.success('Demande envoyée ! Réponse sous 24-48h ✅')
+      onSubmitted()
+    } finally { setSending(false) }
   }
 
   // ── SÉLECTEUR DE BOUTIQUE ──
@@ -1367,7 +1407,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
     return (
       <BottomSheet open={open} onClose={onClose} title="🏪 Quelle boutique vérifier ?">
         <div className="px-4 pt-2 pb-8 space-y-3">
-          <p className="text-gray-500 text-sm">Sélectionnez la boutique pour laquelle vous souhaitez demander la vérification.</p>
+          <p className="text-gray-500 text-sm">Sélectionnez la boutique à vérifier.</p>
           {unverifiedShops.map(s => {
             const req = verifyRequests[s.id]
             return (
@@ -1375,16 +1415,14 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                 className={clsx('w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all',
                   req?.status === 'pending' ? 'border-yellow-200 bg-yellow-50 opacity-70' : 'border-gray-100 bg-white active:scale-[0.98]')}>
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-primary-100 flex-shrink-0">
-                  {s.cover_url
-                    ? <img src={s.cover_url} className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
+                  {s.cover_url ? <img src={s.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-dark-800 text-sm truncate">{s.name}</p>
                   <p className="text-gray-400 text-xs">{s.city || 'Localisation non définie'}</p>
                 </div>
                 {req?.status === 'pending'
-                  ? <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold flex-shrink-0">⏳ En attente</span>
+                  ? <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">⏳ En attente</span>
                   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>}
               </button>
             )
@@ -1398,26 +1436,20 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
 
   return (
     <BottomSheet open={open} onClose={onClose} title="✅ Demande de vérification">
-      <div style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+      <div style={{ maxHeight: '88vh', overflowY: 'auto' }}>
         <div className="px-4 pt-2 pb-8 space-y-5">
 
-          {/* Boutique sélectionnée */}
+          {/* Boutique */}
           <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-100 flex-shrink-0">
-              {shop.cover_url
-                ? <img src={shop.cover_url} className="w-full h-full object-cover"/>
-                : <div className="w-full h-full flex items-center justify-center">🌿</div>}
+              {shop.cover_url ? <img src={shop.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center">🌿</div>}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-blue-800 text-sm truncate">{shop.name}</p>
               <p className="text-blue-500 text-xs">Boutique à vérifier</p>
             </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
           </div>
 
-          {/* Statut existant */}
           {isPending && (
             <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
               <p className="text-4xl mb-2">⏳</p>
@@ -1436,26 +1468,23 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
 
           {!isPending && (
             <>
-              {/* Indicateur d'étapes */}
-              <div className="flex items-center gap-2">
+              {/* Indicateur étapes */}
+              <div className="flex items-center gap-1">
                 {[1,2,3].map(s => (
-                  <div key={s} className="flex items-center gap-2 flex-1">
-                    <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all',
-                      step === s ? 'bg-blue-600 text-white shadow-md' :
-                      step > s ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500')}>
+                  <div key={s} className="flex items-center gap-1 flex-1">
+                    <div className={clsx('w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all flex-shrink-0',
+                      step === s ? 'bg-blue-600 text-white shadow-md' : step > s ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500')}>
                       {step > s ? '✓' : s}
                     </div>
-                    {s < 3 && <div className={clsx('flex-1 h-1 rounded-full transition-all', step > s ? 'bg-green-400' : 'bg-gray-200')}/>}
+                    {s < 3 && <div className={clsx('flex-1 h-1 rounded-full', step > s ? 'bg-green-400' : 'bg-gray-200')}/>}
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] text-gray-400 -mt-2">
-                <span>Identité</span>
-                <span className="ml-4">Activité</span>
-                <span>Production</span>
+              <div className="flex justify-between text-[9px] text-gray-400 -mt-2 px-1">
+                <span>Identité</span><span>Activité</span><span>Détails</span>
               </div>
 
-              {/* ── ÉTAPE 1 : Identité ── */}
+              {/* ═══ ÉTAPE 1 — Identité + Photos ═══ */}
               {step === 1 && (
                 <div className="space-y-4">
                   <p className="font-black text-dark-900 text-base">👤 Votre identité</p>
@@ -1487,37 +1516,107 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                     </div>
                   </div>
 
-                  <div className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
-                    <p className="text-amber-700 text-xs font-semibold">📋 Note : Vous devrez peut-être envoyer une photo de votre pièce via WhatsApp après soumission.</p>
+                  {/* Photo pièce d'identité */}
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Photo de votre {idType} *</label>
+                    <input ref={idPhotoRef} type="file" accept="image/*" capture="environment" className="hidden"
+                      onChange={e => handlePhoto(e, setIdPhoto, setIdPhotoPreview)}/>
+                    {idPhotoPreview ? (
+                      <div className="relative rounded-2xl overflow-hidden">
+                        <img src={idPhotoPreview} className="w-full h-36 object-cover rounded-2xl"/>
+                        <button onClick={() => { setIdPhoto(null); setIdPhotoPreview(null) }}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
+                          <X size={14} className="text-white"/>
+                        </button>
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-green-500 rounded-full">
+                          <span className="text-white text-[10px] font-bold">✓ Photo ajoutée</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => idPhotoRef.current?.click()}
+                        className="w-full h-28 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 flex flex-col items-center justify-center gap-2 active:scale-[0.98]">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span className="text-blue-600 text-xs font-bold">Prendre une photo / Choisir</span>
+                        <span className="text-gray-400 text-[10px]">Recto de votre {idType}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Selfie avec pièce */}
+                  <div>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">
+                      Selfie avec votre {idType} <span className="text-gray-400 font-normal">(optionnel)</span>
+                    </label>
+                    <input ref={selfieRef} type="file" accept="image/*" capture="user" className="hidden"
+                      onChange={e => handlePhoto(e, setSelfiePhoto, setSelfiePreview)}/>
+                    {selfiePreview ? (
+                      <div className="relative rounded-2xl overflow-hidden">
+                        <img src={selfiePreview} className="w-full h-28 object-cover rounded-2xl"/>
+                        <button onClick={() => { setSelfiePhoto(null); setSelfiePreview(null) }}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
+                          <X size={14} className="text-white"/>
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => selfieRef.current?.click()}
+                        className="w-full h-20 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center gap-2 active:scale-[0.98]">
+                        <span className="text-gray-400 text-xs">📸 Selfie avec la pièce (recommandé)</span>
+                      </button>
+                    )}
                   </div>
 
                   <button onClick={() => setStep(2)} disabled={!canGoStep2}
-                    className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98] flex items-center justify-center gap-2">
+                    className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98]">
                     Suivant →
                   </button>
+                  {!idPhoto && <p className="text-center text-red-400 text-xs">⚠️ La photo de votre {idType} est obligatoire</p>}
                 </div>
               )}
 
-              {/* ── ÉTAPE 2 : Boutique & Activité ── */}
+              {/* ═══ ÉTAPE 2 — Type d'activité ═══ */}
               {step === 2 && (
                 <div className="space-y-4">
-                  <p className="font-black text-dark-900 text-base">🏪 Votre activité</p>
+                  <p className="font-black text-dark-900 text-base">🏪 Votre profil</p>
 
+                  {/* Profil type */}
                   <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Type d'activité *</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {ACTIVITY_TYPES.map(t => (
-                        <button key={t} onClick={() => setActivityType(t)}
-                          className={clsx('py-2.5 px-3 rounded-2xl border-2 text-xs font-bold text-left transition-all active:scale-95',
-                            activityType === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
-                          {t}
+                    <label className="text-sm font-bold text-dark-700 block mb-2">Vous êtes *</label>
+                    <div className="space-y-2">
+                      {PROFILE_TYPES.map(pt => (
+                        <button key={pt.key} onClick={() => { setProfileType(pt.key); setActivityType('') }}
+                          className={clsx('w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[0.98]',
+                            profileType === pt.key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white')}>
+                          <div className={clsx('w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                            profileType === pt.key ? 'border-blue-500 bg-blue-500' : 'border-gray-300')}>
+                            {profileType === pt.key && <div className="w-2 h-2 rounded-full bg-white"/>}
+                          </div>
+                          <div>
+                            <p className="font-bold text-dark-800 text-sm">{pt.label}</p>
+                            <p className="text-gray-400 text-xs">{pt.desc}</p>
+                          </div>
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Activité spécifique */}
+                  {profileType && (
+                    <div>
+                      <label className="text-sm font-bold text-dark-700 block mb-2">Type précis *</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {ACTIVITY_TYPES[profileType].map(t => (
+                          <button key={t} onClick={() => setActivityType(t)}
+                            className={clsx('py-2.5 px-3 rounded-2xl border-2 text-xs font-bold text-left transition-all active:scale-95',
+                              activityType === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Localisation exacte *</label>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Localisation *</label>
                     <input type="text" value={location} onChange={e => setLocation(e.target.value)}
                       placeholder="Ex: Cotonou, Quartier Fidjrossè"
                       className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
@@ -1525,10 +1624,10 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
 
                   <div>
                     <label className="text-sm font-bold text-dark-700 block mb-1.5">Années d'expérience</label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 flex-wrap">
                       {['< 1 an', '1-3 ans', '3-5 ans', '5-10 ans', '10+ ans'].map(y => (
                         <button key={y} onClick={() => setYearsExperience(y)}
-                          className={clsx('flex-1 py-2 rounded-xl border-2 text-[10px] font-bold transition-all active:scale-95',
+                          className={clsx('px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all active:scale-95',
                             yearsExperience === y ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
                           {y}
                         </button>
@@ -1537,54 +1636,102 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => setStep(1)}
-                      className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">
-                      ← Retour
-                    </button>
+                    <button onClick={() => setStep(1)} className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">← Retour</button>
                     <button onClick={() => setStep(3)} disabled={!canGoStep3}
-                      className="flex-[2] py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98]">
-                      Suivant →
-                    </button>
+                      className="flex-[2] py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98]">Suivant →</button>
                   </div>
                 </div>
               )}
 
-              {/* ── ÉTAPE 3 : Conditions de production ── */}
+              {/* ═══ ÉTAPE 3 — Détails selon profil ═══ */}
               {step === 3 && (
                 <div className="space-y-4">
-                  <p className="font-black text-dark-900 text-base">🌱 Production & Livraison</p>
+                  <p className="font-black text-dark-900 text-base">
+                    {profileType === 'producteur' ? '🌱 Production' : profileType === 'commercant' ? '📦 Commerce' : '🎓 Prestation'}
+                  </p>
 
-                  <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Méthode de production *</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {PRODUCTION_METHODS.map(m => (
-                        <button key={m} onClick={() => setProductionMethod(m)}
-                          className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
-                            productionMethod === m ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600')}>
-                          {m}
-                        </button>
-                      ))}
+                  {/* PRODUCTEUR */}
+                  {profileType === 'producteur' && (
+                    <>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Méthode de production *</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['Bio / Naturel', 'Conventionnel', 'Traditionnel', 'Mixte'].map(m => (
+                            <button key={m} onClick={() => setProductionMethod(m)}
+                              className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                                productionMethod === m ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600')}>
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Pesticides / engrais chimiques ?</label>
+                        <div className="flex gap-2">
+                          {[{v:false,l:'Non ✅'},{v:true,l:'Oui'},{v:'parfois',l:'Parfois'}].map(opt => (
+                            <button key={String(opt.v)} onClick={() => setUsePesticides(opt.v)}
+                              className={clsx('flex-1 py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                                usePesticides === opt.v ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
+                              {opt.l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Superficie exploitée</label>
+                        <input type="text" value={farmSize} onChange={e => setFarmSize(e.target.value)}
+                          placeholder="Ex: 2 hectares, 500 m²..."
+                          className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Capacité mensuelle</label>
+                        <input type="text" value={monthlyCapacity} onChange={e => setMonthlyCapacity(e.target.value)}
+                          placeholder="Ex: 500 kg/mois, 20 lapins/semaine..."
+                          className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                      </div>
+                    </>
+                  )}
+
+                  {/* COMMERÇANT */}
+                  {profileType === 'commercant' && (
+                    <>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Produits vendus *</label>
+                        <input type="text" value={productsType} onChange={e => setProductsType(e.target.value)}
+                          placeholder="Ex: Tracteurs, semences de maïs, engrais NPK..."
+                          className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold text-dark-700 block mb-1.5">Source d'approvisionnement</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['Import direct', 'Grossiste local', 'Fabricant', 'Producteurs locaux', 'Mixte', 'Autre'].map(s => (
+                            <button key={s} onClick={() => setSupplySource(s)}
+                              className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
+                                supplySource === s ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* SERVICE */}
+                  {profileType === 'service' && (
+                    <div>
+                      <label className="text-sm font-bold text-dark-700 block mb-1.5">Services proposés *</label>
+                      <textarea value={productsType} onChange={e => setProductsType(e.target.value)}
+                        placeholder="Décrivez vos services en détail..."
+                        rows={3}
+                        className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300 resize-none"/>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Commun */}
                   <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-2">Utilisation de pesticides / engrais chimiques ?</label>
-                    <div className="flex gap-2">
-                      {[{v: false, l:'Non ✅'},{v: true, l:'Oui'},{v: null, l:'Parfois'}].map(opt => (
-                        <button key={String(opt.v)} onClick={() => setUsePesticides(opt.v)}
-                          className={clsx('flex-1 py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
-                            usePesticides === opt.v && opt.v !== null || (usePesticides === null && opt.v === null)
-                              ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Zone de livraison *</label>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Zone de service *</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {DELIVERY_SCOPES.map(d => (
+                      {['Locale (ville)', 'Régionale', 'Nationale', 'Non disponible'].map(d => (
                         <button key={d} onClick={() => setDeliveryScope(d)}
                           className={clsx('py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
                             deliveryScope === d ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600')}>
@@ -1595,40 +1742,27 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                   </div>
 
                   <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Capacité mensuelle (optionnel)</label>
-                    <input type="text" value={monthlyCapacity} onChange={e => setMonthlyCapacity(e.target.value)}
-                      placeholder="Ex: 500 kg/mois, 20 lapins/semaine..."
-                      className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Certifications (optionnel)</label>
+                    <label className="text-sm font-bold text-dark-700 block mb-1.5">Certifications / Agréments</label>
                     <input type="text" value={certifications} onChange={e => setCertifications(e.target.value)}
-                      placeholder="Ex: Certification bio, label qualité..."
+                      placeholder="Ex: Certification bio, agrément MAEP..."
                       className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300"/>
                   </div>
 
                   <div>
                     <label className="text-sm font-bold text-dark-700 block mb-1.5">Informations supplémentaires</label>
                     <textarea value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)}
-                      placeholder="Tout ce que vous souhaitez nous dire sur votre activité..."
-                      rows={3}
+                      placeholder="Tout ce que vous souhaitez ajouter..."
+                      rows={2}
                       className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-blue-300 resize-none"/>
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => setStep(2)}
-                      className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">
-                      ← Retour
-                    </button>
+                    <button onClick={() => setStep(2)} className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">← Retour</button>
                     <button onClick={submit} disabled={!canSubmit || sending}
                       className="flex-[2] py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
-                      {sending
-                        ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                        : '✅ Envoyer la demande'}
+                      {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '✅ Envoyer la demande'}
                     </button>
                   </div>
-
                   <p className="text-center text-gray-400 text-xs">Réponse sous 24-48h après examen</p>
                 </div>
               )}
