@@ -22,7 +22,8 @@ import MessagesPage       from '@/pages/MessagesPage'
 import NotificationsPage  from '@/pages/NotificationsPage'
 import FavoritesPage      from '@/pages/FavoritesPage'
 import PublicProfilePage  from '@/pages/PublicProfilePage'
-import ReferralPage       from '@/pages/ReferralPage'
+import ReferralPage            from '@/pages/ReferralPage'
+import AdminVerificationPage from '@/pages/AdminVerificationPage'
 
 
 // ── Splash screen (photo existante) ──────────────────────
@@ -131,6 +132,7 @@ export default function App() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/parrainage"         element={<ReferralPage />} />
           <Route path="/profil/:username" element={<PublicProfilePage />} />
+          <Route path="/admin/verifications" element={<AdminVerificationPage />} />
         </Route>
 
         {/* Fallback */}
