@@ -1387,6 +1387,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
       const { error } = await supabase.from('verification_requests').insert(formData)
       if (error) {
         toast.error(error.code === '23505' ? 'Demande déjà envoyée' : 'Erreur : ' + error.message)
+        setSending(false)
         return
       }
 
@@ -1398,9 +1399,14 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
         p_reference_id: shop.id, p_reference_type: 'shop',
       })
 
+      setSending(false)
       toast.success('Demande envoyée ! Réponse sous 24-48h ✅')
       onSubmitted()
-    } finally { setSending(false) }
+    } catch (err) {
+      console.log('Submit error:', err)
+      toast.error('Erreur : ' + (err.message || 'Réessayez'))
+      setSending(false)
+    }
   }
 
   // ── SÉLECTEUR DE BOUTIQUE ──
