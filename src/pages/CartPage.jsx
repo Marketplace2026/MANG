@@ -237,7 +237,7 @@ export default function CartPage() {
                 onClick={() => setCheckoutStep(2)}
                 className="w-full py-4 rounded-2xl bg-primary-600 hover:bg-primary-500 text-white font-black text-sm tracking-wide shadow-green active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                Payer par Wallet MANG
+                Commander
               </button>
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function CartPage() {
                 {checkingOut ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 ) : (
-                  `Confirmer le paiement (${cartTotal.toLocaleString('fr-FR')} F)`
+                  `Confirmer la commande (${cartTotal.toLocaleString('fr-FR')} F)`
                 )}
               </button>
             </div>
