@@ -20,6 +20,8 @@ export default function CartPage() {
   const navigate = useNavigate()
   const { user, wallet, refreshWallet } = useAuthStore()
   const { items, removeItem, updateQuantity, clearCart } = useCartStore()
+  const cartItems = Array.isArray(items) ? items : (items && Array.isArray(items.items) ? items.items : [])
+  console.log("cartItems:", cartItems)
 
   const [address, setAddress] = useState('')
   const [deliveryPhone, setDeliveryPhone] = useState('')
@@ -54,12 +56,12 @@ export default function CartPage() {
   }
 
   // Calcul des totaux
-  const cartSubtotal = items.reduce((sum, item) => sum + getItemUnitPrice(item) * item.quantity, 0)
+  const cartSubtotal = cartItems.reduce((sum, item) => sum + getItemUnitPrice(item) * item.quantity, 0)
   const platformFee = 0 // Pas de frais supplémentaires affichés
   const cartTotal = cartSubtotal
 
   // Regrouper les articles par boutique pour l'affichage
-  const groupedItems = items.reduce((acc, item) => {
+  const groupedItems = cartItems.reduce((acc, item) => {
     if (!item) return acc
     const product = item.product || item
     const shopId = product.shop_id || 'no-shop'
@@ -78,7 +80,7 @@ export default function CartPage() {
     setCheckingOut(true)
     try {
       // Passer la commande pour chaque article du panier
-      for (const item of items) {
+      for (const item of cartItems) {
         const product = item.product || item
         const { data, error } = await supabase.rpc('place_order', {
           p_buyer_id: user.id,
@@ -107,7 +109,7 @@ export default function CartPage() {
     }
   }
 
-  if (items.length === 0 && checkoutStep !== 3) {
+  if (cartItems.length === 0 && checkoutStep !== 3) {
     return (
       <div className="min-h-screen bg-surface-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mb-4">
