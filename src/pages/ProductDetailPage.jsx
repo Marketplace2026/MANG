@@ -578,12 +578,12 @@ export default function ProductDetailPage() {
             {/* VERT - Ajouter au panier */}
             <button onClick={handleAddToCart}
               className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md">
-              <ShoppingBag size={14}/> Panier
+              <ShoppingBag size={14}/> Ajouter au panier
             </button>
             {/* ORANGE - Acheter maintenant */}
             <button onClick={handleBuyNow}
               className="flex-1 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-400 text-white font-black text-xs shadow-md active:scale-95 transition-transform">
-              Checkout Direct
+              Acheter maintenant
             </button>
           </div>
         )}
