@@ -1,18 +1,16 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
-  Home, ShoppingCart, Plus, Bell, User,
-  Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle
+  Home, ShoppingCart, User, LayoutGrid, Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle, Bell
 } from 'lucide-react'
 import { useAuthStore, useNotificationsStore, useCartStore } from '@/store'
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
   { icon: Home,          label: 'Accueil',      path: '/marketplace'   },
+  { icon: LayoutGrid,    label: 'Catégories',   path: '/marketplace'   },
   { icon: ShoppingCart,  label: 'Panier',       path: '/panier'        },
-  { icon: Plus,          label: 'Menu',          path: null, isCenter: true },
-  { icon: Bell,          label: 'Notifs',        path: '/notifications' },
-  { icon: User,          label: 'Profil',        path: '/profil'        },
+  { icon: User,          label: 'Profil',       path: '/profil'        },
 ]
 
 const CENTER_MENU = [
@@ -156,13 +154,13 @@ export default function AppLayout() {
 
       {/* ── BARRE NAV BAS ── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200"
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+          boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
         }}
       >
-        <div className="mx-auto max-w-[var(--content-max-width)] flex items-center h-16">
+        <div className="mx-auto max-w-[var(--content-max-width)] flex items-center justify-around h-16 px-4">
           {NAV_ITEMS.map((item, idx) => {
             const Icon     = item.icon
             const isActive = item.path && location.pathname.startsWith(item.path)
@@ -170,19 +168,25 @@ export default function AppLayout() {
             /* Bouton central + */
             if (item.isCenter) {
               return (
-                <button key={idx} onClick={() => setMenuOpen(v => !v)}
-                  className="flex-1 flex justify-center items-center">
-                  <div className={clsx(
-                    'w-14 h-14 -mt-6 rounded-2xl flex items-center justify-center',
-                    'transition-all duration-200 active:scale-90',
-                    menuOpen
-                      ? 'bg-dark-900 rotate-[135deg] shadow-xl'
-                      : 'bg-primary-600 shadow-lg'
-                  )}
-                    style={!menuOpen ? { boxShadow: '0 8px 24px rgba(46,204,113,0.45)' } : {}}>
+                <button
+                  key={idx}
+                  onClick={() => setMenuOpen(v => !v)}
+                  className="flex justify-center items-center relative -top-3 focus:outline-none"
+                  aria-label="Ouvrir le menu d'accès rapide"
+                >
+                  <div
+                    className={clsx(
+                      'w-14 h-14 rounded-2xl flex items-center justify-center',
+                      'transition-all duration-300 ease-out active:scale-90',
+                      menuOpen
+                        ? 'bg-dark-900 rotate-[135deg] shadow-xl scale-95'
+                        : 'bg-gradient-to-tr from-primary-600 to-primary-500 shadow-green hover:shadow-lg'
+                    )}
+                    style={!menuOpen ? { boxShadow: '0 8px 24px rgba(22,163,74,0.35)' } : {}}
+                  >
                     {menuOpen
-                      ? <X size={22} className="text-white" strokeWidth={2.5}/>
-                      : <Plus size={26} className="text-white" strokeWidth={2.5}/>
+                      ? <X size={22} className="text-white" strokeWidth={2.5} />
+                      : <Plus size={26} className="text-white" strokeWidth={2.5} />
                     }
                   </div>
                 </button>
@@ -193,42 +197,47 @@ export default function AppLayout() {
               <button
                 key={idx}
                 onClick={() => handleNav(item.path)}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 relative active:scale-95 transition-transform duration-150"
+                className="flex-1 flex flex-col items-center justify-center py-1 relative focus:outline-none"
               >
-                {/* Trait actif en haut */}
-                {isActive && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary-600"/>
-                )}
-
-                {/* Icône */}
-                <div className="relative">
-                  <Icon
-                    size={22}
-                    strokeWidth={isActive ? 2.5 : 1.8}
+                {/* Icône avec fond actif de type capsule (Material style) */}
+                <div className="relative flex items-center justify-center px-4 py-1.5 rounded-full transition-all duration-300">
+                  <div
                     className={clsx(
-                      'transition-colors duration-200',
-                      isActive ? 'text-primary-600' : 'text-dark-500/55'
+                      'absolute inset-0 rounded-full transition-all duration-300 ease-out -z-10',
+                      isActive ? 'bg-primary-50 scale-100 opacity-100' : 'bg-transparent scale-50 opacity-0'
                     )}
                   />
+                  <Icon
+                    size={20}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                    className={clsx(
+                      'transition-transform duration-300',
+                      isActive ? 'text-primary-600 scale-110' : 'text-dark-500/60 hover:text-dark-900'
+                    )}
+                  />
+                  
                   {/* Badge notifications */}
                   {item.path === '/notifications' && unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-0.5 border-2 border-white">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white shadow-sm animate-pulse">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
+                  
                   {/* Badge panier */}
                   {item.path === '/panier' && cartCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-0.5 border-2 border-white">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white shadow-sm animate-pulse">
                       {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
                 </div>
 
                 {/* Label */}
-                <span className={clsx(
-                  'text-[10px] font-semibold transition-colors duration-200',
-                  isActive ? 'text-primary-600' : 'text-dark-500/50'
-                )}>
+                <span
+                  className={clsx(
+                    'text-[10px] font-bold tracking-wide mt-1 transition-all duration-300',
+                    isActive ? 'text-primary-700 scale-105' : 'text-dark-500/50'
+                  )}
+                >
                   {item.label}
                 </span>
               </button>
