@@ -20,7 +20,7 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { user }  = useAuthStore()
+  const { user, profile }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const { unreadCount: unreadMessages, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
   const cartItems = useCartStore(state => state.items)
@@ -46,18 +46,63 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-surface-50">
-      <main className="flex-1 safe-pb">
+      {/* HEADER DESKTOP */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
+          <div className="w-9 h-9 rounded-xl bg-gold-400 flex items-center justify-center">
+            <span className="text-lg">🌿</span>
+          </div>
+          <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
+        </div>
+
+        {/* Barre d'outils droite */}
+        <div className="flex items-center gap-5">
+          <button onClick={() => navigate('/messages')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+            <MessageCircle size={20}/>
+            {unreadMessages > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
+          </button>
+          
+          <button onClick={() => navigate('/panier')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+            <ShoppingCart size={20}/>
+            {cartCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </button>
+
+          <button onClick={() => navigate('/favoris')} className="p-2 text-dark-600 hover:text-primary-600 transition-colors">
+            <Heart size={20}/>
+          </button>
+
+          <button
+            onClick={() => navigate('/vendeur')}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm"
+          >
+            <Store size={16}/>
+            <span>Espace Vendeur</span>
+          </button>
+
+          <button onClick={() => navigate('/profil')} className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm border border-primary-200">
+            {profile?.full_name ? profile.full_name[0].toUpperCase() : 'U'}
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 safe-pb md:pt-16">
         <div className="mx-auto w-full max-w-[var(--content-max-width)]">
           <Outlet />
         </div>
       </main>
 
-
-
       {/* ── BARRE NAV BAS ── */}
       {!isProductPage && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50"
+          className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50 md:hidden"
           style={{
             paddingBottom: 'env(safe-area-inset-bottom)',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
