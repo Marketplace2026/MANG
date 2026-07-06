@@ -9,7 +9,7 @@ import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
   { icon: Home,          label: 'Accueil',      path: '/marketplace'   },
-  { icon: LayoutGrid,    label: 'Catégories',   path: '/marketplace'   },
+  { icon: LayoutGrid,    label: 'Catégories',   path: '/marketplace',  state: { openCategories: true } },
   { icon: MessageCircle, label: 'Messages',     path: '/messages'      },
   { icon: ShoppingCart,  label: 'Panier',       path: '/panier'        },
   { icon: User,          label: 'Mon MANG',     path: '/profil'        },
@@ -39,9 +39,9 @@ export default function AppLayout() {
     }
   }, [user])
 
-  const handleNav = (path) => {
-    if (!path) return
-    navigate(path)
+  const handleNav = (item) => {
+    if (!item.path) return
+    navigate(item.path, { state: item.state })
   }
 
   return (
@@ -116,7 +116,7 @@ export default function AppLayout() {
             return (
               <button
                 key={idx}
-                onClick={() => handleNav(item.path)}
+                onClick={() => handleNav(item)}
                 className="flex-1 flex flex-col items-center justify-center py-1 relative focus:outline-none"
               >
                 {/* Icône avec fond actif de type capsule */}

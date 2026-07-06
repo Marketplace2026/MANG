@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera
@@ -62,6 +62,7 @@ function distanceKm(lat1, lon1, lat2, lon2) {
 export default function MarketplacePage() {
   const { user, profile } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [shops, setShops] = useState([])
   const [allShops, setAllShops] = useState([])
@@ -76,6 +77,7 @@ export default function MarketplacePage() {
   const [sortBy, setSortBy] = useState('recent')
   const [minRating, setMinRating] = useState(null)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [topShopsOnly, setTopShopsOnly] = useState(false)
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
 
@@ -102,7 +104,15 @@ export default function MarketplacePage() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly])
+  useEffect(() => {
+    if (location.state?.openCategories) {
+      setFilterOpen(true)
+      // Reset navigation state to avoid re-opening on hot reload / back navigation
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state])
+
+  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly])
 
   useEffect(() => {
     if (!user) return
@@ -169,6 +179,7 @@ export default function MarketplacePage() {
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
       if (verifiedOnly) query = query.eq('is_verified', true)
+      if (topShopsOnly) query = query.gt('premium_level', 0)
       if (minRating) query = query.gte('rating_avg', minRating)
       if (sortBy === 'rating') query = query.order('rating_avg', { ascending: false })
       else if (sortBy === 'followers') query = query.order('followers_count', { ascending: false })
@@ -341,13 +352,14 @@ export default function MarketplacePage() {
     setSortBy('recent')
     setMinRating(null)
     setVerifiedOnly(false)
+    setTopShopsOnly(false)
     setSearch('')
     setSuggestions([])
   }
 
   const activeFiltersCount = [
     filters.category, filters.hasDelivery, filters.nearby,
-    minRating, verifiedOnly || null,
+    minRating, verifiedOnly || null, topShopsOnly || null,
     sortBy !== 'recent' ? sortBy : null
   ].filter(Boolean).length
 
@@ -355,18 +367,13 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-primary-800 to-primary-600 shadow-lg max-w-[480px] mx-auto">
-        {/* Logo + slogan défilant */}
-        <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Logo */}
+        <div className="flex items-center justify-between px-3 pt-3 pb-1">
+          <div className="flex items-center gap-1.5">
             <div className="w-9 h-9 rounded-xl bg-gold-400 flex items-center justify-center">
               <span className="text-lg">🌿</span>
             </div>
             <span className="font-display font-bold text-white text-base">MANG</span>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <div className="animate-marquee whitespace-nowrap text-white/70 text-xs font-medium">
-              🌍 MANG – La nouvelle génération du marché agricole en Afrique • 🌽 Achetez • Vendez • Connectez producteurs et acheteurs • 🚜 La marketplace agricole moderne
-            </div>
           </div>
         </div>
 
@@ -444,8 +451,8 @@ export default function MarketplacePage() {
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2.5">
           {[
             { label: '🔄 Tous', action: resetFilters, active: activeFiltersCount === 0 },
-            { label: '🔥 Top boutiques', action: loadTopShops, active: false },
-            { label: '📂 Catégories', action: () => setFilterOpen(true), active: !!filters.category },
+            { label: '🔥 Top boutiques', action: () => setTopShopsOnly(v => !v), active: topShopsOnly },
+            { label: '📂 Catégories', action: () => setFilterOpen(true), active: !!filters.category || !!filters.categoryName },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
             { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
