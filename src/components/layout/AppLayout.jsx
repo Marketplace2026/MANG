@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { icon: LayoutGrid,    label: 'Catégories',   path: '/marketplace'   },
   { icon: MessageCircle, label: 'Messages',     path: '/messages'      },
   { icon: ShoppingCart,  label: 'Panier',       path: '/panier'        },
-  { icon: User,          label: 'Profil',       path: '/profil'        },
+  { icon: User,          label: 'Mon MANG',     path: '/profil'        },
 ]
 
 

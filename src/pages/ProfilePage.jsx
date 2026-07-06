@@ -177,7 +177,7 @@ export default function ProfilePage() {
           <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider mb-3.5 pl-0.5">Mes Services</p>
           <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center">
             {[
-              { icon: Store, label: 'Espace Vendeur', onClick: () => navigate('/vendeur'), color: 'text-emerald-600 bg-emerald-50' },
+              {icon: Store, label: 'Espace Vendeur', onClick: () => navigate('/vendeur'), color: 'text-[#22C55E] bg-green-50' },
               { icon: MessageCircle, label: 'Messages', onClick: () => navigate('/messages'), color: 'text-violet-600 bg-violet-50' },
               { icon: Bell, label: 'Notifications', onClick: () => navigate('/notifications'), color: 'text-blue-600 bg-blue-50', badge: unreadCount },
               { icon: Gift, label: 'Parrainage', onClick: () => navigate('/parrainage'), color: 'text-amber-600 bg-amber-50' },
