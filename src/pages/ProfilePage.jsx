@@ -6,7 +6,7 @@ import {
   Wallet, Coins, Copy, Check, Settings, Star,
   Lock, Eye, EyeOff, Globe, ChevronDown, ChevronUp,
   AlertCircle, CheckCircle2, XCircle, ToggleLeft, ToggleRight,
-  Navigation, X
+  Navigation, X, MessageCircle, Gift, Store, Package, Heart
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -134,6 +134,32 @@ export default function ProfilePage() {
           <StatCard icon={Coins} label="Pièces MANG" value={`${pieces?.balance ?? 0} pièces`} color="gold"/>
           <div onClick={() => navigate('/vendeur')} className="cursor-pointer">
             <StatCard icon={Star} label="Mes boutiques" value="Voir tout" color="primary"/>
+          </div>
+        </div>
+
+        {/* Grille de services (Espace Vendeur, Messages, Favoris, etc.) */}
+        <div className="bg-white rounded-3xl p-4 shadow-card">
+          <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider mb-3.5 pl-0.5">Mes Services</p>
+          <div className="grid grid-cols-4 gap-y-4 gap-x-2 text-center">
+            {[
+              { icon: Store, label: 'Ventes', path: '/vendeur', color: 'text-emerald-600 bg-emerald-50' },
+              { icon: Package, label: 'Commandes', path: '/commandes', color: 'text-orange-600 bg-orange-50' },
+              { icon: MessageCircle, label: 'Messages', path: '/messages', color: 'text-violet-600 bg-violet-50' },
+              { icon: Heart, label: 'Favoris', path: '/favoris', color: 'text-red-500 bg-red-50' },
+              { icon: Gift, label: 'Parrainage', path: '/parrainage', color: 'text-amber-600 bg-amber-50' },
+              { icon: Globe, label: 'Communauté', path: '/communaute', color: 'text-blue-600 bg-blue-50' },
+              { icon: Wallet, label: 'Wallet', path: '/portefeuille', color: 'text-dark-700 bg-surface-100' }
+            ].map((srv, i) => {
+              const SrvIcon = srv.icon
+              return (
+                <button key={i} onClick={() => navigate(srv.path)} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${srv.color}`}>
+                    <SrvIcon size={18} strokeWidth={2.2}/>
+                  </div>
+                  <span className="text-[10px] font-bold text-dark-700 leading-tight">{srv.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 

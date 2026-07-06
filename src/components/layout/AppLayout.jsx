@@ -54,6 +54,7 @@ export default function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const cartItems = useCartStore(state => state.items)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const isProductPage = location.pathname.startsWith('/produit/')
 
   useEffect(() => {
     if (!user) return
@@ -153,13 +154,14 @@ export default function AppLayout() {
       )}
 
       {/* ── BARRE NAV BAS ── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50"
-        style={{
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
-        }}
-      >
+      {!isProductPage && (
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50"
+          style={{
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
+          }}
+        >
         <div className="mx-auto max-w-[var(--content-max-width)] flex items-center justify-around h-16 px-4">
           {NAV_ITEMS.map((item, idx) => {
             const Icon     = item.icon
@@ -245,6 +247,7 @@ export default function AppLayout() {
           })}
         </div>
       </nav>
+      )}
 
       <style>{`
         @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }

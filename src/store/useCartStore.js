@@ -1,9 +1,18 @@
 import { create } from 'zustand'
 
+const getSavedCart = () => {
+  try {
+    const saved = localStorage.getItem('mang_cart')
+    return saved ? JSON.parse(saved) : []
+  } catch (e) {
+    return []
+  }
+}
+
 // Store Zustand pour le panier d'achat avec persistance localStorage
 export const useCartStore = create((set, get) => ({
-  // Récupération initiale des articles du panier depuis le localStorage
-  items: JSON.parse(localStorage.getItem('mang_cart')) || [],
+  // Récupération initiale sécurisée des articles du panier
+  items: getSavedCart(),
 
   // Ajouter un produit avec quantité et variante facultative
   addItem: (product, quantity = 1, variant = null) => {
