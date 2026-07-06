@@ -1,15 +1,15 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
-  Home, MessageCircle, Plus, Bell, User,
-  Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift
+  Home, ShoppingCart, Plus, Bell, User,
+  Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle
 } from 'lucide-react'
-import { useAuthStore, useNotificationsStore } from '@/store'
+import { useAuthStore, useNotificationsStore, useCartStore } from '@/store'
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
   { icon: Home,          label: 'Accueil',      path: '/marketplace'   },
-  { icon: MessageCircle, label: 'Messages',      path: '/messages'      },
+  { icon: ShoppingCart,  label: 'Panier',       path: '/panier'        },
   { icon: Plus,          label: 'Menu',          path: null, isCenter: true },
   { icon: Bell,          label: 'Notifs',        path: '/notifications' },
   { icon: User,          label: 'Profil',        path: '/profil'        },
@@ -54,6 +54,8 @@ export default function AppLayout() {
   const { user }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const [menuOpen, setMenuOpen] = useState(false)
+  const cartItems = useCartStore(state => state.items)
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
   useEffect(() => {
     if (!user) return
@@ -214,7 +216,12 @@ export default function AppLayout() {
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
-                  {/* Badge messages — optionnel, à brancher si tu as le store */}
+                  {/* Badge panier */}
+                  {item.path === '/panier' && cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-0.5 border-2 border-white">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
                 </div>
 
                 {/* Label */}
