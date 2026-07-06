@@ -7,7 +7,8 @@ import {
   Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore, useCartStore } from '@/store'
+import { useAuthStore } from '@/store'
+import { useCartStore } from '@/store/useCartStore'
 import { Avatar, BottomSheet, Button } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'

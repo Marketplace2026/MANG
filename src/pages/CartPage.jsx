@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
-import { useCartStore } from '@/store'
+import { useCartStore } from '@/store/useCartStore'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui'
 

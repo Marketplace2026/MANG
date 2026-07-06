@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import {
   Home, ShoppingCart, User, LayoutGrid, Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle, Bell
 } from 'lucide-react'
-import { useAuthStore, useNotificationsStore, useCartStore } from '@/store'
+import { useAuthStore, useNotificationsStore } from '@/store'
+import { useCartStore } from '@/store/useCartStore'
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
