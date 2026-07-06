@@ -35,6 +35,19 @@ const CATEGORIES = [
   { name: 'Services agricoles', icon: '🛠️', items: ['Labour & préparation du sol','Récolte & battage','Transport & logistique','Stockage & conservation','Formation & conseil','Commercialisation & export'] },
 ]
 
+const BANNERS = [
+  { id: 1, title: 'Frais & Local', desc: 'Légumes cueillis ce matin à la ferme', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop', categoryName: '🌱 Production végétale' },
+  { id: 2, title: 'Matériel Agricole', desc: 'Tracteurs & outils professionnels', image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=500&auto=format&fit=crop', categoryName: '🚜 Machines & équipements' },
+  { id: 3, title: 'Intrants & Semences', desc: 'Engrais bio pour vos cultures', image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=500&auto=format&fit=crop', categoryName: '🌿 Intrants agricoles' }
+]
+
+const QUICK_CATS = [
+  { icon: '🌱', label: 'Végétaux', name: 'Production végétale' },
+  { icon: '🐄', label: 'Élevage', name: 'Production animale' },
+  { icon: '🍯', label: 'Transformés', name: 'Transformation agricole' },
+  { icon: '🚜', label: 'Matériel', name: 'Machines & équipements' }
+]
+
 function normalize(text) {
   return (text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -78,6 +91,7 @@ export default function MarketplacePage() {
   const [minRating, setMinRating] = useState(null)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [topShopsOnly, setTopShopsOnly] = useState(false)
+  const [activeBanner, setActiveBanner] = useState(0)
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
 
@@ -94,6 +108,7 @@ export default function MarketplacePage() {
   const [placeholderVisible, setPlaceholderVisible] = useState(true)
 
   useEffect(() => {
+    loadTop5Shops()
     const interval = setInterval(() => {
       setPlaceholderVisible(false)
       setTimeout(() => {
@@ -105,12 +120,10 @@ export default function MarketplacePage() {
   }, [])
 
   useEffect(() => {
-    if (location.state?.openCategories) {
+    if (location.state?.openCategories || location.search.includes('openCategories')) {
       setFilterOpen(true)
-      // Reset navigation state to avoid re-opening on hot reload / back navigation
-      navigate(location.pathname, { replace: true, state: {} })
     }
-  }, [location.state])
+  }, [location])
 
   useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly])
 
@@ -304,17 +317,14 @@ export default function MarketplacePage() {
     )
   }
 
-  const loadTopShops = async () => {
+  const loadTop5Shops = async () => {
     const { data } = await supabase
       .from('shops')
-      .select('*, owner:profiles(id, username, avatar_url)')
+      .select('*, owner:profiles(id, username, avatar_url, last_seen_at)')
       .eq('is_active', true)
-      .gt('premium_level', 0)
-      .order('premium_level', { ascending: false })
       .order('followers_count', { ascending: false })
       .limit(5)
     setTopShops(data || [])
-    setTopOpen(true)
   }
 
   const toggleLike = async (shopId) => {
@@ -328,6 +338,9 @@ export default function MarketplacePage() {
       setLikedShops(prev => new Set([...prev, shopId]))
     }
     setShops(prev => prev.map(s =>
+      s.id === shopId ? { ...s, likes_count: (s.likes_count || 0) + (isLiked ? -1 : 1) } : s
+    ))
+    setTopShops(prev => prev.map(s =>
       s.id === shopId ? { ...s, likes_count: (s.likes_count || 0) + (isLiked ? -1 : 1) } : s
     ))
   }
@@ -345,6 +358,9 @@ export default function MarketplacePage() {
     setShops(prev => prev.map(s =>
       s.id === shopId ? { ...s, followers_count: (s.followers_count || 0) + (isFollowing ? -1 : 1) } : s
     ))
+    setTopShops(prev => prev.map(s =>
+      s.id === shopId ? { ...s, followers_count: (s.followers_count || 0) + (isFollowing ? -1 : 1) } : s
+    ))
   }
 
   const resetFilters = () => {
@@ -357,6 +373,15 @@ export default function MarketplacePage() {
     setSuggestions([])
   }
 
+  const handleQuickCat = (cat) => {
+    const targetName = `${cat.icon} ${cat.name}`
+    if (filters.categoryName === targetName) {
+      setFilters(f => ({ ...f, category: null, categoryName: null }))
+    } else {
+      setFilters(f => ({ ...f, category: null, categoryName: targetName }))
+    }
+  }
+
   const activeFiltersCount = [
     filters.category, filters.hasDelivery, filters.nearby,
     minRating, verifiedOnly || null, topShopsOnly || null,
@@ -367,14 +392,22 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-primary-800 to-primary-600 shadow-lg max-w-[480px] mx-auto">
-        {/* Logo */}
+        {/* Logo & Localisation */}
         <div className="flex items-center justify-between px-3 pt-3 pb-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => navigate('/marketplace')}>
             <div className="w-9 h-9 rounded-xl bg-gold-400 flex items-center justify-center">
               <span className="text-lg">🌿</span>
             </div>
             <span className="font-display font-bold text-white text-base">MANG</span>
           </div>
+
+          <button onClick={handleNearby} className={clsx(
+            "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all backdrop-blur-sm",
+            filters.nearby ? "bg-white text-primary-700 shadow-sm" : "bg-white/10 text-white hover:bg-white/20"
+          )}>
+            <MapPin size={11}/>
+            <span>{filters.nearby ? "📍 Proche de moi" : "📍 Cotonou, Bénin"}</span>
+          </button>
         </div>
 
         {/* Barre de recherche */}
@@ -446,45 +479,81 @@ export default function MarketplacePage() {
 
       {/* CONTENU */}
       <div className="pt-[108px] pb-24">
+        {/* CARROUSEL BANNIÈRES */}
+        <div className="px-3 mb-4">
+          <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
+            <img
+              src={BANNERS[activeBanner].image}
+              alt={BANNERS[activeBanner].title}
+              className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply"
+            />
+            <div className="absolute inset-0 p-4 flex flex-col justify-end bg-gradient-to-t from-black/50 to-transparent">
+              <h4 className="text-white font-bold text-sm leading-tight">{BANNERS[activeBanner].title}</h4>
+              <p className="text-white/80 text-[10px] mt-0.5 line-clamp-1">{BANNERS[activeBanner].desc}</p>
+            </div>
+            {/* Dots */}
+            <div className="absolute bottom-2.5 right-3 flex gap-1 z-10">
+              {BANNERS.map((_, i) => (
+                <span
+                  key={i}
+                  className={clsx(
+                    'w-1.5 h-1.5 rounded-full transition-all duration-300',
+                    activeBanner === i ? 'bg-gold-400 w-3' : 'bg-white/55'
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
 
-        {/* BOUTONS FILTRES HORIZONTAUX */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2.5">
+        {/* BULLES CATÉGORIES RAPIDES */}
+        <div className="mb-4">
+          <p className="text-[10px] font-black text-dark-400 uppercase tracking-wider mb-2 px-3">Exploration Rapide</p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-3 pb-1">
+            {QUICK_CATS.map((cat, i) => {
+              const isActive = filters.categoryName === `${cat.icon} ${cat.name}`
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleQuickCat(cat)}
+                  className="flex flex-col items-center gap-1 active:scale-95 transition-transform flex-shrink-0"
+                >
+                  <div className={clsx(
+                    "w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all border",
+                    isActive ? "bg-primary-600 border-primary-600 text-white shadow-sm" : "bg-white border-surface-200 shadow-card"
+                  )}>
+                    {cat.icon}
+                  </div>
+                  <span className={clsx("text-[9px] font-bold", isActive ? "text-primary-700" : "text-dark-700")}>{cat.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* BARRE DES 4 FILTRES RAPIDES */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
-            { label: '🔄 Tous', action: resetFilters, active: activeFiltersCount === 0 },
             { label: '🔥 Top boutiques', action: () => setTopShopsOnly(v => !v), active: topShopsOnly },
-            { label: '📂 Catégories', action: () => setFilterOpen(true), active: !!filters.category || !!filters.categoryName },
+            { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
-            { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
           ].map((btn, i) => (
             <button key={i} onClick={btn.action}
               className={clsx(
-                'flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-95',
+                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border',
                 btn.active
-                  ? 'bg-primary-600 text-white shadow-green'
-                  : 'bg-white text-dark-700 shadow-card'
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-green'
+                  : 'bg-white text-dark-700 border-surface-200/50 shadow-card'
               )}>
               {btn.label}
             </button>
           ))}
-          <button onClick={() => setAdvancedOpen(true)}
-            className={clsx(
-              'flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-95',
-              activeFiltersCount > 0 ? 'bg-primary-600 text-white shadow-green' : 'bg-white text-dark-700 shadow-card'
-            )}>
-            <SlidersHorizontal size={14}/>
-            Filtres
-            {activeFiltersCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-white text-primary-600 text-[10px] font-black flex items-center justify-center ml-0.5">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* FILTRE ACTIF LABEL */}
         {filters.categoryName && (
-          <div className="px-3 pb-1">
+          <div className="px-3 pb-1 mt-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-100">
               <span className="text-primary-700 text-xs font-semibold">{filters.categoryName}</span>
               <button onClick={() => setFilters(f => ({ ...f, category: null, categoryName: null }))}>
@@ -493,6 +562,44 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
+
+        {/* SECTION 5 : TOP 5 BOUTIQUES MANG 🔥 */}
+        {topShops.length > 0 && !topShopsOnly && (
+          <div className="mb-5 pt-3">
+            <div className="flex items-center justify-between px-3 mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">🔥</span>
+                <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">Top 5 Boutiques MANG</h2>
+              </div>
+              <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">VIP Partners</span>
+            </div>
+            
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-3 pb-2.5">
+              {topShops.slice(0, 5).map((shop, i) => (
+                <TopShopCard
+                  key={shop.id}
+                  shop={shop}
+                  rank={i + 1}
+                  isLiked={likedShops.has(shop.id)}
+                  isFollowing={followedShops.has(shop.id)}
+                  onLike={() => toggleLike(shop.id)}
+                  onFollow={() => toggleFollow(shop.id)}
+                  onOpen={() => navigate(`/boutique/${shop.slug || shop.id}`)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 6 : TOUTES LES BOUTIQUES */}
+        <div className="px-3 mb-2.5 mt-2 flex items-center justify-between">
+          <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">Toutes les Boutiques</h2>
+          {activeFiltersCount > 0 && (
+            <button onClick={resetFilters} className="text-[10px] font-bold text-primary-600 hover:text-primary-700">
+              Réinitialiser ({activeFiltersCount})
+            </button>
+          )}
+        </div>
 
         {/* LISTE BOUTIQUES */}
         {loading ? (
@@ -542,22 +649,31 @@ export default function MarketplacePage() {
           toast(`Filtre: ${item}`)
         }}
       />
+    </div>
+  )
+}
 
-      {/* TOP BOUTIQUES */}
-      <BottomSheet open={topOpen} onClose={() => setTopOpen(false)} title="🔥 Top 5 Boutiques">
-        <div className="px-4 pt-2 pb-6 space-y-3">
-          {topShops.map((shop, i) => (
-            <TopShopItem
-              key={shop.id}
-              shop={shop}
-              rank={i + 1}
-              isFollowing={followedShops.has(shop.id)}
-              onFollow={() => toggleFollow(shop.id)}
-              onOpen={() => { setTopOpen(false); navigate(`/boutique/${shop.slug || shop.id}`) }}
-            />
-          ))}
-        </div>
-      </BottomSheet>
+// ============================================================
+// TOP SHOP CARD
+// ============================================================
+function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, rank }) {
+  const medalColor = { 1: 'bg-gold-400 text-gold-950', 2: 'bg-slate-300 text-slate-900', 3: 'bg-amber-600 text-amber-50' }[rank] || 'bg-primary-500 text-white'
+  
+  return (
+    <div className="relative w-64 flex-shrink-0">
+      {/* Badge de classement */}
+      <div className={`absolute top-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black shadow-md ${medalColor}`}>
+        <span>🏆 N°{rank}</span>
+      </div>
+      
+      <ShopCard
+        shop={shop}
+        isLiked={isLiked}
+        isFollowing={isFollowing}
+        onLike={onLike}
+        onFollow={onFollow}
+        onOpen={onOpen}
+      />
     </div>
   )
 }

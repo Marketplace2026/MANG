@@ -116,7 +116,13 @@ export default function AppLayout() {
             return (
               <button
                 key={idx}
-                onClick={() => handleNav(item)}
+                onClick={() => {
+                  if (item.label === 'Catégories') {
+                    navigate('/marketplace', { state: { openCategories: true } })
+                  } else {
+                    handleNav(item)
+                  }
+                }}
                 className="flex-1 flex flex-col items-center justify-center py-1 relative focus:outline-none"
               >
                 {/* Icône avec fond actif de type capsule */}

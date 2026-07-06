@@ -115,6 +115,17 @@ export default function LoginPage() {
           {loading && <Loader2 size={16} className="animate-spin"/>}
           {loading ? 'Connexion...' : 'Se connecter'}
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            toast.success("Mode invité activé (lecture seule)")
+            navigate('/marketplace')
+          }}
+          className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/15 transition-all duration-200 active:scale-95 flex items-center justify-center mt-2"
+        >
+          Entrer en tant qu'invité
+        </button>
       </form>
 
       <p className="text-center text-white/50 text-sm mt-6">
