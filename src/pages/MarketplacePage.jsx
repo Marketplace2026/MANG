@@ -36,16 +36,16 @@ const CATEGORIES = [
 ]
 
 const BANNERS = [
-  { id: 1, title: 'Frais & Local', desc: 'Légumes cueillis ce matin à la ferme', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop', categoryName: '🌱 Production végétale' },
-  { id: 2, title: 'Matériel Agricole', desc: 'Tracteurs & outils professionnels', image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=500&auto=format&fit=crop', categoryName: '🚜 Machines & équipements' },
-  { id: 3, title: 'Intrants & Semences', desc: 'Engrais bio pour vos cultures', image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=500&auto=format&fit=crop', categoryName: '🌿 Intrants agricoles' }
+  { id: 1, title: 'Produits frais du Bénin', desc: 'Frais, Locaux, Livrés chez vous', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop' },
+  { id: 2, title: 'Livraison 24h partout', desc: 'Commandez en toute simplicité', image: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=500&auto=format&fit=crop' },
+  { id: 3, title: 'Vendeurs Vérifiés', desc: 'Des professionnels de confiance', image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=500&auto=format&fit=crop' }
 ]
 
 const QUICK_CATS = [
-  { icon: '🌱', label: 'Végétaux', name: 'Production végétale' },
-  { icon: '🐄', label: 'Élevage', name: 'Production animale' },
-  { icon: '🍯', label: 'Transformés', name: 'Transformation agricole' },
-  { icon: '🚜', label: 'Matériel', name: 'Machines & équipements' }
+  { icon: '🌱', label: 'Céréales', name: 'Céréales & Légumineuses' },
+  { icon: '🥔', label: 'Tubercules', name: 'Tubercules & Racines' },
+  { icon: '🍎', label: 'Fruits', name: 'Fruits & Légumes' },
+  { icon: '🥩', label: 'Élevage', name: 'Produits Animaux' }
 ]
 
 function normalize(text) {
@@ -94,6 +94,8 @@ export default function MarketplacePage() {
   const [activeBanner, setActiveBanner] = useState(0)
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
+  const [selectedGroup, setSelectedGroup] = useState(null)
+  const [dbCategories, setDbCategories] = useState([])
 
   const [userLocation, setUserLocation] = useState(null)
   const [likedShops, setLikedShops] = useState(new Set())
@@ -109,14 +111,32 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     loadTop5Shops()
-    const interval = setInterval(() => {
+    
+    // Charger les catégories de la base de données
+    const loadCats = async () => {
+      const { data } = await supabase.from('categories').select('*')
+      setDbCategories(data || [])
+    }
+    loadCats()
+
+    // Défilement du carrousel de bannières toutes les 3 secondes
+    const bannerTimer = setInterval(() => {
+      setActiveBanner(b => (b + 1) % BANNERS.length)
+    }, 3000)
+
+    // Défilement des placeholders
+    const placeholderTimer = setInterval(() => {
       setPlaceholderVisible(false)
       setTimeout(() => {
         setPlaceholderIdx(i => (i + 1) % placeholders.length)
         setPlaceholderVisible(true)
       }, 300)
     }, 2500)
-    return () => clearInterval(interval)
+
+    return () => {
+      clearInterval(bannerTimer)
+      clearInterval(placeholderTimer)
+    }
   }, [])
 
   useEffect(() => {
@@ -125,7 +145,7 @@ export default function MarketplacePage() {
     }
   }, [location])
 
-  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly])
+  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly, selectedGroup])
 
   useEffect(() => {
     if (!user) return
@@ -191,6 +211,16 @@ export default function MarketplacePage() {
 
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
+      if (selectedGroup) {
+        const targetIds = dbCategories
+          .filter(c => c.group_name === selectedGroup)
+          .map(c => c.id)
+        if (targetIds.length > 0) {
+          query = query.in('category_id', targetIds)
+        } else {
+          query = query.eq('category_id', '00000000-0000-0000-0000-000000000000')
+        }
+      }
       if (verifiedOnly) query = query.eq('is_verified', true)
       if (topShopsOnly) query = query.gt('premium_level', 0)
       if (minRating) query = query.gte('rating_avg', minRating)
@@ -369,17 +399,17 @@ export default function MarketplacePage() {
     setMinRating(null)
     setVerifiedOnly(false)
     setTopShopsOnly(false)
+    setSelectedGroup(null)
     setSearch('')
     setSuggestions([])
   }
 
+  const handlePopular = () => {
+    setSortBy(prev => prev === 'followers' ? 'recent' : 'followers')
+  }
+
   const handleQuickCat = (cat) => {
-    const targetName = `${cat.icon} ${cat.name}`
-    if (filters.categoryName === targetName) {
-      setFilters(f => ({ ...f, category: null, categoryName: null }))
-    } else {
-      setFilters(f => ({ ...f, category: null, categoryName: targetName }))
-    }
+    setSelectedGroup(prev => prev === cat.name ? null : cat.name)
   }
 
   const activeFiltersCount = [
@@ -392,33 +422,37 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-primary-800 to-primary-600 shadow-lg max-w-[480px] mx-auto">
-        {/* Logo & Localisation */}
-        <div className="flex items-center justify-between px-3 pt-3 pb-1">
-          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => navigate('/marketplace')}>
-            <div className="w-9 h-9 rounded-xl bg-gold-400 flex items-center justify-center">
-              <span className="text-lg">🌿</span>
+        {/* Logo centré */}
+        <div className="flex items-center justify-center py-2.5">
+          <div className="flex items-center gap-1.5 cursor-pointer animate-fade-in" onClick={() => navigate('/marketplace')}>
+            <div className="w-8 h-8 rounded-xl bg-gold-400 flex items-center justify-center shadow-md">
+              <span className="text-base">🌿</span>
             </div>
-            <span className="font-display font-bold text-white text-base">MANG</span>
+            <span className="font-display font-black text-white text-base tracking-wider">MANG</span>
           </div>
+        </div>
 
-          <button onClick={handleNearby} className={clsx(
-            "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all backdrop-blur-sm",
-            filters.nearby ? "bg-white text-primary-700 shadow-sm" : "bg-white/10 text-white hover:bg-white/20"
-          )}>
-            <MapPin size={11}/>
-            <span>{filters.nearby ? "📍 Proche de moi" : "📍 Cotonou, Bénin"}</span>
-          </button>
+        {/* Bandeau déroulant animé */}
+        <div className="w-full bg-primary-950/80 text-gold-400 py-1 overflow-hidden relative border-y border-white/5">
+          <div className="whitespace-nowrap flex gap-8 animate-marquee-loop">
+            <span className="text-[9px] font-black tracking-wider uppercase">Un marché agricole nouvelle génération • Frais, Locaux, Livrés chez vous • Paiement Mobile Money</span>
+            <span className="text-[9px] font-black tracking-wider uppercase">Un marché agricole nouvelle génération • Frais, Locaux, Livrés chez vous • Paiement Mobile Money</span>
+          </div>
         </div>
 
         {/* Barre de recherche */}
-        <div className="px-3 pb-3 relative">
-          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-10 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
-            {/* Caméra */}
-            <button className="flex-shrink-0 w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center active:scale-90">
-              <Camera size={13} className="text-dark-600"/>
+        <div className="px-3 py-2.5 relative">
+          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
+            {/* Localisation / GPS badge */}
+            <button onClick={handleNearby} className={clsx(
+              "flex-shrink-0 flex items-center gap-0.5 px-2 py-1 rounded-lg text-[9px] font-black transition-all",
+              filters.nearby ? "bg-primary-100 text-primary-700" : "bg-surface-100 text-dark-600 hover:bg-surface-200"
+            )}>
+              <MapPin size={11} className="text-primary-600"/>
+              <span>{filters.nearby ? "Proche" : "Cotonou"}</span>
             </button>
 
-            {/* Input avec placeholder animé */}
+            {/* Input avec placeholder */}
             <div className="flex-1 relative">
               <input
                 ref={searchRef}
@@ -427,16 +461,9 @@ export default function MarketplacePage() {
                 onChange={e => handleSearch(e.target.value)}
                 onFocus={() => search && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="w-full bg-transparent text-dark-800 text-sm font-medium outline-none"
+                placeholder="Recher Maïs, Igname, Tomates..."
+                className="w-full bg-transparent text-dark-800 text-sm font-medium outline-none placeholder-dark-600/40"
               />
-              {!search && (
-                <span className={clsx(
-                  'absolute inset-0 flex items-center text-dark-600/40 text-sm font-medium pointer-events-none transition-all duration-300',
-                  placeholderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-                )}>
-                  🔍 {placeholders[placeholderIdx]}
-                </span>
-              )}
             </div>
 
             {search && (
@@ -445,6 +472,11 @@ export default function MarketplacePage() {
                 <X size={11} className="text-dark-600"/>
               </button>
             )}
+
+            {/* Caméra */}
+            <button className="flex-shrink-0 w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center active:scale-90">
+              <Camera size={13} className="text-dark-600"/>
+            </button>
 
             {/* Micro */}
             <button onClick={handleVoiceSearch} className="flex-shrink-0 w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center active:scale-90">
@@ -478,7 +510,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU */}
-      <div className="pt-[108px] pb-24">
+      <div className="pt-[144px] pb-24">
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-4">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
@@ -508,10 +540,15 @@ export default function MarketplacePage() {
 
         {/* BULLES CATÉGORIES RAPIDES */}
         <div className="mb-4">
-          <p className="text-[10px] font-black text-dark-400 uppercase tracking-wider mb-2 px-3">Exploration Rapide</p>
+          <div className="flex items-center justify-between px-3 mb-2">
+            <p className="text-[10px] font-black text-dark-400 uppercase tracking-wider">Exploration Rapide</p>
+            <button onClick={() => setFilterOpen(true)} className="text-[10px] font-black text-primary-600 hover:underline flex items-center gap-0.5">
+              Voir tout 📂
+            </button>
+          </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar px-3 pb-1">
             {QUICK_CATS.map((cat, i) => {
-              const isActive = filters.categoryName === `${cat.icon} ${cat.name}`
+              const isActive = selectedGroup === cat.name
               return (
                 <button
                   key={i}
@@ -534,7 +571,7 @@ export default function MarketplacePage() {
         {/* BARRE DES 4 FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
-            { label: '🔥 Top boutiques', action: () => setTopShopsOnly(v => !v), active: topShopsOnly },
+            { label: '🔥 Populaires', action: handlePopular, active: sortBy === 'followers' },
             { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
@@ -552,11 +589,11 @@ export default function MarketplacePage() {
         </div>
 
         {/* FILTRE ACTIF LABEL */}
-        {filters.categoryName && (
-          <div className="px-3 pb-1 mt-2">
+        {selectedGroup && (
+          <div className="px-3 pb-1 mt-2 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-100">
-              <span className="text-primary-700 text-xs font-semibold">{filters.categoryName}</span>
-              <button onClick={() => setFilters(f => ({ ...f, category: null, categoryName: null }))}>
+              <span className="text-primary-700 text-xs font-semibold">📂 {selectedGroup}</span>
+              <button onClick={() => setSelectedGroup(null)}>
                 <X size={12} className="text-primary-500"/>
               </button>
             </div>
@@ -564,7 +601,7 @@ export default function MarketplacePage() {
         )}
 
         {/* SECTION 5 : TOP 5 BOUTIQUES MANG 🔥 */}
-        {topShops.length > 0 && !topShopsOnly && (
+        {topShops.length > 0 && !selectedGroup && (
           <div className="mb-5 pt-3">
             <div className="flex items-center justify-between px-3 mb-2.5">
               <div className="flex items-center gap-1.5">
@@ -643,12 +680,22 @@ export default function MarketplacePage() {
       <CategoryModal
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
-        onSelect={(cat, item) => {
-          setFilters(f => ({ ...f, category: null, categoryName: `${cat.icon} ${item}` }))
-          setFilterOpen(false)
-          toast(`Filtre: ${item}`)
-        }}
+        dbCategories={dbCategories}
+        allShops={allShops}
+        onSelectGroup={setSelectedGroup}
       />
+
+      <style>{`
+        @keyframes marquee-loop {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee-loop {
+          display: flex;
+          width: max-content;
+          animation: marquee-loop 15s linear infinite;
+        }
+      `}</style>
     </div>
   )
 }
@@ -864,70 +911,91 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
 }
 
 // ============================================================
-// MODAL CATÉGORIES
+// MODAL CATÉGORIES (GRILLE 3x3 ALIBABA)
 // ============================================================
-function CategoryModal({ open, onClose, onSelect }) {
-  const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState(null)
+function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup }) {
+  const [emptyGroup, setEmptyGroup] = useState(null)
 
   if (!open) return null
 
-  const filtered = CATEGORIES.map(cat => ({
-    ...cat,
-    items: cat.items.filter(item =>
-      !search || normalize(item).includes(normalize(search)) || normalize(cat.name).includes(normalize(search))
-    )
-  })).filter(cat => cat.items.length > 0)
+  const GROUPS = [
+    { name: 'Céréales & Légumineuses', label: 'Céréales', icon: '🌽' },
+    { name: 'Tubercules & Racines', label: 'Tubercules', icon: '🥔' },
+    { name: 'Fruits & Légumes', label: 'Fruits & Légumes', icon: '🍎' },
+    { name: 'Produits Animaux', label: 'Élevage', icon: '🥩' },
+    { name: 'Produits Transformés', label: 'Transformés', icon: '🍯' },
+    { name: 'Épices & Condiments', label: 'Épices', icon: '🌶️' },
+    { name: 'Intrants Agricoles', label: 'Intrants', icon: '🌿' },
+    { name: 'RESET', label: 'Tous', icon: '🔄' },
+    { name: 'CLOSE', label: 'Fermer', icon: '❌' },
+  ]
+
+  const handleGroupClick = (group) => {
+    if (group.name === 'CLOSE') {
+      onClose()
+      return
+    }
+    if (group.name === 'RESET') {
+      onSelectGroup(null)
+      onClose()
+      return
+    }
+
+    // Compter les boutiques correspondantes
+    const count = allShops.filter(s => {
+      const cat = dbCategories.find(c => c.id === s.category_id)
+      return cat && cat.group_name === group.name
+    }).length
+
+    if (count === 0) {
+      setEmptyGroup(group.label)
+    } else {
+      onSelectGroup(group.name)
+      onClose()
+    }
+  }
 
   return (
     <>
       <div className="overlay" onClick={onClose}/>
-      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0">
-        <div className="flex justify-center pt-3 pb-1">
+      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0 p-5">
+        <div className="flex justify-center pt-1 pb-3">
           <div className="w-10 h-1 rounded-full bg-surface-300"/>
         </div>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100">
-          <h3 className="font-display text-lg font-bold text-dark-800">📂 Catégories</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center">
-            <X size={16}/>
-          </button>
-        </div>
 
-        {/* Recherche catégorie */}
-        <div className="px-4 py-3">
-          <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40"/>
-            <input type="text" placeholder="Rechercher une catégorie..." value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="input-field pl-10 text-sm"/>
+        {emptyGroup ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="text-4xl">🫙</div>
+            <p className="text-dark-800 font-bold text-sm">
+              Aucune boutique n'a cette catégorie pour le moment
+            </p>
+            <button
+              onClick={() => setEmptyGroup(null)}
+              className="px-5 py-2.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl text-xs shadow-md transition-all active:scale-95"
+            >
+              Retour
+            </button>
           </div>
-        </div>
-
-        <div className="overflow-y-auto max-h-[60vh] px-4 pb-6 space-y-2">
-          {filtered.map(cat => (
-            <div key={cat.name} className="rounded-2xl border-2 border-surface-200 overflow-hidden">
-              <button onClick={() => setExpanded(expanded === cat.name ? null : cat.name)}
-                className="w-full flex items-center justify-between p-3.5 bg-surface-50 active:bg-surface-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="font-bold text-dark-800 text-sm">{cat.name}</span>
-                </div>
-                <ChevronDown size={16} className={clsx('text-dark-600/40 transition-transform duration-200', expanded === cat.name && 'rotate-180')}/>
-              </button>
-              {expanded === cat.name && (
-                <div className="grid grid-cols-2 gap-1.5 p-2 bg-white">
-                  {cat.items.map(item => (
-                    <button key={item} onClick={() => onSelect(cat, item)}
-                      className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-50 active:bg-primary-50 text-left transition-colors">
-                      <span className="text-sm">{cat.icon}</span>
-                      <span className="text-xs font-semibold text-dark-700 truncate">{item}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+        ) : (
+          <div>
+            <h3 className="font-display text-base font-black text-dark-800 text-center mb-4 uppercase tracking-wider">
+              Catégories Alibaba
+            </h3>
+            
+            <div className="grid grid-cols-3 gap-3.5">
+              {GROUPS.map((g, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleGroupClick(g)}
+                  className="flex flex-col items-center justify-center p-3 rounded-2xl bg-surface-50 border-2 border-surface-200 active:scale-95 hover:border-primary-400 transition-all text-center aspect-square"
+                >
+                  <span className="text-2xl mb-1.5">{g.icon}</span>
+                  <span className="text-[10px] font-black text-dark-800 leading-tight line-clamp-2">{g.label}</span>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </>
   )
