@@ -614,6 +614,7 @@ export default function ShopPublicPage() {
 // PRODUCT CARD
 // ══════════════════════════════════════
 function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
+  const navigate = useNavigate()
   const [isFav, setIsFav] = useState(false)
 
   useEffect(() => {
@@ -623,14 +624,19 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
       .then(({ data }) => setIsFav(!!data))
   }, [user, product.id])
 
-  const handleFav = async () => { await onFavorite(); setIsFav(v => !v) }
+  const handleFav = async (e) => {
+    e.stopPropagation()
+    await onFavorite()
+    setIsFav(v => !v)
+  }
   const isAvailable = product.availability === 'now'
 
   return (
-    <div className="flex-shrink-0 w-48 bg-white rounded-3xl overflow-hidden shadow-md border border-gray-100 active:scale-[0.96] transition-all duration-150">
+    <div className="flex-shrink-0 w-48 bg-white rounded-3xl overflow-hidden shadow-md border border-gray-100 active:scale-[0.96] transition-all duration-150 cursor-pointer"
+      onClick={() => navigate(`/produit/${product.id}`)}>
       <div className="relative h-40 overflow-hidden bg-gray-100">
         {product.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" onClick={onZoom}/>
+          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-5xl opacity-20">🌿</div>}
         <span className={clsx(
           'absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold',
@@ -656,7 +662,7 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
             <span className="font-black text-primary-700 text-base">{product.price?.toLocaleString('fr-FR')}</span>
             <span className="text-[10px] text-gray-400 ml-1">FCFA</span>
           </div>
-          <button onClick={onOrder}
+          <button onClick={(e) => { e.stopPropagation(); navigate(`/produit/${product.id}`) }}
             className="w-9 h-9 rounded-2xl bg-primary-600 flex items-center justify-center shadow-md shadow-primary-100 active:scale-90">
             <ShoppingCart size={15} className="text-white"/>
           </button>

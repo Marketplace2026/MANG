@@ -272,3 +272,55 @@ export const useUIStore = create((set) => ({
   openBottomSheet: (content) => set({ bottomSheetOpen: true, bottomSheetContent: content }),
   closeBottomSheet: () => set({ bottomSheetOpen: false, bottomSheetContent: null }),
 }))
+
+// ============================================================
+// CART STORE (Panier avec localStorage)
+// ============================================================
+const getSavedCart = () => {
+  try {
+    return JSON.parse(localStorage.getItem('mang_cart')) || []
+  } catch {
+    return []
+  }
+}
+
+export const useCartStore = create((set, get) => ({
+  items: getSavedCart(),
+
+  addItem: (product, quantity = 1, variant = null) => {
+    const id = product.id + (variant ? '_' + variant.name : '')
+    const items = get().items
+    const existing = items.find(item => item.id === id)
+
+    let newItems
+    if (existing) {
+      newItems = items.map(item =>
+        item.id === id ? { ...item, quantity: item.quantity + quantity } : item
+      )
+    } else {
+      newItems = [...items, { id, product, quantity, variant }]
+    }
+
+    localStorage.setItem('mang_cart', JSON.stringify(newItems))
+    set({ items: newItems })
+  },
+
+  removeItem: (itemId) => {
+    const newItems = get().items.filter(item => item.id !== itemId)
+    localStorage.setItem('mang_cart', JSON.stringify(newItems))
+    set({ items: newItems })
+  },
+
+  updateQuantity: (itemId, qty) => {
+    const newItems = get().items.map(item =>
+      item.id === itemId ? { ...item, quantity: Math.max(1, qty) } : item
+    )
+    localStorage.setItem('mang_cart', JSON.stringify(newItems))
+    set({ items: newItems })
+  },
+
+  clearCart: () => {
+    localStorage.removeItem('mang_cart')
+    set({ items: [] })
+  }
+}))

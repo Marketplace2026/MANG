@@ -103,6 +103,39 @@ export default function VendorPage() {
   const [verifyOpen, setVerifyOpen] = useState(null) // shop
   const [verifyRequests, setVerifyRequests] = useState({}) // shopId -> request
 
+  // Phase 2 : Dashboard Vendeur, Commandes & Devis
+  const [activeTab, setActiveTab] = useState('shops') // 'shops' | 'orders' | 'quotes'
+  const [receivedOrders, setReceivedOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [quotes, setQuotes] = useState([])
+  const [quotesLoading, setQuotesLoading] = useState(false)
+
+  const loadReceivedOrders = async () => {
+    setOrdersLoading(true)
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('*, product:products(*), buyer:profiles(username)')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+      setReceivedOrders(data || [])
+    } catch {}
+    setOrdersLoading(false)
+  }
+
+  const loadQuotes = async () => {
+    setQuotesLoading(true)
+    try {
+      const { data } = await supabase
+        .from('wholesale_quotes')
+        .select('*, product:products(name), buyer:profiles(username)')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+      setQuotes(data || [])
+    } catch {}
+    setQuotesLoading(false)
+  }
+
   useEffect(() => { if (user) { loadShops(); checkPremium(); loadVerifyRequests() } }, [user])
 
   const loadVerifyRequests = async () => {
@@ -274,39 +307,77 @@ export default function VendorPage() {
           </div>
         )}
 
-        {/* MES BOUTIQUES */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-lg font-bold text-dark-800">Mes boutiques</h2>
-            <span className="text-xs text-dark-600/50 font-medium bg-surface-100 px-2.5 py-1 rounded-xl">
-              {shops.length} boutique{shops.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          {loading ? (
-            <div className="space-y-3">
-              {[1,2].map(i => <ShopCardSkeleton key={i}/>)}
-            </div>
-          ) : shops.length === 0 ? (
-            <EmptyShops onCreate={() => setCreateShopOpen(true)}/>
-          ) : (
-            <div className="space-y-3">
-              {shops.map(shop => (
-                <ShopCard
-                  key={shop.id}
-                  shop={shop}
-                  premiumStatus={premiumStatus}
-                  verifyRequest={verifyRequests[shop.id]}
-                  onOpen={() => setShopDetailOpen(shop)}
-                  onEdit={() => setEditShopOpen(shop)}
-                  onDelete={() => setDeleteShopModal(shop)}
-                  onAddProduct={() => { setActiveShop(shop); setAddProductOpen(true) }}
-                  onVerify={() => setVerifyOpen(shop)}
-                />
-              ))}
-            </div>
-          )}
+        {/* SÉLECTEUR D'ONGLETS */}
+        <div className="flex bg-white rounded-2xl p-1 shadow-card border border-surface-100">
+          <button
+            onClick={() => setActiveTab('shops')}
+            className={clsx('flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all',
+              activeTab === 'shops' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
+            )}
+          >
+            🏪 Boutiques
+          </button>
+          <button
+            onClick={() => { setActiveTab('orders'); loadReceivedOrders() }}
+            className={clsx('flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all',
+              activeTab === 'orders' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
+            )}
+          >
+            📦 Commandes
+          </button>
+          <button
+            onClick={() => { setActiveTab('quotes'); loadQuotes() }}
+            className={clsx('flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all',
+              activeTab === 'quotes' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
+            )}
+          >
+            🏷️ Devis Grossistes
+          </button>
         </div>
+
+        {/* PANELS D'ONGLETS */}
+        {activeTab === 'shops' && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display text-lg font-bold text-dark-800">Mes boutiques</h2>
+              <span className="text-xs text-dark-600/50 font-medium bg-surface-100 px-2.5 py-1 rounded-xl">
+                {shops.length} boutique{shops.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="space-y-3">
+                {[1,2].map(i => <ShopCardSkeleton key={i}/>)}
+              </div>
+            ) : shops.length === 0 ? (
+              <EmptyShops onCreate={() => setCreateShopOpen(true)}/>
+            ) : (
+              <div className="space-y-3">
+                {shops.map(shop => (
+                  <ShopCard
+                    key={shop.id}
+                    shop={shop}
+                    premiumStatus={premiumStatus}
+                    verifyRequest={verifyRequests[shop.id]}
+                    onOpen={() => setShopDetailOpen(shop)}
+                    onEdit={() => setEditShopOpen(shop)}
+                    onDelete={() => setDeleteShopModal(shop)}
+                    onAddProduct={() => { setActiveShop(shop); setAddProductOpen(true) }}
+                    onVerify={() => setVerifyOpen(shop)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <ReceivedOrdersTab orders={receivedOrders} loading={ordersLoading} onRefresh={loadReceivedOrders} />
+        )}
+
+        {activeTab === 'quotes' && (
+          <QuotesTab quotes={quotes} loading={quotesLoading} onRefresh={loadQuotes} />
+        )}
       </div>
 
       {/* ===== MODALS ===== */}
@@ -888,18 +959,58 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
 // ============================================================
 function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', price:'', availability:'now' })
+  const [stockQuantity, setStockQuantity] = useState('')
+  const [variants, setVariants] = useState([])
+  const [wholesaleTiers, setWholesaleTiers] = useState([])
+
+  // States pour ajouter de nouvelles lignes de variantes/paliers
+  const [vName, setVName] = useState('')
+  const [vPrice, setVPrice] = useState('')
+  const [vStock, setVStock] = useState('')
+  const [tQty, setTQty] = useState('')
+  const [tPrice, setTPrice] = useState('')
+
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [loading, setLoading] = useState(false)
   const imgRef = useRef()
 
-  const reset = () => { setForm({ name:'', description:'', price:'', availability:'now' }); setImageFile(null); setImagePreview(null) }
+  const reset = () => {
+    setForm({ name:'', description:'', price:'', availability:'now' })
+    setStockQuantity('')
+    setVariants([])
+    setWholesaleTiers([])
+    setVName(''); setVPrice(''); setVStock('')
+    setTQty(''); setTPrice('')
+    setImageFile(null); setImagePreview(null)
+  }
 
   const handleImage = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+  }
+
+  const addVariantLocal = () => {
+    if (!vName.trim()) return toast.error('Nom de variante requis')
+    if (!vPrice || isNaN(vPrice) || +vPrice <= 0) return toast.error('Prix de variante invalide')
+    setVariants(prev => [...prev, {
+      name: vName.trim(),
+      price: Math.round(+vPrice),
+      stock: vStock && !isNaN(vStock) ? parseInt(vStock) : null
+    }])
+    setVName(''); setVPrice(''); setVStock('')
+  }
+
+  const addTierLocal = () => {
+    if (!tQty || isNaN(tQty) || +tQty <= 0) return toast.error('Quantité minimale invalide')
+    if (!tPrice || isNaN(tPrice) || +tPrice <= 0) return toast.error('Prix grossiste invalide')
+    setWholesaleTiers(prev => [...prev, {
+      min_qty: parseInt(tQty),
+      price: Math.round(+tPrice)
+    }])
+    setTQty(''); setTPrice('')
   }
 
   const handleAdd = async () => {
@@ -922,6 +1033,9 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
         image_url: imageUrl,
         availability: form.availability,
         is_available: true,
+        stock_quantity: stockQuantity ? parseInt(stockQuantity) : null,
+        variants: variants,
+        wholesale_tiers: wholesaleTiers
       })
       if (error) throw error
 
@@ -934,7 +1048,6 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
 
       toast.success('Produit ajouté ! 📦')
       reset()
-      // Recharger les pièces depuis Supabase
       if (refreshWallet) await refreshWallet()
       onAdded()
       onClose()
@@ -979,10 +1092,66 @@ function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWa
             className="input-field resize-none" rows={2}/>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-bold text-dark-700">Prix (FCFA) *</label>
-          <input type="number" placeholder="Ex: 5000" min="0" value={form.price}
-            onChange={e => setForm(p => ({...p, price: e.target.value}))} className="input-field"/>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-dark-700">Prix unitaire (FCFA) *</label>
+            <input type="number" placeholder="Ex: 5000" min="0" value={form.price}
+              onChange={e => setForm(p => ({...p, price: e.target.value}))} className="input-field"/>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-dark-700">Stock général (optionnel)</label>
+            <input type="number" placeholder="Ex: 250 (vide = infini)" min="0" value={stockQuantity}
+              onChange={e => setStockQuantity(e.target.value)} className="input-field"/>
+          </div>
+        </div>
+
+        {/* COMPOSANT GESTIONNAIRE DE VARIANTES */}
+        <div className="bg-surface-50 border border-surface-200 rounded-3xl p-4 space-y-3">
+          <p className="text-xs font-bold text-dark-700 uppercase tracking-wider pl-0.5">Variantes (ex: 50kg, 100kg, sac)</p>
+          
+          <div className="grid grid-cols-3 gap-1.5">
+            <input type="text" placeholder="Nom" value={vName} onChange={e => setVName(e.target.value)} className="input-field text-xs py-2 px-3"/>
+            <input type="number" placeholder="Prix" value={vPrice} onChange={e => setVPrice(e.target.value)} className="input-field text-xs py-2 px-3"/>
+            <input type="number" placeholder="Stock" value={vStock} onChange={e => setVStock(e.target.value)} className="input-field text-xs py-2 px-3"/>
+          </div>
+          <button onClick={addVariantLocal} className="w-full py-2 bg-primary-100 text-primary-700 text-xs font-bold rounded-xl active:scale-[0.98] transition-transform">
+            ＋ Ajouter la variante
+          </button>
+
+          {variants.length > 0 && (
+            <div className="space-y-1.5 pt-2 border-t border-surface-200">
+              {variants.map((v, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white border border-surface-150 p-2 rounded-xl text-xs">
+                  <p className="font-semibold text-dark-800">{v.name} - {v.price} F {v.stock !== null ? `(${v.stock} en stock)` : ''}</p>
+                  <button onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* COMPOSANT GESTIONNAIRE DE PALIERS DE GROS */}
+        <div className="bg-surface-50 border border-surface-200 rounded-3xl p-4 space-y-3">
+          <p className="text-xs font-bold text-dark-700 uppercase tracking-wider pl-0.5">Paliers de gros (prix dégressifs)</p>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <input type="number" placeholder="Qté minimale" value={tQty} onChange={e => setTQty(e.target.value)} className="input-field text-xs py-2 px-3"/>
+            <input type="number" placeholder="Prix unitaire (FCFA)" value={tPrice} onChange={e => setTPrice(e.target.value)} className="input-field text-xs py-2 px-3"/>
+          </div>
+          <button onClick={addTierLocal} className="w-full py-2 bg-gold-500/10 text-gold-700 text-xs font-bold rounded-xl active:scale-[0.98] transition-transform">
+            ＋ Ajouter le palier grossiste
+          </button>
+
+          {wholesaleTiers.length > 0 && (
+            <div className="space-y-1.5 pt-2 border-t border-surface-200">
+              {wholesaleTiers.map((t, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white border border-surface-150 p-2 rounded-xl text-xs">
+                  <p className="font-semibold text-dark-800">Dès {t.min_qty} unités : {t.price} F / unité</p>
+                  <button onClick={() => setWholesaleTiers(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -1779,5 +1948,373 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
         </div>
       </div>
     </BottomSheet>
+  )
+}
+
+// ============================================================
+// COMPOSANT COMMANDES REÇUES
+// ============================================================
+function ReceivedOrdersTab({ orders, loading, onRefresh }) {
+  const [updatingId, setUpdatingId] = useState(null)
+
+  const handleAccept = async (orderId) => {
+    setUpdatingId(orderId)
+    try {
+      const { data, error } = await supabase.rpc('accept_order', { p_order_id: orderId })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Commande acceptée ! 📦')
+        onRefresh()
+      } else {
+        throw new Error(data?.error || 'Erreur lors de la validation')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleRefuse = async (orderId) => {
+    if (!confirm('Voulez-vous vraiment refuser cette commande ? L\'acheteur sera remboursé.')) return
+    setUpdatingId(orderId)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.rpc('refuse_order', { p_seller_id: user.id, p_order_id: orderId })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Commande refusée et remboursée !')
+        onRefresh()
+      } else {
+        throw new Error(data?.error || 'Erreur')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleDeliveryUpdate = async (orderId, newStatus) => {
+    setUpdatingId(orderId)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.rpc('update_delivery_status', {
+        p_seller_id: user.id,
+        p_order_id: orderId,
+        p_status: newStatus
+      })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Statut de livraison mis à jour ! 🚚')
+        onRefresh()
+      } else {
+        throw new Error(data?.error || 'Erreur')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const paidOrders = orders.filter(o => o.status === 'paid')
+  const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.net_amount || 0), 0)
+  const totalCommission = paidOrders.reduce((sum, o) => sum + (o.commission || 0), 0)
+
+  return (
+    <div className="space-y-4">
+      {/* Dashboard des ventes */}
+      <div className="grid grid-cols-2 gap-3 bg-white rounded-3xl p-4 shadow-card">
+        <div className="p-3 bg-emerald-50 rounded-2xl text-center">
+          <p className="text-emerald-800 font-bold text-sm">Revenus Nets</p>
+          <p className="font-display font-black text-emerald-600 text-lg mt-0.5">{(totalRevenue/1).toLocaleString('fr-FR')} F</p>
+        </div>
+        <div className="p-3 bg-surface-50 rounded-2xl text-center">
+          <p className="text-dark-600 font-bold text-sm">Commissions (5%)</p>
+          <p className="font-display font-black text-dark-800 text-lg mt-0.5">{(totalCommission/1).toLocaleString('fr-FR')} F</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 text-center shadow-card">
+          <p className="text-4xl mb-2">📦</p>
+          <p className="font-bold text-dark-800">Aucune commande reçue</p>
+          <p className="text-xs text-dark-600/40 mt-1">Les commandes des clients apparaîtront ici.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map(order => (
+            <div key={order.id} className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+              <div className="flex justify-between items-center pb-2.5 border-b border-surface-50 text-xs">
+                <span className="font-mono text-dark-400">Order #{order.id.slice(0, 8)}</span>
+                <span className={clsx('font-black px-2 py-0.5 rounded-lg uppercase text-[9px]',
+                  order.status === 'pending' && 'bg-orange-50 text-orange-600',
+                  order.status === 'accepted' && 'bg-blue-50 text-blue-600',
+                  order.status === 'paid' && 'bg-emerald-50 text-emerald-600',
+                  order.status === 'refused' && 'bg-red-50 text-red-600'
+                )}>
+                  {order.status === 'pending' && 'En attente'}
+                  {order.status === 'accepted' && 'Acceptée'}
+                  {order.status === 'paid' && 'Payée'}
+                  {order.status === 'refused' && 'Refusée'}
+                </span>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="w-12 h-12 bg-surface-100 rounded-xl overflow-hidden flex-shrink-0">
+                  {order.product?.image_url ? (
+                    <img src={order.product.image_url} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-dark-800 text-sm truncate">{order.product?.name || 'Produit inconnu'}</p>
+                  <p className="text-xs text-dark-500 mt-0.5">Acheteur : @{order.buyer?.username || 'Client MANG'}</p>
+                  <p className="text-xs text-dark-600 mt-1">Qté : <span className="font-bold">{order.quantity}</span> | Prix net : <span className="font-bold text-primary-700">{order.net_amount?.toLocaleString('fr-FR')} F</span></p>
+                  {order.variant_name && (
+                    <p className="text-[10px] text-dark-400 font-semibold mt-1">Option : {order.variant_name}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-xs text-dark-600/70 p-2.5 bg-surface-50 rounded-xl space-y-1">
+                <p>📍 <strong>Lieu :</strong> {order.delivery_address}</p>
+                <p>📞 <strong>Tel :</strong> {order.delivery_phone}</p>
+                {order.note && <p>💬 <strong>Note :</strong> {order.note}</p>}
+              </div>
+
+              {/* Actions de livraison */}
+              {order.status === 'paid' && (
+                <div className="pt-1 flex items-center justify-between border-t border-surface-50 text-xs">
+                  <span className="font-bold text-dark-600/70">🚚 Livraison :</span>
+                  <div className="flex gap-1">
+                    {order.delivery_status === 'pending' && (
+                      <button
+                        onClick={() => handleDeliveryUpdate(order.id, 'preparing')}
+                        disabled={updatingId === order.id}
+                        className="px-2.5 py-1.5 rounded-lg bg-orange-100 text-orange-700 font-bold active:scale-95 transition-transform"
+                      >
+                        Préparer
+                      </button>
+                    )}
+                    {order.delivery_status === 'preparing' && (
+                      <button
+                        onClick={() => handleDeliveryUpdate(order.id, 'shipped')}
+                        disabled={updatingId === order.id}
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-100 text-blue-700 font-bold active:scale-95 transition-transform"
+                      >
+                        Expédier
+                      </button>
+                    )}
+                    {order.delivery_status === 'shipped' && (
+                      <button
+                        onClick={() => handleDeliveryUpdate(order.id, 'delivered')}
+                        disabled={updatingId === order.id}
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 font-bold active:scale-95 transition-transform"
+                      >
+                        Livrer
+                      </button>
+                    )}
+                    {order.delivery_status === 'delivered' && (
+                      <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-black">Livré ✓</span>
+                    )}
+                    <span className="ml-1 uppercase tracking-wider font-bold text-[9px] bg-surface-100 px-2 py-1 rounded-lg text-dark-600">
+                      {order.delivery_status === 'pending' && 'En attente'}
+                      {order.delivery_status === 'preparing' && 'En préparation'}
+                      {order.delivery_status === 'shipped' && 'Expédié'}
+                      {order.delivery_status === 'delivered' && 'Livré'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions de validation de commande */}
+              {order.status === 'pending' && (
+                <div className="pt-2 flex gap-2 border-t border-surface-50">
+                  <button
+                    onClick={() => handleRefuse(order.id)}
+                    disabled={updatingId === order.id}
+                    className="flex-1 py-2.5 bg-red-50 text-red-500 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                  >
+                    Refuser
+                  </button>
+                  <button
+                    onClick={() => handleAccept(order.id)}
+                    disabled={updatingId === order.id}
+                    className="flex-[2] py-2.5 bg-primary-600 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                  >
+                    Accepter la commande
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// COMPOSANT DEVIS GROSSISTES
+// ============================================================
+function QuotesTab({ quotes, loading, onRefresh }) {
+  const [updatingId, setUpdatingId] = useState(null)
+  const [proposedPrices, setProposedPrices] = useState({}) // quoteId -> price
+
+  const handleRespond = async (quoteId) => {
+    const price = proposedPrices[quoteId]
+    if (!price || isNaN(price) || price <= 0) {
+      return toast.error('Veuillez saisir un prix valide')
+    }
+    setUpdatingId(quoteId)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.rpc('respond_wholesale_quote', {
+        p_quote_id: quoteId,
+        p_seller_id: user.id,
+        p_proposed_price: parseInt(price),
+        p_status: 'responded'
+      })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Proposition envoyée avec succès ! 🏷️')
+        onRefresh()
+      } else {
+        throw new Error(data?.error || 'Erreur')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleReject = async (quoteId) => {
+    if (!confirm('Rejeter cette demande de devis ?')) return
+    setUpdatingId(quoteId)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.rpc('respond_wholesale_quote', {
+        p_quote_id: quoteId,
+        p_seller_id: user.id,
+        p_proposed_price: 0,
+        p_status: 'rejected'
+      })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Demande déclinée')
+        onRefresh()
+      } else {
+        throw new Error(data?.error || 'Erreur')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
+        </div>
+      ) : quotes.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 text-center shadow-card">
+          <p className="text-4xl mb-2">🏷️</p>
+          <p className="font-bold text-dark-800">Aucun devis reçu</p>
+          <p className="text-xs text-dark-600/40 mt-1">Les demandes des grossistes apparaîtront ici.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {quotes.map(quote => (
+            <div key={quote.id} className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-surface-50 text-xs">
+                <span className="font-mono text-dark-400">Devis #{quote.id.slice(0, 8)}</span>
+                <span className={clsx('font-black px-2 py-0.5 rounded-lg uppercase text-[9px]',
+                  quote.status === 'pending' && 'bg-orange-50 text-orange-600',
+                  quote.status === 'responded' && 'bg-blue-50 text-blue-600',
+                  quote.status === 'accepted' && 'bg-emerald-50 text-emerald-600',
+                  quote.status === 'rejected' && 'bg-red-50 text-red-600'
+                )}>
+                  {quote.status === 'pending' && 'À traiter'}
+                  {quote.status === 'responded' && 'Répondu'}
+                  {quote.status === 'accepted' && 'Accepté'}
+                  {quote.status === 'rejected' && 'Décliné'}
+                </span>
+              </div>
+
+              <div>
+                <p className="font-bold text-dark-800 text-sm">{quote.product?.name}</p>
+                <p className="text-xs text-dark-500 mt-0.5">Grossiste : @{quote.buyer?.username}</p>
+                <p className="text-xs text-dark-700 mt-2 font-bold">Quantité demandée : {quote.quantity} unités</p>
+                {quote.description && (
+                  <p className="text-xs text-dark-600 bg-surface-50 p-2.5 rounded-xl border border-surface-100 mt-2 font-medium">
+                    💬 {quote.description}
+                  </p>
+                )}
+              </div>
+
+              {quote.status === 'pending' && (
+                <div className="pt-2 border-t border-surface-50 space-y-3">
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      placeholder="Prix unitaire proposé (FCFA)"
+                      value={proposedPrices[quote.id] || ''}
+                      onChange={e => setProposedPrices(p => ({ ...p, [quote.id]: e.target.value }))}
+                      className="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <span className="text-xs text-dark-500 font-bold">FCFA</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleReject(quote.id)}
+                      disabled={updatingId === quote.id}
+                      className="flex-1 py-2.5 bg-red-50 text-red-500 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                    >
+                      Décliner
+                    </button>
+                    <button
+                      onClick={() => handleRespond(quote.id)}
+                      disabled={updatingId === quote.id}
+                      className="flex-[2] py-2.5 bg-primary-600 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                    >
+                      Proposer le tarif
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quote.status === 'responded' && (
+                <p className="text-xs text-primary-700 font-bold bg-primary-50 p-2 rounded-xl text-center">
+                  🏷️ Tarif proposé : {quote.proposed_price?.toLocaleString('fr-FR')} FCFA / u
+                </p>
+              )}
+
+              {quote.status === 'accepted' && (
+                <p className="text-xs text-emerald-700 font-bold bg-emerald-50 p-2 rounded-xl text-center">
+                  ✅ Offre acceptée ! Tarif validé : {quote.proposed_price?.toLocaleString('fr-FR')} FCFA / u
+                </p>
+              )}
+
+              {quote.status === 'rejected' && (
+                <p className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded-xl text-center">
+                  ❌ Vous avez décliné cette demande
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

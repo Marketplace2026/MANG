@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, X, ChevronDown, ChevronUp, Phone, MapPin, User, Shield } from 'lucide-react'
+import {
+  ArrowLeft, Check, X, Shield, Users, Store, Package,
+  TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
-import { Avatar, BottomSheet } from '@/components/ui'
-import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { Avatar, BottomSheet, Button } from '@/components/ui'
 
 const ADMIN_ID = 'd9f97369-ae78-4da2-844c-1c9c97b12445'
 
@@ -40,14 +41,35 @@ const REJECT_REASONS = {
 export default function AdminVerificationPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState('verifications') // 'verifications' | 'stats' | 'disputes' | 'catalog'
+
+  // Verification Requests state
   const [requests, setRequests] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [requestsLoading, setRequestsLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [selectedReasons, setSelectedReasons] = useState([])
   const [customNote, setCustomNote] = useState('')
   const [processing, setProcessing] = useState(false)
+
+  // Admin Stats state
+  const [stats, setStats] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+
+  // Disputes state
+  const [disputes, setDisputes] = useState([])
+  const [disputesLoading, setDisputesLoading] = useState(false)
+  const [resolvingDispute, setResolvingDispute] = useState(null)
+  const [resNote, setResNote] = useState('')
+  const [resDecision, setResDecision] = useState('')
+
+  // Catalog moderation state
+  const [catalogShops, setCatalogShops] = useState([])
+  const [catalogProducts, setCatalogProducts] = useState([])
+  const [catalogLoading, setCatalogLoading] = useState(false)
 
   // Sécurité — seul l'admin peut accéder
   useEffect(() => {
@@ -57,28 +79,85 @@ export default function AdminVerificationPage() {
     }
   }, [user, navigate])
 
+  // Chargement des vérifications
   const loadRequests = useCallback(async () => {
-    setLoading(true)
+    setRequestsLoading(true)
     const { data } = await supabase
       .from('verification_requests')
       .select('*, shop:shops(id, name, slug, cover_url, city, is_verified), user:profiles(id, username, avatar_url, email)')
       .eq('status', filter)
       .order('created_at', { ascending: false })
     setRequests(data || [])
-    setLoading(false)
+    setRequestsLoading(false)
   }, [filter])
 
-  useEffect(() => { loadRequests() }, [loadRequests])
+  useEffect(() => {
+    if (activeTab === 'verifications') loadRequests()
+  }, [activeTab, loadRequests])
 
+  // Chargement des statistiques
+  const loadStats = async () => {
+    setStatsLoading(true)
+    try {
+      const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
+      const { count: shopCount } = await supabase.from('shops').select('*', { count: 'exact', head: true })
+      const { count: verifiedShopsCount } = await supabase.from('shops').select('*', { count: 'exact', head: true }).eq('is_verified', true)
+      const { data: orders } = await supabase.from('orders').select('*').eq('status', 'paid')
+      const { count: disputesCount } = await supabase.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'open')
+
+      const gmv = orders ? orders.reduce((sum, o) => sum + o.total_amount, 0) : 0
+      const commissions = orders ? orders.reduce((sum, o) => sum + o.commission, 0) : 0
+
+      setStats({
+        userCount,
+        shopCount,
+        verifiedShopsCount,
+        gmv,
+        commissions,
+        disputesCount
+      })
+    } catch {}
+    setStatsLoading(false)
+  }
+
+  // Chargement des litiges
+  const loadDisputes = async () => {
+    setDisputesLoading(true)
+    try {
+      const { data } = await supabase
+        .from('disputes')
+        .select('*, initiator:profiles(username), order:orders(*, product:products(name), buyer:profiles(username), seller:profiles(username))')
+        .order('created_at', { ascending: false })
+      setDisputes(data || [])
+    } catch {}
+    setDisputesLoading(false)
+  }
+
+  // Chargement du catalogue (modération)
+  const loadCatalog = async () => {
+    setCatalogLoading(true)
+    try {
+      const { data: sh } = await supabase.from('shops').select('*, owner:profiles(username)').order('created_at', { ascending: false })
+      const { data: pr } = await supabase.from('products').select('*, shop:shops(name)').order('created_at', { ascending: false })
+      setCatalogShops(sh || [])
+      setCatalogProducts(pr || [])
+    } catch {}
+    setCatalogLoading(false)
+  }
+
+  useEffect(() => {
+    if (activeTab === 'stats') loadStats()
+    if (activeTab === 'disputes') loadDisputes()
+    if (activeTab === 'catalog') loadCatalog()
+  }, [activeTab])
+
+  // APPROBATION DE BOUTIQUE
   const approve = async (req) => {
     if (!confirm(`Vérifier la boutique "${req.shop?.name}" ?`)) return
     setProcessing(true)
     try {
-      // 1. Vérifier la boutique
       await supabase.from('shops').update({ is_verified: true }).eq('id', req.shop_id)
-      // 2. Mettre à jour la demande
       await supabase.from('verification_requests').update({ status: 'approved' }).eq('id', req.id)
-      // 3. Notifier le vendeur
       await supabase.rpc('create_notification', {
         p_user_id: req.user_id,
         p_type: 'shop_follow',
@@ -93,6 +172,7 @@ export default function AdminVerificationPage() {
     } finally { setProcessing(false) }
   }
 
+  // REJET DE DEMANDE DE BOUTIQUE
   const reject = async (req) => {
     if (selectedReasons.length === 0 && !customNote.trim()) {
       toast.error('Sélectionnez au moins une raison')
@@ -124,10 +204,55 @@ export default function AdminVerificationPage() {
     } finally { setProcessing(false) }
   }
 
-  const toggleReason = (reason) => {
-    setSelectedReasons(prev =>
-      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
-    )
+  // RESOLUTION DE LITIGE
+  const handleResolveDispute = async () => {
+    if (!resDecision) return toast.error('Veuillez prendre une décision')
+    if (!resNote.trim()) return toast.error('Veuillez saisir une note de résolution')
+    setProcessing(true)
+    try {
+      const { data, error } = await supabase.rpc('resolve_dispute', {
+        p_dispute_id: resolvingDispute.id,
+        p_decision: resDecision,
+        p_resolution_note: resNote.trim()
+      })
+      if (error) throw error
+      if (data?.success) {
+        toast.success('Litige résolu avec succès ! ⚖️')
+        setResolvingDispute(null)
+        setResNote('')
+        setResDecision('')
+        loadDisputes()
+      } else {
+        throw new Error(data?.error || 'Erreur')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Erreur')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // MODERATION CATALOGUE (Suppression)
+  const handleDeleteProduct = async (product) => {
+    if (!confirm(`Supprimer définitivement le produit "${product.name}" ?`)) return
+    try {
+      await supabase.from('products').delete().eq('id', product.id)
+      toast.success('Produit supprimé !')
+      loadCatalog()
+    } catch {
+      toast.error('Erreur de suppression')
+    }
+  }
+
+  const handleDeleteShop = async (shop) => {
+    if (!confirm(`Supprimer définitivement la boutique "${shop.name}" ?`)) return
+    try {
+      await supabase.from('shops').delete().eq('id', shop.id)
+      toast.success('Boutique supprimée !')
+      loadCatalog()
+    } catch {
+      toast.error('Erreur de suppression')
+    }
   }
 
   const STATUS_CONFIG = {
@@ -146,282 +271,383 @@ export default function AdminVerificationPage() {
             <ArrowLeft size={18} className="text-white"/>
           </button>
           <div>
-            <h1 className="font-black text-xl text-white">Vérifications</h1>
-            <p className="text-blue-200 text-xs">Administration MANG</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1 px-2.5 py-1 bg-white/10 rounded-full">
-            <Shield size={12} className="text-blue-200"/>
-            <span className="text-blue-200 text-[10px] font-bold">Admin</span>
+            <h1 className="font-black text-xl text-white">Panel Administrateur</h1>
+            <p className="text-blue-200 text-xs">MANG E-Commerce Administration</p>
           </div>
         </div>
 
-        {/* Filtres */}
-        <div className="flex gap-2">
-          {['pending', 'approved', 'rejected'].map(s => (
-            <button key={s} onClick={() => setFilter(s)}
-              className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all',
-                filter === s ? 'bg-white text-blue-700' : 'bg-white/10 text-white/70')}>
-              <span className={clsx('w-1.5 h-1.5 rounded-full', STATUS_CONFIG[s].dot)}/>
-              {STATUS_CONFIG[s].label}
-              {filter === s && requests.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black">
-                  {requests.length}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* TABS SELECTOR */}
+        <div className="flex bg-white/10 rounded-2xl p-1 border border-white/10 mt-4 text-xs font-bold text-white">
+          <button onClick={() => setActiveTab('verifications')}
+            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'verifications' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            Vérifications
+          </button>
+          <button onClick={() => setActiveTab('stats')}
+            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'stats' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            Dashboard
+          </button>
+          <button onClick={() => setActiveTab('disputes')}
+            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'disputes' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            Litiges
+          </button>
+          <button onClick={() => setActiveTab('catalog')}
+            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'catalog' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            Catalogue
+          </button>
         </div>
       </div>
 
-      {/* Liste */}
-      <div className="px-4 py-4 space-y-3">
-        {loading ? (
-          [1,2,3].map(i => <div key={i} className="h-24 skeleton rounded-2xl"/>)
-        ) : requests.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-5xl mb-3">📋</p>
-            <p className="font-bold text-dark-800">Aucune demande {STATUS_CONFIG[filter].label.toLowerCase()}</p>
-          </div>
-        ) : (
-          requests.map(req => (
-            <button key={req.id} onClick={() => setSelectedRequest(req)}
-              className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 text-left active:scale-[0.98] transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                  {req.shop?.cover_url
-                    ? <img src={req.shop.cover_url} className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-black text-dark-900 text-sm truncate">{req.shop?.name}</p>
-                    {req.profile_type && (
-                      <span className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">
-                        {req.profile_type === 'producteur' ? '🌱' : req.profile_type === 'commercant' ? '🏪' : '🎓'}
-                        {' '}{req.profile_type}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-500 text-xs">@{req.user?.username} · {req.full_name || 'Nom non renseigné'}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-gray-400 text-[10px]">
-                      {formatDistanceToNow(new Date(req.created_at), { addSuffix: true, locale: fr })}
-                    </p>
-                    {req.activity_type && (
-                      <span className="text-gray-400 text-[10px]">· {req.activity_type}</span>
-                    )}
-                  </div>
-                </div>
-                <div className={clsx('w-2 h-2 rounded-full flex-shrink-0', STATUS_CONFIG[req.status]?.dot)}/>
+      <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
+        
+        {/* ONGLET 1 : VERIFICATIONS (BOUTIQUES) */}
+        {activeTab === 'verifications' && (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              {Object.keys(STATUS_CONFIG).map(st => (
+                <button key={st} onClick={() => setFilter(st)}
+                  className={clsx('flex-1 py-2.5 rounded-2xl font-bold text-xs border-2 transition-all active:scale-95',
+                    filter === st ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
+                  )}>
+                  {STATUS_CONFIG[st].label}
+                </button>
+              ))}
+            </div>
+
+            {requestsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => <div key={i} className="h-32 skeleton rounded-3xl" />)}
               </div>
-              {req.admin_note && (
-                <p className="mt-2 text-red-500 text-[10px] bg-red-50 px-3 py-1.5 rounded-xl">❌ {req.admin_note}</p>
-              )}
-            </button>
-          ))
+            ) : requests.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
+                <p className="text-4xl mb-2">📋</p>
+                <p className="font-bold">Aucune demande</p>
+                <p className="text-xs text-dark-600/40 mt-1">Aucune demande trouvée avec ce statut.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {requests.map(req => (
+                  <div key={req.id} onClick={() => setSelectedRequest(req)}
+                    className="bg-white rounded-3xl p-4 shadow-card hover:border-blue-300 border-2 border-transparent transition-all cursor-pointer flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar src={null} name={req.shop_name || req.shop?.name} size="md" />
+                      <div>
+                        <p className="font-bold text-dark-800 text-sm">{req.shop_name || req.shop?.name}</p>
+                        <p className="text-dark-600/40 text-xs">Par @{req.user?.username || 'Vendeur'}</p>
+                      </div>
+                    </div>
+                    <span className={clsx('text-[10px] font-bold px-2 py-1 rounded-lg', STATUS_CONFIG[req.status].color)}>
+                      {STATUS_CONFIG[req.status].label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ONGLET 2 : DASHBOARD STATS */}
+        {activeTab === 'stats' && (
+          <div className="space-y-4">
+            {statsLoading ? (
+              <div className="h-40 skeleton rounded-3xl"/>
+            ) : stats ? (
+              <div className="space-y-4">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-3xl p-4 shadow-card flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center"><Users size={20}/></div>
+                    <div>
+                      <p className="text-dark-600/40 text-[10px] font-bold uppercase tracking-wider">Utilisateurs</p>
+                      <p className="font-display font-black text-dark-800 text-lg leading-tight">{stats.userCount}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl p-4 shadow-card flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center"><Store size={20}/></div>
+                    <div>
+                      <p className="text-dark-600/40 text-[10px] font-bold uppercase tracking-wider">Boutiques</p>
+                      <p className="font-display font-black text-dark-800 text-lg leading-tight">{stats.verifiedShopsCount} / {stats.shopCount}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-3xl p-5 shadow-card text-white space-y-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="text-blue-300" size={18}/>
+                    <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">Volume & Revenus Plateforme</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">Volume GMV (Payé)</p>
+                      <p className="font-display font-black text-white text-2xl mt-1">{(stats.gmv/1).toLocaleString('fr-FR')} F</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">Commissions Net (5%)</p>
+                      <p className="font-display font-black text-gold-300 text-2xl mt-1">{(stats.commissions/1).toLocaleString('fr-FR')} F</p>
+                    </div>
+                  </div>
+                </div>
+
+                {stats.disputesCount > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-3xl p-4 flex items-center justify-between text-red-800">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="text-red-600" size={18}/>
+                      <span className="font-bold text-xs">{stats.disputesCount} litige(s) en attente de résolution</span>
+                    </div>
+                    <button onClick={() => setActiveTab('disputes')}
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold">
+                      Arbitrer
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* ONGLET 3 : LITIGES */}
+        {activeTab === 'disputes' && (
+          <div className="space-y-4">
+            {disputesLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
+              </div>
+            ) : disputes.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
+                <p className="text-4xl mb-2">⚖️</p>
+                <p className="font-bold">Aucun litige</p>
+                <p className="text-xs text-dark-600/40 mt-1">Aucune réclamation ouverte sur la plateforme.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {disputes.map(dispute => (
+                  <div key={dispute.id} className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-surface-50 text-xs">
+                      <span className="font-mono text-dark-400">Litige #{dispute.id.slice(0, 8)}</span>
+                      <span className={clsx('font-black px-2 py-0.5 rounded-lg uppercase text-[9px]',
+                        dispute.status === 'open' ? 'bg-red-50 text-red-600 animate-pulse' : 'bg-surface-100 text-dark-500'
+                      )}>
+                        {dispute.status === 'open' ? 'À arbitrer' : 'Résolu'}
+                      </span>
+                    </div>
+
+                    <div className="text-xs space-y-1">
+                      <p>📦 <strong>Produit :</strong> {dispute.order?.product?.name}</p>
+                      <p>👤 <strong>Acheteur :</strong> @{dispute.order?.buyer?.username}</p>
+                      <p>🏪 <strong>Vendeur :</strong> @{dispute.order?.seller?.username}</p>
+                      <p className="text-red-700 bg-red-50 p-2.5 rounded-xl font-medium mt-1">
+                        ⚠️ <strong>Raison :</strong> {dispute.reason} — {dispute.description}
+                      </p>
+                    </div>
+
+                    {dispute.status === 'open' && (
+                      <button onClick={() => setResolvingDispute(dispute)}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-2xl active:scale-95 shadow-md transition-all flex items-center justify-center gap-1.5">
+                        <Scale size={14}/> Ouvrir l'arbitrage admin
+                      </button>
+                    )}
+
+                    {dispute.status === 'resolved' && (
+                      <p className="text-xs text-dark-500 font-semibold bg-surface-50 p-2 rounded-xl text-center">
+                        ⚖️ Résolution : {dispute.resolution_note}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ONGLET 4 : MODERATION CATALOGUE */}
+        {activeTab === 'catalog' && (
+          <div className="space-y-4">
+            {catalogLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Moderation Boutiques */}
+                <div className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+                  <p className="text-xs font-black text-dark-600/50 uppercase tracking-wider pl-0.5">Boutiques ({catalogShops.length})</p>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {catalogShops.map(sh => (
+                      <div key={sh.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{sh.is_verified ? '✅' : '🏪'}</span>
+                          <div>
+                            <p className="font-bold text-xs text-dark-800">{sh.name}</p>
+                            <p className="text-dark-600/35 text-[9px]">Par @{sh.owner?.username}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteShop(sh)} className="text-red-500 p-1 active:scale-75 transition-transform">
+                          <Trash2 size={13}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Moderation Produits */}
+                <div className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+                  <p className="text-xs font-black text-dark-600/50 uppercase tracking-wider pl-0.5">Produits ({catalogProducts.length})</p>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {catalogProducts.map(prod => (
+                      <div key={prod.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded bg-surface-100 overflow-hidden flex-shrink-0">
+                            {prod.image_url ? <img src={prod.image_url} className="w-full h-full object-cover"/> : '🌾'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-xs text-dark-800 truncate max-w-[120px]">{prod.name}</p>
+                            <p className="text-dark-600/35 text-[9px]">Boutique: {prod.shop?.name}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteProduct(prod)} className="text-red-500 p-1 active:scale-75 transition-transform">
+                          <Trash2 size={13}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* DETAIL SHEET */}
+      {/* DETAIL DEMANDE DE VERIFICATION SHEET */}
       {selectedRequest && (
-        <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)}
-          title={`📋 ${selectedRequest.shop?.name}`}>
-          <div style={{ maxHeight: '85vh', overflowY: 'auto' }}>
-            <div className="px-4 pt-2 pb-6 space-y-4">
+        <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="📋 Détail de la demande">
+          <div className="px-4 pt-2 pb-8 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-4 bg-surface-50 rounded-2xl space-y-3 text-xs">
+              <p>👤 <strong>Nom complet :</strong> {selectedRequest.full_name}</p>
+              <p>📞 <strong>Téléphone :</strong> {selectedRequest.phone}</p>
+              <p>📍 <strong>Localisation :</strong> {selectedRequest.location}</p>
+              <p>🌾 <strong>Type de profil :</strong> {selectedRequest.profile_type} ({selectedRequest.activity_type})</p>
+              <p>💼 <strong>Expérience :</strong> {selectedRequest.years_experience} ans</p>
+              <p>🚚 <strong>Portée livraison :</strong> {selectedRequest.delivery_scope}</p>
+              {selectedRequest.production_method && <p>🚜 <strong>Méthode prod. :</strong> {selectedRequest.production_method}</p>}
+              {selectedRequest.additional_info && <p>💬 <strong>Exigences/Notes :</strong> {selectedRequest.additional_info}</p>}
+            </div>
 
-              {/* Infos boutique */}
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-blue-100">
-                  {selectedRequest.shop?.cover_url
-                    ? <img src={selectedRequest.shop.cover_url} className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
-                </div>
-                <div>
-                  <p className="font-black text-blue-900 text-sm">{selectedRequest.shop?.name}</p>
-                  <p className="text-blue-500 text-xs">@{selectedRequest.user?.username}</p>
-                  {selectedRequest.shop?.city && <p className="text-blue-400 text-[10px]">📍 {selectedRequest.shop.city}</p>}
-                </div>
-              </div>
-
-              {/* Section: Identité */}
-              <InfoSection title="👤 Identité" color="blue">
-                <InfoRow label="Nom complet" value={selectedRequest.full_name}/>
-                <InfoRow label="Téléphone" value={selectedRequest.phone}/>
-                <InfoRow label="Pièce d'identité" value={selectedRequest.id_type}/>
-                {selectedRequest.id_photo_url && (
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold mb-1">Photo pièce d'identité</p>
-                    <img src={selectedRequest.id_photo_url} className="w-full max-h-40 object-cover rounded-xl border border-gray-200"/>
-                  </div>
-                )}
-                {selectedRequest.selfie_url && (
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold mb-1">Selfie avec pièce</p>
-                    <img src={selectedRequest.selfie_url} className="w-full max-h-40 object-cover rounded-xl border border-gray-200"/>
-                  </div>
-                )}
-              </InfoSection>
-
-              {/* Section: Activité */}
-              <InfoSection title="🏪 Activité" color="green">
-                <InfoRow label="Profil" value={selectedRequest.profile_type}/>
-                <InfoRow label="Type d'activité" value={selectedRequest.activity_type}/>
-                <InfoRow label="Localisation" value={selectedRequest.location}/>
-                <InfoRow label="Expérience" value={selectedRequest.years_experience}/>
-              </InfoSection>
-
-              {/* Section: Production / Commerce */}
-              <InfoSection title={selectedRequest.profile_type === 'producteur' ? '🌱 Production' : '📦 Commerce/Service'} color="amber">
-                {selectedRequest.profile_type === 'producteur' && (
-                  <>
-                    <InfoRow label="Méthode" value={selectedRequest.production_method}/>
-                    <InfoRow label="Pesticides" value={selectedRequest.use_pesticides === true ? 'Oui' : selectedRequest.use_pesticides === false ? 'Non' : selectedRequest.use_pesticides}/>
-                    <InfoRow label="Superficie" value={selectedRequest.farm_size}/>
-                    <InfoRow label="Capacité/mois" value={selectedRequest.monthly_capacity}/>
-                  </>
-                )}
-                {selectedRequest.profile_type !== 'producteur' && (
-                  <>
-                    <InfoRow label="Produits/Services" value={selectedRequest.products_type}/>
-                    <InfoRow label="Approvisionnement" value={selectedRequest.supply_source}/>
-                  </>
-                )}
-                <InfoRow label="Zone de service" value={selectedRequest.delivery_scope}/>
-                <InfoRow label="Certifications" value={selectedRequest.certifications}/>
-                {selectedRequest.additional_info && (
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold">Notes supplémentaires</p>
-                    <p className="text-sm text-dark-800 mt-0.5">{selectedRequest.additional_info}</p>
-                  </div>
-                )}
-              </InfoSection>
-
-              {/* Boutons actions */}
-              {selectedRequest.status === 'pending' && (
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => { setRejectOpen(true) }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-50 text-red-600 border-2 border-red-200 font-bold text-sm active:scale-95">
-                    <X size={16}/> Refuser
-                  </button>
-                  <button onClick={() => approve(selectedRequest)} disabled={processing}
-                    className="flex-[2] flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-green-600 text-white font-bold text-sm shadow-md active:scale-[0.97] disabled:opacity-50">
-                    {processing
-                      ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                      : <><Check size={16}/> Approuver ✅</>}
-                  </button>
+            {/* Photos ID */}
+            <div className="grid grid-cols-2 gap-2">
+              {selectedRequest.id_photo_url && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-dark-600 pl-0.5">Pièce d'identité</p>
+                  <a href={selectedRequest.id_photo_url} target="_blank" rel="noreferrer" className="block h-28 rounded-xl bg-surface-100 overflow-hidden border border-surface-200">
+                    <img src={selectedRequest.id_photo_url} className="w-full h-full object-cover" alt="ID"/>
+                  </a>
                 </div>
               )}
-
-              {selectedRequest.status === 'approved' && (
-                <div className="text-center p-4 bg-green-50 rounded-2xl border border-green-100">
-                  <p className="text-2xl mb-1">✅</p>
-                  <p className="font-bold text-green-700 text-sm">Boutique vérifiée</p>
-                </div>
-              )}
-
-              {selectedRequest.status === 'rejected' && (
-                <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
-                  <p className="font-bold text-red-700 text-sm mb-1">❌ Refusée</p>
-                  <p className="text-red-600 text-xs">{selectedRequest.admin_note}</p>
+              {selectedRequest.selfie_url && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-dark-600 pl-0.5">Selfie de vérification</p>
+                  <a href={selectedRequest.selfie_url} target="_blank" rel="noreferrer" className="block h-28 rounded-xl bg-surface-100 overflow-hidden border border-surface-200">
+                    <img src={selectedRequest.selfie_url} className="w-full h-full object-cover" alt="Selfie"/>
+                  </a>
                 </div>
               )}
             </div>
+
+            {selectedRequest.status === 'pending' && (
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setRejectOpen(true)}
+                  className="flex-1 py-3 bg-red-50 text-red-500 font-bold rounded-2xl text-sm active:scale-95 transition-transform">
+                  Rejeter
+                </button>
+                <button onClick={() => approve(selectedRequest)} disabled={processing}
+                  className="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-2xl text-sm active:scale-95 transition-transform shadow-md flex items-center justify-center gap-1.5">
+                  {processing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <><Check size={16}/> Valider la boutique</>}
+                </button>
+              </div>
+            )}
           </div>
         </BottomSheet>
       )}
 
       {/* REJECT SHEET */}
-      <BottomSheet open={rejectOpen} onClose={() => { setRejectOpen(false); setSelectedReasons([]); setCustomNote('') }}
-        title="❌ Raisons du refus">
-        <div style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-          <div className="px-4 pt-2 pb-6 space-y-4">
-            <p className="text-gray-500 text-sm">Cochez toutes les raisons applicables. Le vendeur les recevra par notification.</p>
-
+      {selectedRequest && rejectOpen && (
+        <BottomSheet open={rejectOpen} onClose={() => setRejectOpen(false)} title="❌ Motif du rejet">
+          <div className="px-4 pt-2 pb-8 space-y-4 max-h-[85vh] overflow-y-auto">
             {Object.entries(REJECT_REASONS).map(([category, reasons]) => (
-              <div key={category}>
-                <p className="font-bold text-dark-700 text-xs uppercase tracking-wide mb-2 px-1">
-                  {category === 'identite' ? '👤 Identité' :
-                   category === 'activite' ? '🏪 Activité' :
-                   category === 'production' ? '🌱 Production' : '⚠️ Général'}
+              <div key={category} className="space-y-2">
+                <p className="text-[10px] font-bold text-dark-600/50 uppercase tracking-wider pl-0.5">
+                  {category === 'identite' && 'Pièce & Selfie'}
+                  {category === 'activite' && 'Localisation & Expérience'}
+                  {category === 'production' && 'Capacité & Livraison'}
+                  {category === 'general' && 'Autres raisons'}
                 </p>
-                <div className="space-y-1.5">
-                  {reasons.map(reason => (
-                    <button key={reason} onClick={() => toggleReason(reason)}
-                      className={clsx('w-full flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.98]',
-                        selectedReasons.includes(reason) ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white')}>
-                      <div className={clsx('w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all',
-                        selectedReasons.includes(reason) ? 'border-red-500 bg-red-500' : 'border-gray-300')}>
-                        {selectedReasons.includes(reason) && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-sm text-dark-700">{reason}</span>
+                <div className="flex flex-col gap-1.5">
+                  {reasons.map(r => (
+                    <button key={r} onClick={() => toggleReason(r)}
+                      className={clsx('p-3 rounded-xl border text-left text-xs font-semibold transition-all active:scale-[0.99]',
+                        selectedReasons.includes(r) ? 'border-red-500 bg-red-50 text-red-700 font-bold' : 'border-surface-200 bg-white text-dark-700 hover:border-surface-300'
+                      )}>
+                      {r}
                     </button>
                   ))}
                 </div>
               </div>
             ))}
 
-            <div>
-              <p className="font-bold text-dark-700 text-xs uppercase tracking-wide mb-2 px-1">✏️ Note personnalisée</p>
-              <textarea value={customNote} onChange={e => setCustomNote(e.target.value)}
-                placeholder="Ajoutez une note personnalisée au vendeur..."
-                rows={2}
-                className="w-full bg-gray-50 rounded-2xl px-4 py-3 text-sm border border-gray-200 outline-none focus:border-red-300 resize-none"/>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Note additionnelle (optionnel)</label>
+              <textarea placeholder="Compléments ou explications..." value={customNote} onChange={e => setCustomNote(e.target.value)}
+                rows={2} className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none"/>
             </div>
 
-            {selectedReasons.length > 0 && (
-              <div className="p-3 bg-red-50 rounded-2xl border border-red-100">
-                <p className="text-red-600 text-xs font-semibold mb-1">{selectedReasons.length} raison(s) sélectionnée(s) :</p>
-                {selectedReasons.map(r => <p key={r} className="text-red-500 text-xs">• {r}</p>)}
-              </div>
-            )}
-
-            <button onClick={() => reject(selectedRequest)} disabled={processing || (selectedReasons.length === 0 && !customNote.trim())}
-              className="w-full py-3.5 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
-              {processing
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                : <><X size={15}/> Refuser et notifier le vendeur</>}
-            </button>
+            <Button onClick={() => reject(selectedRequest)} disabled={processing} variant="danger" className="w-full py-3.5 text-sm font-bold shadow-md">
+              {processing ? 'Traitement...' : '❌ Confirmer le rejet'}
+            </Button>
           </div>
-        </div>
-      </BottomSheet>
-    </div>
-  )
-}
-
-// ── Composants utilitaires ──
-function InfoSection({ title, color, children }) {
-  const [open, setOpen] = useState(true)
-  const colors = {
-    blue: 'border-blue-100 bg-blue-50',
-    green: 'border-green-100 bg-green-50',
-    amber: 'border-amber-100 bg-amber-50',
-  }
-  return (
-    <div className={clsx('rounded-2xl border overflow-hidden', colors[color])}>
-      <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3">
-        <p className="font-black text-dark-800 text-sm">{title}</p>
-        {open ? <ChevronUp size={16} className="text-gray-400"/> : <ChevronDown size={16} className="text-gray-400"/>}
-      </button>
-      {open && (
-        <div className="px-4 pb-3 space-y-2 bg-white border-t border-gray-100">
-          {children}
-        </div>
+        </BottomSheet>
       )}
-    </div>
-  )
-}
 
-function InfoRow({ label, value }) {
-  if (!value && value !== false && value !== 0) return null
-  return (
-    <div className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-      <span className="text-gray-400 text-xs w-28 flex-shrink-0 pt-0.5">{label}</span>
-      <span className="text-dark-800 text-sm font-semibold flex-1">{String(value)}</span>
+      {/* ARBITRAGE LITIGE SHEET */}
+      {resolvingDispute && (
+        <BottomSheet open={!!resolvingDispute} onClose={() => setResolvingDispute(null)} title="⚖️ Arbitrage de litige">
+          <div className="px-4 pt-2 pb-8 space-y-4">
+            <div className="p-3.5 bg-red-500/10 border border-red-300/30 rounded-2xl text-red-800 text-xs leading-normal">
+              ⚠️ <strong>Action d'arbitrage.</strong> Vous devez décider si vous remboursez l'acheteur ou si vous libérez les fonds au vendeur. Cette action est irréversible.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Décision arbitrale *</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setResDecision('refund_buyer')}
+                  className={clsx('p-3 rounded-xl border-2 text-center text-xs font-bold transition-all active:scale-95',
+                    resDecision === 'refund_buyer' ? 'border-red-500 bg-red-50 text-red-700' : 'border-surface-200 text-dark-600 bg-white hover:border-surface-300'
+                  )}>
+                  Rembourser Acheteur
+                </button>
+                <button onClick={() => setResDecision('pay_seller')}
+                  className={clsx('p-3 rounded-xl border-2 text-center text-xs font-bold transition-all active:scale-95',
+                    resDecision === 'pay_seller' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-surface-200 text-dark-600 bg-white hover:border-surface-300'
+                  )}>
+                  Payer le Vendeur
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Note de résolution (Justification) *</label>
+              <textarea
+                placeholder="Indiquez la raison de votre décision..."
+                value={resNote}
+                onChange={e => setResNote(e.target.value)}
+                rows={3}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none font-medium"
+              />
+            </div>
+
+            <Button onClick={handleResolveDispute} disabled={processing} className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-md">
+              {processing ? 'Application...' : <><CheckCircle size={15}/> Appliquer la décision</>}
+            </Button>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   )
 }

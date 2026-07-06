@@ -81,6 +81,8 @@ export default function OrdersPage() {
   const [tab, setTab]               = useState('all')
   const [filterStatus, setFilter]   = useState('all')
   const [selectedOrder, setSelected] = useState(null)
+  const [reviewOrder, setReviewOrder] = useState(null)
+  const [disputeOrder, setDisputeOrder] = useState(null)
 
   // PIN payment
   const [pinModal, setPinModal]     = useState(null)
@@ -339,6 +341,24 @@ export default function OrdersPage() {
         onPay={() => { setPinModal({ orderId: selectedOrder?.id }); setPin('') }}
         onDeliveryStatus={(status) => handleDeliveryStatus(selectedOrder?.id, status)}
         processing={processing}
+        onOpenReview={setReviewOrder}
+        onOpenDispute={setDisputeOrder}
+      />
+
+      <ReviewSheet
+        open={!!reviewOrder}
+        onClose={() => setReviewOrder(null)}
+        order={reviewOrder}
+        user={user}
+        onSubmitted={loadOrders}
+      />
+
+      <DisputeSheet
+        open={!!disputeOrder}
+        onClose={() => setDisputeOrder(null)}
+        order={disputeOrder}
+        user={user}
+        onSubmitted={loadOrders}
       />
 
       {/* MODAL PIN */}
@@ -436,7 +456,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
 }
 
 // ── ORDER DETAIL SHEET ───────────────────────────────────────
-function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, onPay, onDeliveryStatus, processing }) {
+function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, onPay, onDeliveryStatus, processing, onOpenReview, onOpenDispute }) {
   if (!order) return null
   const cfg = STATUS[order.status] || STATUS.pending
   const other = isBuyer ? order.seller : order.buyer
@@ -589,8 +609,32 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
           )}
 
           {order.status === 'paid' && (
-            <div className="text-center py-3 bg-blue-50 rounded-2xl">
-              <p className="text-blue-700 font-bold">🎉 Commande payée et finalisée !</p>
+            <div className="space-y-2">
+              <div className="text-center py-3 bg-blue-50 rounded-2xl">
+                <p className="text-blue-700 font-bold">🎉 Commande payée et finalisée !</p>
+              </div>
+              {isBuyer && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { onClose(); onOpenDispute(order) }}
+                    className="py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                  >
+                    ⚖️ Ouvrir un litige
+                  </button>
+                  {order.delivery_status === 'delivered' ? (
+                    <button
+                      onClick={() => { onClose(); onOpenReview(order) }}
+                      className="py-3 bg-gold-500 hover:bg-gold-400 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-gold"
+                    >
+                      ⭐ Écrire un avis
+                    </button>
+                  ) : (
+                    <span className="py-3 bg-surface-100 text-dark-400/40 text-center font-bold rounded-2xl text-xs">
+                      Avis après livraison
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {order.status === 'refused' && (
@@ -599,6 +643,163 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
             </div>
           )}
         </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
+// ── REVIEW SHEET (AVIS PRODUIT) ──────────────────────────────
+function ReviewSheet({ open, onClose, order, user, onSubmitted }) {
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  if (!order) return null
+
+  const handleSubmit = async () => {
+    if (!comment.trim()) return toast.error('Veuillez saisir un commentaire')
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('product_reviews').insert({
+        product_id: order.product_id,
+        user_id: user.id,
+        rating: rating,
+        comment: comment.trim()
+      })
+      if (error) {
+        if (error.code === '23505') throw new Error('Vous avez déjà laissé un avis sur ce produit')
+        throw error
+      }
+      toast.success('Avis publié avec succès ! ⭐')
+      setComment('')
+      setRating(5)
+      if (onSubmitted) onSubmitted()
+      onClose()
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la publication')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="⭐ Laisser un avis">
+      <div className="px-4 pt-2 pb-8 space-y-4">
+        <p className="text-xs text-dark-600/50 leading-normal">
+          Partagez votre avis sur le produit <strong>{order.product?.name}</strong> pour aider la communauté.
+        </p>
+
+        <div className="flex justify-center gap-2 text-3xl">
+          {[1,2,3,4,5].map(val => (
+            <button key={val} onClick={() => setRating(val)} className="transition-transform active:scale-75">
+              <span className={val <= rating ? 'text-gold-500 text-3xl' : 'text-surface-300 text-3xl'}>★</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-dark-700">Votre commentaire</label>
+          <textarea
+            placeholder="Qualité du produit, fraîcheur..."
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={3}
+            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-gold-500 resize-none font-medium"
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full py-3.5 bg-gold-500 text-white font-bold rounded-2xl text-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-gold disabled:opacity-40"
+        >
+          {loading ? 'Publication...' : 'Publier l\'avis'}
+        </button>
+      </div>
+    </BottomSheet>
+  )
+}
+
+// ── DISPUTE SHEET (LITIGES) ──────────────────────────────────
+function DisputeSheet({ open, onClose, order, user, onSubmitted }) {
+  const [reason, setReason] = useState('Produit gâté / abîmé')
+  const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  if (!order) return null
+
+  const handleSubmit = async () => {
+    if (!description.trim()) return toast.error('Veuillez décrire le problème')
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('disputes').insert({
+        order_id: order.id,
+        initiator_id: user.id,
+        reason: reason,
+        description: description.trim(),
+        status: 'open'
+      })
+      if (error) throw error
+
+      await supabase.rpc('create_notification', {
+        p_user_id: order.seller_id,
+        p_type: 'order_refused',
+        p_title: '⚠️ Litige ouvert',
+        p_body: `L'acheteur a ouvert un litige sur la commande #${order.id.slice(0, 8)}. Motif : ${reason}`,
+        p_reference_id: order.id,
+        p_reference_type: 'order'
+      })
+
+      toast.success('Litige ouvert. L\'administrateur va l\'étudier.')
+      setDescription('')
+      if (onSubmitted) onSubmitted()
+      onClose()
+    } catch {
+      toast.error('Erreur lors de la création du litige')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="⚖️ Ouvrir un litige">
+      <div className="px-4 pt-2 pb-8 space-y-4">
+        <div className="p-3 bg-red-50 text-red-800 rounded-2xl text-xs leading-normal">
+          Si le produit reçu n'est pas conforme, est gâté ou n'a pas été livré, signalez-le. L'argent restera bloqué en escrow le temps de la résolution.
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-dark-700">Motif du litige</label>
+          <div className="flex flex-col gap-1.5">
+            {['Produit gâté / abîmé', 'Commande non reçue', 'Qualité non conforme', 'Autre problème'].map(r => (
+              <button key={r} onClick={() => setReason(r)}
+                className={clsx('p-3 rounded-xl border text-left text-xs font-semibold transition-all active:scale-[0.99]',
+                  reason === r ? 'border-red-500 bg-red-50 text-red-700 font-bold' : 'border-surface-200 bg-white text-dark-700'
+                )}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-dark-700">Détails explicatifs</label>
+          <textarea
+            placeholder="Expliquez précisément la situation..."
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={3}
+            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none font-medium"
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full py-3.5 bg-red-600 text-white font-bold rounded-2xl text-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md disabled:opacity-40"
+        >
+          {loading ? 'Création...' : 'Ouvrir le dossier de litige'}
+        </button>
       </div>
     </BottomSheet>
   )
