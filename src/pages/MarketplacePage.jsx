@@ -48,6 +48,18 @@ const QUICK_CATS = [
   { icon: '🥩', label: 'Élevage', name: 'Produits Animaux' }
 ]
 
+const GRID_CATEGORIES = [
+  { name: 'Céréales', icon: '🌽' },
+  { name: 'Tubercules', icon: '🥔' },
+  { name: 'Fruits', icon: '🍎' },
+  { name: 'Légumes', icon: '🍅' },
+  { name: 'Élevage', icon: '🐄' },
+  { name: 'Produits Transformés', icon: '🍯' },
+  { name: 'Intrants', icon: '🌿' },
+  { name: 'Pêche', icon: '🐟' },
+  { name: 'Artisanat', icon: '🏺' },
+]
+
 function normalize(text) {
   return (text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -96,6 +108,8 @@ export default function MarketplacePage() {
   const [topShops, setTopShops] = useState([])
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [dbCategories, setDbCategories] = useState([])
+  const [userCity, setUserCity] = useState(null)
+  const [geolocError, setGeolocError] = useState(false)
 
   const [userLocation, setUserLocation] = useState(null)
   const [likedShops, setLikedShops] = useState(new Set())
@@ -199,6 +213,38 @@ export default function MarketplacePage() {
     setFollowedShops(new Set((follows.data || []).map(f => f.shop_id)))
   }
 
+  const getGroupCategoryIds = (catName) => {
+    if (!dbCategories.length) return []
+    if (catName === 'Céréales') {
+      return dbCategories.filter(c => c.group_name === 'Céréales & Légumineuses').map(c => c.id)
+    }
+    if (catName === 'Tubercules') {
+      return dbCategories.filter(c => c.group_name === 'Tubercules & Racines').map(c => c.id)
+    }
+    if (catName === 'Fruits') {
+      return dbCategories.filter(c => c.group_name === 'Fruits & Légumes' && (c.name.toLowerCase().includes('fruit') || c.name.toLowerCase().includes('banane') || c.name.toLowerCase().includes('mangue') || c.name.toLowerCase().includes('ananas') || c.name.toLowerCase().includes('papaye'))).map(c => c.id)
+    }
+    if (catName === 'Légumes') {
+      return dbCategories.filter(c => c.group_name === 'Fruits & Légumes' && (c.name.toLowerCase().includes('legume') || c.name.toLowerCase().includes('tomate') || c.name.toLowerCase().includes('oignon') || c.name.toLowerCase().includes('piment') || c.name.toLowerCase().includes('gombo') || c.name.toLowerCase().includes('aubergine'))).map(c => c.id)
+    }
+    if (catName === 'Élevage') {
+      return dbCategories.filter(c => c.group_name === 'Produits Animaux' && !c.name.toLowerCase().includes('poisson')).map(c => c.id)
+    }
+    if (catName === 'Produits Transformés') {
+      return dbCategories.filter(c => c.group_name === 'Produits Transformés').map(c => c.id)
+    }
+    if (catName === 'Intrants') {
+      return dbCategories.filter(c => c.group_name === 'Intrants Agricoles').map(c => c.id)
+    }
+    if (catName === 'Pêche') {
+      return dbCategories.filter(c => c.group_name === 'Produits Animaux' && c.name.toLowerCase().includes('poisson')).map(c => c.id)
+    }
+    if (catName === 'Artisanat') {
+      return dbCategories.filter(c => c.group_name === 'Épices & Condiments').map(c => c.id)
+    }
+    return []
+  }
+
   const loadShops = async () => {
     setLoading(true)
     try {
@@ -212,9 +258,7 @@ export default function MarketplacePage() {
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
       if (selectedGroup) {
-        const targetIds = dbCategories
-          .filter(c => c.group_name === selectedGroup)
-          .map(c => c.id)
+        const targetIds = getGroupCategoryIds(selectedGroup)
         if (targetIds.length > 0) {
           query = query.in('category_id', targetIds)
         } else {
@@ -299,52 +343,63 @@ export default function MarketplacePage() {
     toast('🎤 Parlez maintenant...')
   }
 
-  const handleNearby = async () => {
-    // Si on a déjà la position → activer directement
-    if (userLocation) {
-      setFilters(f => ({ ...f, nearby: true }))
+  const reverseGeocode = async (lat, lon) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+      const data = await res.json()
+      if (data && data.address) {
+        const quartier = data.address.suburb || data.address.neighbourhood || data.address.quarter || ""
+        const ville = data.address.city || data.address.town || data.address.village || data.address.county || ""
+        if (quartier && ville) return `${quartier}, ${ville}`
+        if (ville) return ville
+        if (quartier) return quartier
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    return "Commune inconnue"
+  }
+
+  const triggerGeolocation = () => {
+    if (!navigator.geolocation) {
+      setGeolocError(true)
       return
     }
-    if (!navigator.geolocation) { toast.error('GPS non disponible'); return }
-    toast('📍 Détection en cours...', { duration: 3000 })
-
-    let done = false
-    let watchId = null
-    const timeout = setTimeout(() => {
-      if (!done) {
-        done = true
-        navigator.geolocation.clearWatch(watchId)
-        toast.error('GPS trop lent — réessayez en extérieur')
-      }
-    }, 20000)
-
-    watchId = navigator.geolocation.watchPosition(
-      async ({ coords: { latitude, longitude, accuracy } }) => {
-        if (done) return
-        if (accuracy < 500) {
-          done = true
-          clearTimeout(timeout)
-          navigator.geolocation.clearWatch(watchId)
-          const loc = { lat: latitude, lon: longitude }
-          setUserLocation(loc)
-          setFilters(f => ({ ...f, nearby: true }))
-          if (user?.id) {
-            await supabase.from('profiles').update({ latitude, longitude }).eq('id', user.id)
-          }
-          toast.success('📍 Boutiques proches chargées')
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords: { latitude, longitude } }) => {
+        setGeolocError(false)
+        const loc = { lat: latitude, lon: longitude }
+        setUserLocation(loc)
+        const cityName = await reverseGeocode(latitude, longitude)
+        setUserCity(cityName)
+        if (user?.id) {
+          await supabase.from('profiles').update({ city: cityName, latitude, longitude }).eq('id', user.id)
         }
       },
       () => {
-        clearTimeout(timeout)
-        if (userLocation) {
-          setFilters(f => ({ ...f, nearby: true }))
-        } else {
-          toast.error('Impossible d\'accéder au GPS — autorisez la localisation')
-        }
-        done = true
+        setGeolocError(true)
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
     )
+  }
+
+  useEffect(() => {
+    if (profile?.city) {
+      setUserCity(profile.city)
+      if (profile.latitude && profile.longitude) {
+        setUserLocation({ lat: profile.latitude, lon: profile.longitude })
+      }
+    } else {
+      triggerGeolocation()
+    }
+  }, [profile])
+
+  const handleNearby = () => {
+    if (userLocation) {
+      setFilters(f => ({ ...f, nearby: !f.nearby }))
+    } else {
+      triggerGeolocation()
+    }
   }
 
   const loadTop5Shops = async () => {
@@ -422,37 +477,40 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-primary-800 to-primary-600 shadow-lg max-w-[480px] mx-auto">
-        {/* Logo centré */}
-        <div className="flex items-center justify-center py-2.5">
-          <div className="flex items-center gap-1.5 cursor-pointer animate-fade-in" onClick={() => navigate('/marketplace')}>
-            <div className="w-8 h-8 rounded-xl bg-gold-400 flex items-center justify-center shadow-md">
-              <span className="text-base">🌿</span>
+        
+        {/* Logo & Bandeau Défilant */}
+        <div className="relative flex items-center h-10 w-full overflow-hidden bg-primary-950/80 border-b border-white/5">
+          {/* Logo collé à gauche avec z-index 20 et arrière-plan opaque */}
+          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-gradient-to-r from-primary-800 to-primary-750/95 shadow-md rounded-r-2xl border-r border-white/5">
+            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => navigate('/marketplace')}>
+              <div className="w-6.5 h-6.5 rounded-lg bg-gold-400 flex items-center justify-center shadow-sm">
+                <span className="text-xs">🌿</span>
+              </div>
+              <span className="font-display font-black text-white text-xs tracking-wider">MANG</span>
             </div>
-            <span className="font-display font-black text-white text-base tracking-wider">MANG</span>
+          </div>
+
+          {/* Bandeau défilant qui passe derrière le logo */}
+          <div className="w-full overflow-hidden z-10">
+            <div className="animate-marquee-behind whitespace-nowrap text-[9px] font-bold text-white uppercase tracking-wider">
+              UN MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION • FRAIS, LOCAUX, LIVRÉS CHEZ VOUS • PAIEMENT MOBILE MONEY
+            </div>
           </div>
         </div>
 
-        {/* Bandeau déroulant animé */}
-        <div className="w-full bg-primary-950/80 text-gold-400 py-1 overflow-hidden relative border-y border-white/5">
-          <div className="whitespace-nowrap flex gap-8 animate-marquee-loop">
-            <span className="text-[9px] font-black tracking-wider uppercase">Un marché agricole nouvelle génération • Frais, Locaux, Livrés chez vous • Paiement Mobile Money</span>
-            <span className="text-[9px] font-black tracking-wider uppercase">Un marché agricole nouvelle génération • Frais, Locaux, Livrés chez vous • Paiement Mobile Money</span>
-          </div>
-        </div>
-
-        {/* Barre de recherche */}
+        {/* Barre de recherche et Localisation */}
         <div className="px-3 py-2.5 relative">
           <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
-            {/* Localisation / GPS badge */}
+            {/* Bouton de Localisation dynamique */}
             <button onClick={handleNearby} className={clsx(
-              "flex-shrink-0 flex items-center gap-0.5 px-2 py-1 rounded-lg text-[9px] font-black transition-all",
-              filters.nearby ? "bg-primary-100 text-primary-700" : "bg-surface-100 text-dark-600 hover:bg-surface-200"
+              "flex-shrink-0 flex items-center gap-0.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-all border",
+              userCity ? "bg-primary-100 text-primary-700 border-primary-200" : "bg-red-50 text-red-600 border-red-200 animate-pulse"
             )}>
-              <MapPin size={11} className="text-primary-600"/>
-              <span>{filters.nearby ? "Proche" : "Cotonou"}</span>
+              <MapPin size={12} className={userCity ? "text-primary-600" : "text-red-500"}/>
+              <span className="truncate max-w-[85px]">{userCity ? `📍 ${userCity}` : "📍 Définir ma position"}</span>
             </button>
 
-            {/* Input avec placeholder */}
+            {/* Input de recherche */}
             <div className="flex-1 relative">
               <input
                 ref={searchRef}
@@ -461,7 +519,7 @@ export default function MarketplacePage() {
                 onChange={e => handleSearch(e.target.value)}
                 onFocus={() => search && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Recher Maïs, Igname, Tomates..."
+                placeholder="Recher Maïs, Igname, Tomates, Poulets..."
                 className="w-full bg-transparent text-dark-800 text-sm font-medium outline-none placeholder-dark-600/40"
               />
             </div>
@@ -509,10 +567,10 @@ export default function MarketplacePage() {
         </div>
       </header>
 
-      {/* CONTENU */}
-      <div className="pt-[144px] pb-24">
+      {/* CONTENU PRINCIPAL */}
+      <div className="pt-[116px] pb-24">
         {/* CARROUSEL BANNIÈRES */}
-        <div className="px-3 mb-4">
+        <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
             <img
               src={BANNERS[activeBanner].image}
@@ -523,7 +581,7 @@ export default function MarketplacePage() {
               <h4 className="text-white font-bold text-sm leading-tight">{BANNERS[activeBanner].title}</h4>
               <p className="text-white/80 text-[10px] mt-0.5 line-clamp-1">{BANNERS[activeBanner].desc}</p>
             </div>
-            {/* Dots */}
+            {/* Points de navigation */}
             <div className="absolute bottom-2.5 right-3 flex gap-1 z-10">
               {BANNERS.map((_, i) => (
                 <span
@@ -538,30 +596,35 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* BULLES CATÉGORIES RAPIDES */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between px-3 mb-2">
-            <p className="text-[10px] font-black text-dark-400 uppercase tracking-wider">Exploration Rapide</p>
-            <button onClick={() => setFilterOpen(true)} className="text-[10px] font-black text-primary-600 hover:underline flex items-center gap-0.5">
-              Voir tout 📂
-            </button>
+        {/* SECTION CATÉGORIES (GRILLE 3x3 STYLE ALIBABA) */}
+        <div className="mb-6 px-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[10px] font-black text-dark-400 uppercase tracking-wider">Catégories</h3>
+            {selectedGroup && (
+              <button onClick={() => setSelectedGroup(null)} className="text-[10px] font-black text-primary-600 hover:underline">
+                Tout afficher 📂
+              </button>
+            )}
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar px-3 pb-1">
-            {QUICK_CATS.map((cat, i) => {
+          <div className="grid grid-cols-3 gap-3">
+            {GRID_CATEGORIES.map((cat, i) => {
               const isActive = selectedGroup === cat.name
               return (
                 <button
                   key={i}
-                  onClick={() => handleQuickCat(cat)}
-                  className="flex flex-col items-center gap-1 active:scale-95 transition-transform flex-shrink-0"
+                  onClick={() => setSelectedGroup(prev => prev === cat.name ? null : cat.name)}
+                  className={clsx(
+                    "flex flex-col items-center justify-center p-3 rounded-2xl border-2 active:scale-95 transition-all text-center aspect-square shadow-card",
+                    isActive
+                      ? "bg-primary-600 border-primary-600 text-white shadow-green"
+                      : "bg-white border-surface-200 hover:border-primary-400"
+                  )}
                 >
-                  <div className={clsx(
-                    "w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all border",
-                    isActive ? "bg-primary-600 border-primary-600 text-white shadow-sm" : "bg-white border-surface-200 shadow-card"
-                  )}>
-                    {cat.icon}
-                  </div>
-                  <span className={clsx("text-[9px] font-bold", isActive ? "text-primary-700" : "text-dark-700")}>{cat.label}</span>
+                  <span className="text-2xl mb-1.5">{cat.icon}</span>
+                  <span className={clsx(
+                    "text-[10px] font-black leading-tight line-clamp-2",
+                    isActive ? "text-white" : "text-dark-800"
+                  )}>{cat.name}</span>
                 </button>
               )
             })}
@@ -590,7 +653,7 @@ export default function MarketplacePage() {
 
         {/* FILTRE ACTIF LABEL */}
         {selectedGroup && (
-          <div className="px-3 pb-1 mt-2 animate-fade-in">
+          <div className="px-3 pb-1 mt-2.5 animate-fade-in flex items-center justify-between">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-100">
               <span className="text-primary-700 text-xs font-semibold">📂 {selectedGroup}</span>
               <button onClick={() => setSelectedGroup(null)}>
@@ -600,9 +663,9 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {/* SECTION 5 : TOP 5 BOUTIQUES MANG 🔥 */}
+        {/* SECTION 5 : TOP 5 BOUTIQUES MANG */}
         {topShops.length > 0 && !selectedGroup && (
-          <div className="mb-5 pt-3">
+          <div className="mb-6 pt-3">
             <div className="flex items-center justify-between px-3 mb-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm">🔥</span>
@@ -638,16 +701,18 @@ export default function MarketplacePage() {
           )}
         </div>
 
-        {/* LISTE BOUTIQUES */}
+        {/* LISTE BOUTIQUES FILTRÉES */}
         {loading ? (
           <div className="grid grid-cols-2 gap-3 px-3">
             {[...Array(6)].map((_, i) => <ShopSkeleton key={i}/>)}
           </div>
         ) : shops.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-5xl mb-3">🔍</p>
-            <p className="font-display text-lg font-bold text-dark-800">Aucune boutique trouvée</p>
-            <button onClick={resetFilters} className="mt-4 btn-primary">Tout afficher</button>
+          <div className="text-center py-16 px-4">
+            <p className="text-4xl mb-2">🫙</p>
+            <p className="text-dark-600 font-bold text-sm">Aucune boutique dans cette catégorie</p>
+            <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary-600 text-white font-bold rounded-xl text-xs active:scale-95 shadow-sm">
+              Tout afficher
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 px-3">
@@ -686,14 +751,13 @@ export default function MarketplacePage() {
       />
 
       <style>{`
-        @keyframes marquee-loop {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        @keyframes marquee-behind {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
         }
-        .animate-marquee-loop {
-          display: flex;
-          width: max-content;
-          animation: marquee-loop 15s linear infinite;
+        .animate-marquee-behind {
+          display: inline-block;
+          animation: marquee-behind 25s linear infinite;
         }
       `}</style>
     </div>
@@ -707,20 +771,72 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
   const medalColor = { 1: 'bg-gold-400 text-gold-950', 2: 'bg-slate-300 text-slate-900', 3: 'bg-amber-600 text-amber-50' }[rank] || 'bg-primary-500 text-white'
   
   return (
-    <div className="relative w-64 flex-shrink-0">
+    <div className="relative w-44 flex-shrink-0 bg-white rounded-2xl shadow-card overflow-hidden active:scale-[0.97] transition-transform duration-150 cursor-pointer border border-surface-200" onClick={onOpen}>
       {/* Badge de classement */}
-      <div className={`absolute top-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black shadow-md ${medalColor}`}>
-        <span>🏆 N°{rank}</span>
+      <div className={`absolute top-2 left-2 z-20 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black shadow-md ${medalColor}`}>
+        <span>N°{rank}</span>
       </div>
-      
-      <ShopCard
-        shop={shop}
-        isLiked={isLiked}
-        isFollowing={isFollowing}
-        onLike={onLike}
-        onFollow={onFollow}
-        onOpen={onOpen}
-      />
+
+      {/* Image cover (petite photo de la boutique) */}
+      <div className="relative h-20 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
+        {shop.cover_url
+          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          : <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🌿</div>
+        }
+      </div>
+
+      {/* Infos */}
+      <div className="p-2">
+        {/* Avatar + Nom + username */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <Avatar src={shop.owner?.avatar_url} name={shop.name} size="xs" className="ring-1 ring-white shadow-sm flex-shrink-0"/>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-dark-800 text-[10px] leading-tight truncate">{shop.name}</h3>
+            <p className="text-dark-600/40 text-[9px] truncate">@{shop.owner?.username}</p>
+          </div>
+        </div>
+
+        {/* Boutons d'action : icônes uniquement, pas de texte */}
+        <div className="flex gap-1.5 pt-1.5 border-t border-surface-100">
+          {/* Bell button */}
+          <button
+            onClick={e => { e.stopPropagation(); onFollow() }}
+            className={clsx(
+              'flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-200 active:scale-95',
+              isFollowing
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'bg-surface-100 text-dark-400'
+            )}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24"
+              fill={isFollowing ? 'white' : 'none'}
+              stroke={isFollowing ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          {/* Like button */}
+          <button
+            onClick={e => { e.stopPropagation(); onLike() }}
+            className={clsx(
+              'flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-200 active:scale-95',
+              isLiked
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'bg-surface-100 text-dark-400'
+            )}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24"
+              fill={isLiked ? 'white' : 'none'}
+              stroke={isLiked ? 'white' : 'currentColor'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -979,7 +1095,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup })
         ) : (
           <div>
             <h3 className="font-display text-base font-black text-dark-800 text-center mb-4 uppercase tracking-wider">
-              Catégories Alibaba
+              Catégories MANG
             </h3>
             
             <div className="grid grid-cols-3 gap-3.5">
