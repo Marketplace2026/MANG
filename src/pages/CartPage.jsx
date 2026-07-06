@@ -36,20 +36,21 @@ export default function CartPage() {
 
   // Calcul du prix unitaire d'un produit avec variante et paliers de gros
   const getItemUnitPrice = (item) => {
-    const p = item.product
-    let price = item.variant ? item.variant.price : p.price
+    if (!item) return 0
+    const p = item.product || item || {}
+    let price = item.variant ? item.variant.price : (p.price || 0)
 
     // Paliers de gros
-    if (p.wholesale_tiers?.length > 0) {
+    if (p.wholesale_tiers && p.wholesale_tiers.length > 0) {
       const applicableTier = p.wholesale_tiers
-        .filter(t => item.quantity >= parseInt(t.min_qty))
-        .reduce((max, t) => (parseInt(t.min_qty) > parseInt(max.min_qty) ? t : max), { min_qty: 0, price })
+        .filter(t => item.quantity >= parseInt(t.min_qty || 0))
+        .reduce((max, t) => (parseInt(t.min_qty || 0) > parseInt(max.min_qty || 0) ? t : max), { min_qty: 0, price })
       
       if (applicableTier.min_qty > 0) {
         price = applicableTier.price
       }
     }
-    return price
+    return price || 0
   }
 
   // Calcul des totaux
@@ -59,8 +60,10 @@ export default function CartPage() {
 
   // Regrouper les articles par boutique pour l'affichage
   const groupedItems = items.reduce((acc, item) => {
-    const shopId = item.product.shop_id
-    const shopName = item.product.shop?.name || 'Boutique MANG'
+    if (!item) return acc
+    const product = item.product || item
+    const shopId = product.shop_id || 'no-shop'
+    const shopName = product.shop?.name || 'Boutique MANG'
     if (!acc[shopId]) {
       acc[shopId] = { shopName, items: [] }
     }
@@ -71,37 +74,15 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (!address.trim()) return toast.error('Veuillez renseigner une adresse de livraison')
     if (!deliveryPhone.trim()) return toast.error('Veuillez renseigner un téléphone de livraison')
-    if (pin.length !== 4) return toast.error('Veuillez saisir votre code PIN à 4 chiffres')
 
     setCheckingOut(true)
     try {
-      // 1. Charger le solde le plus récent
-      const { data: freshWallet } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-      
-      if (!freshWallet) throw new Error('Portefeuille introuvable')
-
-      // 2. Vérifier le PIN
-      const pinHash = await sha256(pin)
-      if (freshWallet.pin_hash !== pinHash) {
-        setCheckingOut(false)
-        return toast.error('Code PIN incorrect')
-      }
-
-      // 3. Vérifier le solde disponible
-      if (freshWallet.balance_available < cartTotal) {
-        setCheckingOut(false)
-        return toast.error(`Solde insuffisant. Requis : ${cartTotal.toLocaleString('fr-FR')} F`)
-      }
-
-      // 4. Passer la commande pour chaque article du panier
+      // Passer la commande pour chaque article du panier
       for (const item of items) {
+        const product = item.product || item
         const { data, error } = await supabase.rpc('place_order', {
           p_buyer_id: user.id,
-          p_product_id: item.product.id,
+          p_product_id: product.id,
           p_quantity: item.quantity,
           p_delivery_address: address.trim(),
           p_delivery_phone: deliveryPhone.trim(),
@@ -172,21 +153,22 @@ export default function CartPage() {
                 {/* Items */}
                 <div className="space-y-3">
                   {shopData.items.map(item => {
+                    const product = item.product || item
                     const unitPrice = getItemUnitPrice(item)
                     const itemSubtotal = unitPrice * item.quantity
-                    const isBulkDiscount = item.product.wholesale_tiers?.some(t => item.quantity >= parseInt(t.min_qty))
+                    const isBulkDiscount = product.wholesale_tiers?.some(t => item.quantity >= parseInt(t.min_qty || 0))
 
                     return (
                       <div key={item.id} className="flex gap-3 items-center py-2 border-b border-surface-50 last:border-0 last:pb-0">
                         <div className="w-14 h-14 rounded-xl overflow-hidden bg-surface-100 flex-shrink-0">
-                          {item.product.image_url ? (
-                            <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover"/>
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-xl opacity-35 bg-primary-50">🌿</div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-dark-800 text-xs truncate">{item.product.name}</p>
+                          <p className="font-bold text-dark-800 text-xs truncate">{product.name}</p>
                           {item.variant && (
                             <p className="text-[10px] text-dark-500 font-semibold mt-0.5">Variante : {item.variant.name}</p>
                           )}
@@ -303,19 +285,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-dark-700 pl-1 flex items-center gap-1">
-                  <Lock size={12}/> Saisissez votre PIN de sécurité (4 chiffres)
-                </label>
-                <input
-                  type="password"
-                  maxLength={4}
-                  placeholder="• • • •"
-                  value={pin}
-                  onChange={e => setPin(e.target.value.replace(/\D/g,''))}
-                  className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-center font-black text-xl tracking-[0.8em] placeholder-dark-300 outline-none focus:border-primary-500"
-                />
-              </div>
+
 
               <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-2xl text-[10px] text-emerald-800 font-bold">
                 <ShieldCheck size={16} className="text-emerald-600 flex-shrink-0"/>
