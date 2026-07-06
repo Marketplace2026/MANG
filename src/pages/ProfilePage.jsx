@@ -11,7 +11,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useNotificationsStore } from '@/store'
 import {
   Avatar, Button, BottomSheet, InputField, StatCard
 } from '@/components/ui'
@@ -47,10 +47,17 @@ async function reverseGeocode(lat, lon) {
 
 export default function ProfilePage() {
   const { user, profile, wallet, pieces, signOut, refreshProfile } = useAuthStore()
+  const { unreadCount, fetchNotifications } = useNotificationsStore()
   const navigate = useNavigate()
   const [editOpen,     setEditOpen]     = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [walletCopied, setWalletCopied] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications(user.id)
+    }
+  }, [user])
 
   // Sous-feuilles des paramètres
   const [securityOpen,      setSecurityOpen]      = useState(false)
@@ -137,24 +144,56 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Grille de services (Espace Vendeur, Messages, Favoris, etc.) */}
+        {/* LIGNE ACTIONS RAPIDES */}
+        <div className="bg-white rounded-3xl p-4 shadow-card flex justify-around text-center">
+          {/* Action Favoris */}
+          <button onClick={() => navigate('/favoris')} className="flex-1 flex flex-col items-center gap-1.5 active:scale-95 transition-transform border-r border-surface-100 last:border-r-0">
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+              <Heart size={18} strokeWidth={2}/>
+            </div>
+            <span className="text-[10px] font-bold text-dark-500">Favoris</span>
+          </button>
+          
+          {/* Action Portefeuille */}
+          <button onClick={() => navigate('/portefeuille')} className="flex-1 flex flex-col items-center gap-1.5 active:scale-95 transition-transform border-r border-surface-100 last:border-r-0">
+            <div className="w-10 h-10 rounded-full bg-dark-50 flex items-center justify-center text-dark-700">
+              <Wallet size={18} strokeWidth={2}/>
+            </div>
+            <span className="text-[10px] font-bold text-dark-800">{(wallet?.balance_available || 0).toLocaleString('fr-FR')} F</span>
+            <span className="text-[8px] font-bold text-dark-400 -mt-1.5">Solde Wallet</span>
+          </button>
+
+          {/* Action Commandes */}
+          <button onClick={() => navigate('/commandes')} className="flex-1 flex flex-col items-center gap-1.5 active:scale-95 transition-transform">
+            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
+              <Package size={18} strokeWidth={2}/>
+            </div>
+            <span className="text-[10px] font-bold text-dark-500">Commandes</span>
+          </button>
+        </div>
+
+        {/* Grille de services */}
         <div className="bg-white rounded-3xl p-4 shadow-card">
           <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider mb-3.5 pl-0.5">Mes Services</p>
-          <div className="grid grid-cols-4 gap-y-4 gap-x-2 text-center">
+          <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center">
             {[
-              { icon: Store, label: 'Ventes', path: '/vendeur', color: 'text-emerald-600 bg-emerald-50' },
-              { icon: Package, label: 'Commandes', path: '/commandes', color: 'text-orange-600 bg-orange-50' },
-              { icon: MessageCircle, label: 'Messages', path: '/messages', color: 'text-violet-600 bg-violet-50' },
-              { icon: Heart, label: 'Favoris', path: '/favoris', color: 'text-red-500 bg-red-50' },
-              { icon: Gift, label: 'Parrainage', path: '/parrainage', color: 'text-amber-600 bg-amber-50' },
-              { icon: Globe, label: 'Communauté', path: '/communaute', color: 'text-blue-600 bg-blue-50' },
-              { icon: Wallet, label: 'Wallet', path: '/portefeuille', color: 'text-dark-700 bg-surface-100' }
+              { icon: Store, label: 'Espace Vendeur', onClick: () => navigate('/vendeur'), color: 'text-emerald-600 bg-emerald-50' },
+              { icon: MessageCircle, label: 'Messages', onClick: () => navigate('/messages'), color: 'text-violet-600 bg-violet-50' },
+              { icon: Bell, label: 'Notifications', onClick: () => navigate('/notifications'), color: 'text-blue-600 bg-blue-50', badge: unreadCount },
+              { icon: Gift, label: 'Parrainage', onClick: () => navigate('/parrainage'), color: 'text-amber-600 bg-amber-50' },
+              { icon: Globe, label: 'Communauté', onClick: () => navigate('/communaute'), color: 'text-violet-600 bg-violet-50' },
+              { icon: Settings, label: 'Paramètres', onClick: () => setSettingsOpen(true), color: 'text-dark-700 bg-surface-100' }
             ].map((srv, i) => {
               const SrvIcon = srv.icon
               return (
-                <button key={i} onClick={() => navigate(srv.path)} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${srv.color}`}>
+                <button key={i} onClick={srv.onClick} className="flex flex-col items-center gap-1 active:scale-90 transition-transform relative">
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${srv.color} relative`}>
                     <SrvIcon size={18} strokeWidth={2.2}/>
+                    {srv.badge > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white shadow-sm animate-pulse">
+                        {srv.badge > 9 ? '9+' : srv.badge}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] font-bold text-dark-700 leading-tight">{srv.label}</span>
                 </button>
