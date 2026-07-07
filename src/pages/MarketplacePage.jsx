@@ -478,11 +478,11 @@ export default function MarketplacePage() {
         <div className="relative flex items-center h-10 w-full overflow-hidden bg-primary-950/80 border-b border-white/5">
           {/* Logo collé à gauche avec z-index 20 et arrière-plan opaque */}
           <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-gradient-to-r from-primary-800 to-primary-750/95 shadow-md rounded-r-2xl border-r border-white/5">
-            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => navigate('/marketplace')}>
-              <div className="w-6.5 h-6.5 rounded-lg bg-gold-400 flex items-center justify-center shadow-sm">
-                <span className="text-xs">🌿</span>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
+              <div className="w-8 h-8 rounded-none bg-gold-400 flex items-center justify-center shadow-sm">
+                <span className="text-base">🌿</span>
               </div>
-              <span className="font-display font-black text-white text-xs tracking-wider">MANG</span>
+              <span className="font-display font-black text-white text-sm tracking-wider">MANG</span>
             </div>
           </div>
 
@@ -595,8 +595,7 @@ export default function MarketplacePage() {
         {/* BARRE DES FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
-            { label: '🔥 Top boutiques', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
-            { label: '📦 Catégories', action: () => setFilterOpen(true), active: filterOpen },
+            { label: '🔥 Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
             { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
