@@ -459,12 +459,8 @@ export default function MarketplacePage() {
     setSuggestions([])
   }
 
-  const handlePopular = () => {
-    setSortBy(prev => prev === 'followers' ? 'recent' : 'followers')
-  }
-
-  const handleQuickCat = (cat) => {
-    setSelectedGroup(prev => prev === cat.name ? null : cat.name)
+  const handleTopBoutiquesToggle = () => {
+    setSortBy(prev => prev === 'likes' ? 'recent' : 'likes')
   }
 
   const activeFiltersCount = [
@@ -596,52 +592,18 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* SECTION CATÉGORIES (GRILLE 3x3 STYLE ALIBABA) */}
-        <div className="mb-6 px-3">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[10px] font-black text-dark-400 uppercase tracking-wider">Catégories</h3>
-            {selectedGroup && (
-              <button onClick={() => setSelectedGroup(null)} className="text-[10px] font-black text-primary-600 hover:underline">
-                Tout afficher 📂
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {GRID_CATEGORIES.map((cat, i) => {
-              const isActive = selectedGroup === cat.name
-              return (
-                <button
-                  key={i}
-                  onClick={() => setSelectedGroup(prev => prev === cat.name ? null : cat.name)}
-                  className={clsx(
-                    "flex flex-col items-center justify-center p-3 rounded-2xl border-2 active:scale-95 transition-all text-center aspect-square shadow-card",
-                    isActive
-                      ? "bg-primary-600 border-primary-600 text-white shadow-green"
-                      : "bg-white border-surface-200 hover:border-primary-400"
-                  )}
-                >
-                  <span className="text-2xl mb-1.5">{cat.icon}</span>
-                  <span className={clsx(
-                    "text-[10px] font-black leading-tight line-clamp-2",
-                    isActive ? "text-white" : "text-dark-800"
-                  )}>{cat.name}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* BARRE DES 4 FILTRES RAPIDES */}
+        {/* BARRE DES FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
-            { label: '🔥 Populaires', action: handlePopular, active: sortBy === 'followers' },
+            { label: '🔥 Top boutiques', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
+            { label: '📦 Catégories', action: () => setFilterOpen(true), active: filterOpen },
             { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
             { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
             { label: '📍 Proches', action: handleNearby, active: filters.nearby },
           ].map((btn, i) => (
             <button key={i} onClick={btn.action}
               className={clsx(
-                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border',
+                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1',
                 btn.active
                   ? 'bg-primary-600 text-white border-primary-600 shadow-green'
                   : 'bg-white text-dark-700 border-surface-200/50 shadow-card'
