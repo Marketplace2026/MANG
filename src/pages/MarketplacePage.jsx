@@ -99,7 +99,7 @@ export default function MarketplacePage() {
   const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false })
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const [sortBy, setSortBy] = useState('recent')
+  const [sortBy, setSortBy] = useState(() => new URLSearchParams(window.location.search).get('sortBy') || 'recent')
   const [minRating, setMinRating] = useState(null)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [topShopsOnly, setTopShopsOnly] = useState(false)
