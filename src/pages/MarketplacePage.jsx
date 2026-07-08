@@ -477,18 +477,18 @@ export default function MarketplacePage() {
         {/* LIGNE 1 : HEADER PRINCIPAL */}
         <div className="bg-green-700 h-14 px-4 flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-            <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200" />
-            <span className="font-display font-black text-white text-[25px] tracking-wider leading-none">MANG</span>
+            <img src="/logo-mang.png" alt="MANG" className="w-10 h-10 hover:scale-105 active:scale-95 transition-transform duration-200" />
+            <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
           <Link to="/communaute">
-            <GlobeIcon className="w-8 h-8 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
+            <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
           </Link>
         </div>
         
         {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
         <div className="bg-green-600 h-7 flex items-center overflow-hidden" style={{fontFamily: 'Poppins'}}>
           <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm">
-            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 🚜
+            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | VENDEURS DE PRODUITS AGRICOLES 🥭 | LIVRAISON VRAIMENT MOBILE 🚚 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 📱
           </div>
         </div>
 
