@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
-  Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon
+  Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useNotificationsStore } from '@/store'
 import { Avatar, PremiumBadge, BottomSheet } from '@/components/ui'
 
 // ============================================================
@@ -88,6 +88,16 @@ export default function MarketplacePage() {
   const { user, profile } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
+  const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
+
+  useEffect(() => {
+    if (!user) return
+    fetchNotifications(user.id)
+    const unsubNotif = subscribeToNotifications(user.id)
+    return () => {
+      if (typeof unsubNotif === 'function') unsubNotif()
+    }
+  }, [user])
 
   const [shops, setShops] = useState([])
   const [allShops, setAllShops] = useState([])
@@ -480,9 +490,21 @@ export default function MarketplacePage() {
             <img src="/logo-mang.png" alt="MANG" className="w-10 h-10 hover:scale-105 active:scale-95 transition-transform duration-200" />
             <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
-          <Link to="/communaute">
-            <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/communaute">
+              <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
+            </Link>
+            <Link to="/notifications">
+              <div className="relative">
+                <BellIcon className="w-7 h-7 text-white hover:scale-110 transition" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 min-h-5 flex items-center justify-center px-1">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+            </Link>
+          </div>
         </div>
         
         {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
