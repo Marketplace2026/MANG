@@ -77,11 +77,13 @@ export default function OnboardingPage() {
                 <span className="text-white text-xs font-bold tracking-widest uppercase">🌍 Marketplace Agricole Bénin</span>
               </div>
 
-              {/* Cadre carré bien aéré avec le panier de légumes premium agrandi de 30% */}
+              {/* Logo panier de légumes agrandi, sans cadre extérieur, avec de l'espace pour respirer */}
               <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center p-5 shadow-xl">
-                  <img src="/logo-mang.png" alt="MANG" className="w-full h-full object-contain drop-shadow-2xl" />
-                </div>
+                <img 
+                  src="/logo-mang.png" 
+                  alt="MANG" 
+                  className="w-40 h-40 object-contain drop-shadow-2xl mx-auto p-2" 
+                />
               </div>
 
               <h1 className="font-black text-white mb-2"
@@ -171,11 +173,13 @@ export default function OnboardingPage() {
             
             {/* Header */}
             <div className="text-center space-y-3">
-              {/* Cadre carré bien aéré avec le panier de légumes premium agrandi */}
+              {/* Logo panier de légumes agrandi, sans cadre extérieur, avec de l'espace pour respirer */}
               <div className="flex justify-center mb-2">
-                <div className="w-28 h-28 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center p-4 shadow-xl">
-                  <img src="/logo-mang.png" alt="MANG" className="w-full h-full object-contain drop-shadow-2xl" />
-                </div>
+                <img 
+                  src="/logo-mang.png" 
+                  alt="MANG" 
+                  className="w-32 h-32 object-contain drop-shadow-2xl mx-auto p-2" 
+                />
               </div>
               <h2 className="text-2xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Pourquoi choisir MANG ?
