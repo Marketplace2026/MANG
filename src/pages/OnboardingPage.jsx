@@ -48,7 +48,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between">
       
-      {/* Éléments de fond décoratifs identiques à LoginPage/AuthLayout */}
+      {/* Éléments de fond décoratifs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-gold-500/10 blur-3xl" />
         <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-primary-400/10 blur-3xl" />
@@ -57,7 +57,7 @@ export default function OnboardingPage() {
 
       {/* Contenu principal */}
       <div className={clsx(
-        "flex-1 transition-all duration-200 z-10 pb-20",
+        "flex-1 transition-all duration-200 z-10 pb-24",
         animating ? "opacity-0 translate-y-4 scale-95" : "opacity-100 translate-y-0 scale-100"
       )}>
         
@@ -68,18 +68,19 @@ export default function OnboardingPage() {
           <div className="flex flex-col">
             {/* Hero */}
             <div className="text-center px-6 pt-12 pb-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-2"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }}>
                 <div className="w-2 h-2 rounded-full bg-white animate-pulse"/>
                 <span className="text-white text-xs font-bold tracking-widest uppercase">🌍 Marketplace Agricole Bénin</span>
               </div>
 
-              {/* Logo panier carré parfait, agrandi de 40%, bien centré avec espace */}
-              <div className="flex justify-center my-10">
+              {/* Logo panier carré parfait 220px x 220px, centré, 40px en haut et 40px en bas */}
+              <div className="flex justify-center" style={{ marginTop: '40px', marginBottom: '40px' }}>
                 <img 
                   src="/logo-mang.png" 
                   alt="MANG" 
-                  className="w-56 h-56 object-contain drop-shadow-2xl mx-auto p-4" 
+                  className="object-contain drop-shadow-2xl mx-auto" 
+                  style={{ width: '220px', height: '220px' }}
                 />
               </div>
 
@@ -170,12 +171,13 @@ export default function OnboardingPage() {
             
             {/* Header */}
             <div className="text-center space-y-3">
-              {/* Logo panier carré parfait, agrandi de 40%, bien centré avec espace */}
-              <div className="flex justify-center my-8">
+              {/* Logo panier carré parfait 220px x 220px, centré, 40px en haut, et 20px en bas (Correction 3) */}
+              <div className="flex justify-center" style={{ marginTop: '40px', marginBottom: '20px' }}>
                 <img 
                   src="/logo-mang.png" 
                   alt="MANG" 
-                  className="w-48 h-48 object-contain drop-shadow-2xl mx-auto p-3" 
+                  className="object-contain drop-shadow-2xl mx-auto" 
+                  style={{ width: '220px', height: '220px' }}
                 />
               </div>
               <h2 className="text-2xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -255,13 +257,21 @@ export default function OnboardingPage() {
 
       </div>
 
-      {/* Barre fixe en bas compactée de 50% */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-6px_25px_rgba(0,0,0,0.12)] px-6 py-2 flex flex-col justify-center max-w-[480px] mx-auto rounded-t-xl">
+      {/* Barre fixe en bas - Hauteur exacte 80px */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-6px_25px_rgba(0,0,0,0.12)] max-w-[480px] mx-auto rounded-t-xl flex flex-col items-center justify-between py-2" 
+        style={{ height: '80px', boxSizing: 'border-box' }}
+      >
+        {/* Témoin de progression */}
+        <div className="flex justify-center gap-1.5">
+          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 1 ? "w-6 bg-green-700" : "w-1 bg-slate-200")} />
+          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 2 ? "w-6 bg-green-700" : "w-1 bg-slate-200")} />
+        </div>
+
         {page === 1 ? (
           <button 
             onClick={handleNextPage}
-            className="w-full bg-green-700 hover:bg-green-800 text-white font-black rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
-            style={{ height: '48px', fontSize: '16px' }}
+            className="bg-green-700 hover:bg-green-800 text-white font-bold rounded-[12px] flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            style={{ height: '44px', width: '90%', fontSize: '16px' }}
           >
             Continuer
             <ArrowRight className="w-4 h-4 text-white" />
@@ -269,19 +279,13 @@ export default function OnboardingPage() {
         ) : (
           <button 
             onClick={handleStart}
-            className="w-full bg-green-700 hover:bg-green-800 text-white font-black rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
-            style={{ height: '48px', fontSize: '16px' }}
+            className="bg-green-700 hover:bg-green-800 text-white font-bold rounded-[12px] flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            style={{ height: '44px', width: '90%', fontSize: '16px' }}
           >
             Commencer
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
         )}
-
-        {/* Témoin de progression */}
-        <div className="flex justify-center gap-1.5 mt-2">
-          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 1 ? "w-6 bg-green-700" : "w-1 bg-slate-200")} />
-          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 2 ? "w-6 bg-green-700" : "w-1 bg-slate-200")} />
-        </div>
       </div>
 
     </div>
