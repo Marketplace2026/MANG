@@ -476,18 +476,18 @@ export default function MarketplacePage() {
         
         {/* LIGNE 1 : HEADER PRINCIPAL */}
         <div className="bg-green-700 h-14 px-4 flex justify-between items-center">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
+            <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200" />
+            <span className="font-display font-black text-white text-[25px] tracking-wider leading-none">MANG</span>
+          </div>
           <Link to="/community">
             <GlobeIcon className="w-8 h-8 text-white hover:scale-110 transition" />
           </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo-mang.png" alt="MANG" className="w-12 h-12" />
-            <span className="text-lg font-bold text-white">MANG</span>
-          </div>
         </div>
         
         {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
-        <div className="bg-green-600 h-10 overflow-hidden">
-          <div className="animate-marquee whitespace-nowrap text-white text-base font-semibold flex items-center gap-3 h-full">
+        <div className="bg-green-600 h-7 overflow-hidden flex items-center">
+          <div className="animate-marquee whitespace-nowrap text-white text-sm font-medium flex items-center gap-3">
             🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | ACHETEZ VENDREZ DIRECT PRODUCTEUR 🚜 | MANG - LE FUTUR DU COMMERCE 🇧🇯
           </div>
         </div>
@@ -562,7 +562,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pt-[164px] pb-24">
+      <div className="pt-[152px] pb-24">
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
