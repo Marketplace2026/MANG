@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065F46" />
+      <stop offset="100%" stop-color="#022C22" />
+    </linearGradient>
+    <linearGradient id="cornGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </linearGradient>
+  </defs>
+
+  <!-- African Shield Contour -->
+  <g transform="translate(150, 60)">
+    <!-- Base Shield -->
+    <path d="M 100,0 
+             C 160,30 200,80 200,160 
+             C 200,240 150,300 100,320 
+             C 50,300 0,240 0,160 
+             C 0,80 40,30 100,0 Z" 
+          fill="url(#shieldGrad)" 
+          stroke="#CA8A04" 
+          stroke-width="5" />
+          
+    <!-- Stylized Stalk & Leaves of Maize (Corn) -->
+    <g transform="translate(50, 60)">
+      <!-- Left Leaf -->
+      <path d="M 50,150 C 10,120 15,60 15,60 C 15,60 45,90 50,150 Z" fill="#10B981" />
+      <!-- Right Leaf -->
+      <path d="M 50,150 C 90,120 85,60 85,60 C 85,60 55,90 50,150 Z" fill="#10B981" />
+      <!-- Center Gold Maize Ear -->
+      <path d="M 50,30 C 35,50 35,110 50,140 C 65,110 65,50 50,30 Z" fill="url(#cornGrad)" />
+      <!-- Small seed details (cross-hatched lines or dots) -->
+      <line x1="50" y1="40" x2="50" y2="130" stroke="#854D0E" stroke-width="2" opacity="0.4" />
+      <line x1="42" y1="65" x2="58" y2="65" stroke="#854D0E" stroke-width="2" opacity="0.4" />
+      <line x1="40" y1="85" x2="60" y2="85" stroke="#854D0E" stroke-width="2" opacity="0.4" />
+      <line x1="42" y1="105" x2="58" y2="105" stroke="#854D0E" stroke-width="2" opacity="0.4" />
+    </g>
+
+    <!-- Side decorative shield ties -->
+    <rect x="-8" y="145" width="8" height="30" rx="3" fill="#CA8A04" />
+    <rect x="200" y="145" width="8" height="30" rx="3" fill="#CA8A04" />
+  </g>
+
+  <!-- Labels -->
+  <text x="250" y="420" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="52" fill="#022C22" text-anchor="middle" letter-spacing="8">MANG</text>
+  <text x="250" y="455" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="12" fill="#CA8A04" text-anchor="middle" letter-spacing="6">QUALITY &amp; TRUST</text>
+</svg>

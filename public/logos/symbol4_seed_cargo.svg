@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- Concept 4: The Seed-Cargo Loop -->
+  <g transform="translate(10, 10)">
+    <!-- Outer looping cycle (Market cycle & Delivery) -->
+    <!-- Gold curved arrow -->
+    <path d="M 50,150 C 10,110 10,50 50,50 C 80,50 110,80 140,110 C 170,140 190,140 190,140" 
+          fill="none" stroke="#D4AF37" stroke-width="8" stroke-linecap="round" />
+          
+    <!-- Green leaf loop curve -->
+    <path d="M 150,50 C 190,90 190,150 150,150 C 120,150 90,120 60,90 C 30,60 10,60 10,60" 
+          fill="none" stroke="#1B5E20" stroke-width="8" stroke-linecap="round" />
+          
+    <!-- Center seed negative space forming two leaves -->
+    <path d="M 100,100 C 85,85 85,65 100,50 C 115,65 115,85 100,100 Z" fill="#1B5E20" />
+    <path d="M 100,100 C 115,115 115,135 100,150 C 85,135 85,115 100,100 Z" fill="#D4AF37" />
+    
+    <!-- Speed dots (Delivery) -->
+    <circle cx="25" cy="55" r="4" fill="#D4AF37" />
+    <circle cx="175" cy="145" r="4" fill="#1B5E20" />
+  </g>
+</svg>

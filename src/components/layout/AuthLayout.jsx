@@ -12,9 +12,7 @@ export default function AuthLayout() {
 
       {/* Logo header */}
       <div className="flex flex-col items-center pt-16 pb-8 relative z-10">
-        <div className="w-16 h-16 rounded-2xl bg-gold-400 flex items-center justify-center shadow-gold mb-4">
-          <span className="text-3xl">🌿</span>
-        </div>
+        <img src="/logo-mang.png" className="w-16 h-16 mx-auto mb-4" />
         <h1 className="font-display text-3xl text-white font-bold tracking-tight">MANG</h1>
         <p className="text-primary-300 text-sm mt-1 font-medium">Marché Agricole Nouvelle Génération</p>
       </div>

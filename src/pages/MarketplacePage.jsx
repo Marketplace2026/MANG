@@ -479,9 +479,7 @@ export default function MarketplacePage() {
           {/* Logo collé à gauche avec z-index 20 et arrière-plan opaque */}
           <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-gradient-to-r from-primary-800 to-primary-750/95 shadow-md rounded-r-2xl border-r border-white/5">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-              <div className="w-8 h-8 rounded-none bg-gold-400 flex items-center justify-center shadow-sm">
-                <span className="text-base">🌿</span>
-              </div>
+              <img src="/logo-mang.png" className="w-8 h-8 hover:scale-110 active:scale-95 transition-transform duration-200" />
               <span className="font-display font-black text-white text-sm tracking-wider">MANG</span>
             </div>
           </div>

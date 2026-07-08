@@ -49,9 +49,7 @@ export default function AppLayout() {
       {/* HEADER DESKTOP */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-          <div className="w-9 h-9 rounded-xl bg-gold-400 flex items-center justify-center">
-            <span className="text-lg">🌿</span>
-          </div>
+          <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" />
           <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
         </div>
 

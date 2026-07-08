@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- Concept 1: The Dynamic GPS Leaf -->
+  <defs>
+    <linearGradient id="forestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#1B5E20" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10, 10)">
+    <!-- Base leaf shape rotated like a moving GPS Pin -->
+    <path d="M 90,10 
+             C 140,40 170,90 150,140 
+             C 130,190 90,180 90,180 
+             C 90,180 50,190 30,140 
+             C 10,90 40,40 90,10 Z" 
+          fill="url(#forestGrad)" />
+          
+    <!-- Inner dynamic speed arrow cut-out (Delivery / Tech) -->
+    <path d="M 90,170 
+             L 110,130 
+             L 95,135 
+             L 95,70 
+             L 85,70 
+             L 85,135 
+             L 70,130 Z" 
+          fill="#D4AF37" />
+          
+    <!-- Gold seed/target point at the center (Market location) -->
+    <circle cx="90" cy="50" r="10" fill="#D4AF37" />
+    <!-- Outer connection orbits (Tech) -->
+    <circle cx="90" cy="90" r="80" fill="none" stroke="#D4AF37" stroke-width="2" stroke-dasharray="8 6" opacity="0.4" />
+  </g>
+</svg>

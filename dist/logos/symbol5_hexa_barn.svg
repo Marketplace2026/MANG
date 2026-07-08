@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- Concept 5: The Hexagonal Barn Arrow -->
+  <g transform="translate(10, 10)">
+    <!-- Hexagon Border (Tech/Security) -->
+    <polygon points="90,10 170,55 170,145 90,190 10,145 10,55" fill="none" stroke="#000000" stroke-width="4" opacity="0.1" />
+    <polygon points="90,20 160,60 160,140 90,180 20,140 20,60" fill="none" stroke="#D4AF37" stroke-width="5" stroke-linejoin="round" />
+    
+    <!-- Inside Arrow crop rows pointing forward/up -->
+    <!-- Left Leaf Wing -->
+    <path d="M 90,40 C 60,65 50,110 50,110 C 50,110 75,100 90,80" fill="#1B5E20" />
+    <!-- Right Leaf Wing -->
+    <path d="M 90,40 C 120,65 130,110 130,110 C 130,110 105,100 90,80" fill="#1B5E20" />
+    
+    <!-- Parallel crop lines forming the arrow shaft -->
+    <line x1="70" y1="120" x2="90" y2="80" stroke="#1B5E20" stroke-width="5" stroke-linecap="round" />
+    <line x1="90" y1="125" x2="90" y2="70" stroke="#D4AF37" stroke-width="5" stroke-linecap="round" />
+    <line x1="110" y1="120" x2="90" y2="80" stroke="#1B5E20" stroke-width="5" stroke-linecap="round" />
+    
+    <!-- Speed/digital nodes at bottom -->
+    <circle cx="70" cy="135" r="5" fill="#D4AF37" />
+    <circle cx="90" cy="145" r="5" fill="#1B5E20" />
+    <circle cx="110" cy="135" r="5" fill="#D4AF37" />
+  </g>
+</svg>

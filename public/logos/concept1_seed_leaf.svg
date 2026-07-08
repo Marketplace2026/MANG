@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  <!-- Background Shield/Circle -->
+  <circle cx="250" cy="250" r="220" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-dasharray="10 5" opacity="0.3" />
+  
+  <!-- Stylized leaf & seed path forming 'M' -->
+  <g transform="translate(100, 100)">
+    <!-- Left Stem/Seed (Gold) -->
+    <path d="M 50,220 C 50,150 100,100 150,100 C 150,150 120,220 50,220 Z" fill="url(#goldGrad)" />
+    <!-- Right Leaf (Green) -->
+    <path d="M 250,220 C 250,150 200,100 150,100 C 150,150 180,220 250,220 Z" fill="url(#greenGrad)" />
+    <!-- Center Sprout (Growth) -->
+    <path d="M 150,100 C 150,50 170,30 180,10 C 160,30 150,60 150,100 Z" fill="#059669" />
+    <!-- Seed base circle -->
+    <circle cx="150" cy="100" r="8" fill="#FBBF24" />
+  </g>
+  
+  <!-- Text Label -->
+  <text x="250" y="380" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="52" fill="#065F46" text-anchor="middle" letter-spacing="8">MANG</text>
+  <text x="250" y="415" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="14" fill="#D97706" text-anchor="middle" letter-spacing="4">MARCHÉ AGRICOLE</text>
+</svg>

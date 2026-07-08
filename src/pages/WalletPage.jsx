@@ -706,13 +706,27 @@ async function downloadPDF(tx) {
     const receiptNum = tx.receipt_number || `MANG-${new Date().getFullYear()}-${String(tx.id||'').slice(0,6).toUpperCase()}`
     const doc = new jsPDF({ unit: 'pt', format: 'a5' })
 
+    // Charger l'image du logo de manière asynchrone
+    const logoImg = await new Promise((resolve) => {
+      const img = new Image()
+      img.src = '/logo-mang.png'
+      img.onload = () => resolve(img)
+      img.onerror = () => resolve(null)
+    })
+
     doc.setFillColor(11, 61, 46)
     doc.rect(0, 0, 420, 80, 'F')
+
+    if (logoImg) {
+      doc.addImage(logoImg, 'PNG', 25, 20, 40, 40)
+    }
+
+    const startX = logoImg ? 75 : 30
     doc.setTextColor('#fff')
     doc.setFontSize(22); doc.setFont(undefined,'bold')
-    doc.text('MANG Wallet', 30, 48)
+    doc.text('MANG Wallet', startX, 45)
     doc.setFontSize(8); doc.setFont(undefined,'normal')
-    doc.text('Marché Agricole Nouvelle Génération', 30, 65)
+    doc.text('Marché Agricole Nouvelle Génération', startX, 62)
     doc.text('REÇU OFFICIEL', 390, 48, { align:'right' })
 
     doc.setTextColor(isCredit ? '#16a34a' : '#dc2626')

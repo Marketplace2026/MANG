@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="techGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#065F46" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Geometric 'M' crop rows representation -->
+  <g transform="translate(100, 100)">
+    <!-- Column 1 (Left row) -->
+    <rect x="20" y="40" width="35" height="180" rx="17.5" fill="url(#techGrad)" />
+    <!-- Diagonal 1 (Descending) -->
+    <path d="M 55,40 L 150,150 L 150,195 L 55,85 Z" fill="url(#goldGrad)" />
+    <!-- Diagonal 2 (Ascending) -->
+    <path d="M 245,40 L 150,150 L 150,195 L 245,85 Z" fill="url(#goldGrad)" />
+    <!-- Column 2 (Right row) -->
+    <rect x="245" y="40" width="35" height="180" rx="17.5" fill="url(#techGrad)" />
+    
+    <!-- Sprout details at top -->
+    <path d="M 37.5,10 C 25,25 37.5,40 37.5,40 C 37.5,40 50,25 37.5,10 Z" fill="#10B981" />
+    <path d="M 262.5,10 C 250,25 262.5,40 262.5,40 C 262.5,40 275,25 262.5,10 Z" fill="#10B981" />
+    <path d="M 150,110 C 137.5,125 150,140 150,140 C 150,140 162.5,125 150,110 Z" fill="#FBBF24" />
+  </g>
+
+  <!-- Labels -->
+  <text x="250" y="400" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="52" fill="#065F46" text-anchor="middle" letter-spacing="8">MANG</text>
+  <text x="250" y="435" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="12" fill="#D97706" text-anchor="middle" letter-spacing="6">TECH-AGRI MARKET</text>
+</svg>

@@ -34,9 +34,7 @@ function SplashScreen() {
   return (
     <div className="fixed inset-0 bg-primary-900 flex flex-col items-center justify-center gap-4">
       <div className="text-center">
-        <div className="w-20 h-20 rounded-3xl bg-gold-400 flex items-center justify-center mb-4 mx-auto shadow-gold animate-pulse">
-          <span className="text-4xl">🌿</span>
-        </div>
+        <img src="/logo-mang.png" className="w-20 h-20 mx-auto mb-4" />
         <h1 className="font-display text-3xl text-white font-bold">MANG</h1>
         <p className="text-primary-300 text-sm mt-1">Marché Agricole Nouvelle Génération</p>
       </div>
