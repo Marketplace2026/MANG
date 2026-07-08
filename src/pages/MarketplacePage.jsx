@@ -472,12 +472,12 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
-      <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-primary-800 to-primary-600 shadow-lg max-w-[480px] mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-[#004d00] shadow-lg max-w-[480px] mx-auto">
         
         {/* Logo & Bandeau Défilant */}
-        <div className="relative flex items-center h-10 w-full overflow-hidden bg-primary-950/80 border-b border-white/5">
+        <div className="relative flex items-center h-10 w-full overflow-hidden bg-[#004d00] border-b border-white/5">
           {/* Logo collé à gauche avec z-index 20 et arrière-plan opaque */}
-          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-gradient-to-r from-primary-800 to-primary-750/95 shadow-md rounded-r-2xl border-r border-white/5">
+          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-[#004d00]">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
               <img src="/logo-mang.png" className="w-8 h-8 hover:scale-110 active:scale-95 transition-transform duration-200" />
               <span className="font-display font-black text-white text-sm tracking-wider">MANG</span>
