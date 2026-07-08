@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
-  Flame, LayoutGrid, ChevronDown, Mic, Camera
+  Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -472,23 +472,23 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
-      <header className="fixed top-0 left-0 right-0 z-30 bg-[#004d00] shadow-lg max-w-[480px] mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-green-700 shadow-lg max-w-[480px] mx-auto">
         
-        {/* Logo & Bandeau Défilant */}
-        <div className="relative flex items-center h-14 w-full overflow-hidden bg-[#004d00] border-b border-white/5">
-          {/* Logo collé à gauche avec z-index 20 et arrière-plan opaque */}
-          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-[#004d00]">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-              <img src="/logo-mang.png" className="w-12 h-12 hover:scale-110 active:scale-95 transition-transform duration-200" />
-              <span className="font-display font-black text-white text-[25px] tracking-wider leading-none">MANG</span>
-            </div>
+        {/* LIGNE 1 : HEADER PRINCIPAL */}
+        <div className="bg-green-700 h-14 px-4 flex justify-between items-center">
+          <Link to="/community">
+            <GlobeIcon className="w-8 h-8 text-white hover:scale-110 transition" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <img src="/logo-mang.png" alt="MANG" className="w-12 h-12" />
+            <span className="text-lg font-bold text-white">MANG</span>
           </div>
-
-          {/* Bandeau défilant qui passe derrière le logo */}
-          <div className="w-full overflow-hidden z-10">
-            <div className="animate-marquee-behind whitespace-nowrap text-[9px] font-bold text-white uppercase tracking-wider">
-              UN MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION • FRAIS, LOCAUX, LIVRÉS CHEZ VOUS • PAIEMENT MOBILE MONEY
-            </div>
+        </div>
+        
+        {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
+        <div className="bg-green-600 h-10 overflow-hidden">
+          <div className="animate-marquee whitespace-nowrap text-white text-base font-semibold flex items-center gap-3 h-full">
+            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | ACHETEZ VENDREZ DIRECT PRODUCTEUR 🚜 | MANG - LE FUTUR DU COMMERCE 🇧🇯
           </div>
         </div>
 
@@ -562,7 +562,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pt-[116px] pb-24">
+      <div className="pt-[164px] pb-24">
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
@@ -717,6 +717,14 @@ export default function MarketplacePage() {
         .animate-marquee-behind {
           display: inline-block;
           animation: marquee-behind 25s linear infinite;
+        }
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+          display: inline-block;
+          animation: marquee 20s linear infinite;
         }
       `}</style>
     </div>
