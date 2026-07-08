@@ -480,7 +480,7 @@ export default function MarketplacePage() {
           <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-4 bg-[#004d00]">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
               <img src="/logo-mang.png" className="w-10 h-10 hover:scale-110 active:scale-95 transition-transform duration-200" />
-              <span className="font-display font-black text-white text-sm tracking-wider">MANG</span>
+              <span className="font-display font-black text-white text-[40px] tracking-wider leading-none">MANG</span>
             </div>
           </div>
 
