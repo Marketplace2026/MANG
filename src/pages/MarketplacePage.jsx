@@ -480,15 +480,15 @@ export default function MarketplacePage() {
             <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200" />
             <span className="font-display font-black text-white text-[25px] tracking-wider leading-none">MANG</span>
           </div>
-          <Link to="/community">
-            <GlobeIcon className="w-8 h-8 text-white hover:scale-110 transition" />
+          <Link to="/communaute">
+            <GlobeIcon className="w-8 h-8 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
           </Link>
         </div>
         
         {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
-        <div className="bg-green-600 h-7 overflow-hidden flex items-center">
-          <div className="animate-marquee whitespace-nowrap text-white text-sm font-medium flex items-center gap-3">
-            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | ACHETEZ VENDREZ DIRECT PRODUCTEUR 🚜 | MANG - LE FUTUR DU COMMERCE 🇧🇯
+        <div className="bg-green-600 h-7 flex items-center overflow-hidden" style={{fontFamily: 'Poppins'}}>
+          <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm">
+            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 🚜
           </div>
         </div>
 
@@ -725,6 +725,14 @@ export default function MarketplacePage() {
         .animate-marquee {
           display: inline-block;
           animation: marquee 20s linear infinite;
+        }
+        @keyframes bounce-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        .animate-bounce-gentle {
+          display: inline-block;
+          animation: bounce-gentle 2s infinite;
         }
       `}</style>
     </div>
