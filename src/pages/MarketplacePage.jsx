@@ -88,16 +88,7 @@ export default function MarketplacePage() {
   const { user, profile } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
-  const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
-
-  useEffect(() => {
-    if (!user) return
-    fetchNotifications(user.id)
-    const unsubNotif = subscribeToNotifications(user.id)
-    return () => {
-      if (typeof unsubNotif === 'function') unsubNotif()
-    }
-  }, [user])
+  const { unreadCount } = useNotificationsStore()
 
   const [shops, setShops] = useState([])
   const [allShops, setAllShops] = useState([])
