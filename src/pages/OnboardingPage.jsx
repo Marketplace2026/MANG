@@ -46,16 +46,13 @@ export default function OnboardingPage() {
   const testimonial = TESTIMONIALS[tIdx]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F4D2F] to-[#0A3420] max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between">
       
-      {/* Éléments de fond décoratifs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-0 inset-x-0 h-[45vh] opacity-15"
-          style={{ background: 'radial-gradient(ellipse at 50% -10%, #ffffff, transparent)' }}/>
-        <div className="absolute bottom-0 inset-x-0 h-48 opacity-10"
-          style={{ background: 'radial-gradient(ellipse at 50% 110%, #ffffff, transparent)' }}/>
-        <div className="absolute inset-0 opacity-[0.02]"
-          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)', backgroundSize: '32px 32px' }}/>
+      {/* Éléments de fond décoratifs identiques à LoginPage/AuthLayout */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-gold-500/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-primary-400/10 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary-600/5 blur-3xl" />
       </div>
 
       {/* Contenu principal */}
@@ -77,12 +74,12 @@ export default function OnboardingPage() {
                 <span className="text-white text-xs font-bold tracking-widest uppercase">🌍 Marketplace Agricole Bénin</span>
               </div>
 
-              {/* Logo panier de légumes agrandi, sans cadre extérieur, avec de l'espace pour respirer */}
-              <div className="flex justify-center mb-6">
+              {/* Logo panier carré parfait, agrandi de 40%, bien centré avec espace */}
+              <div className="flex justify-center my-10">
                 <img 
                   src="/logo-mang.png" 
                   alt="MANG" 
-                  className="w-40 h-40 object-contain drop-shadow-2xl mx-auto p-2" 
+                  className="w-56 h-56 object-contain drop-shadow-2xl mx-auto p-4" 
                 />
               </div>
 
@@ -173,12 +170,12 @@ export default function OnboardingPage() {
             
             {/* Header */}
             <div className="text-center space-y-3">
-              {/* Logo panier de légumes agrandi, sans cadre extérieur, avec de l'espace pour respirer */}
-              <div className="flex justify-center mb-2">
+              {/* Logo panier carré parfait, agrandi de 40%, bien centré avec espace */}
+              <div className="flex justify-center my-8">
                 <img 
                   src="/logo-mang.png" 
                   alt="MANG" 
-                  className="w-32 h-32 object-contain drop-shadow-2xl mx-auto p-2" 
+                  className="w-48 h-48 object-contain drop-shadow-2xl mx-auto p-3" 
                 />
               </div>
               <h2 className="text-2xl font-black text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -258,12 +255,13 @@ export default function OnboardingPage() {
 
       </div>
 
-      {/* Barre fixe en bas compactée de 40% */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-6px_25px_rgba(0,0,0,0.12)] px-6 py-2.5 flex flex-col justify-center max-w-[480px] mx-auto rounded-t-xl">
+      {/* Barre fixe en bas compactée de 50% */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-6px_25px_rgba(0,0,0,0.12)] px-6 py-2 flex flex-col justify-center max-w-[480px] mx-auto rounded-t-xl">
         {page === 1 ? (
           <button 
             onClick={handleNextPage}
-            className="w-full h-10 bg-green-700 hover:bg-green-800 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            className="w-full bg-green-700 hover:bg-green-800 text-white font-black rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            style={{ height: '48px', fontSize: '16px' }}
           >
             Continuer
             <ArrowRight className="w-4 h-4 text-white" />
@@ -271,7 +269,8 @@ export default function OnboardingPage() {
         ) : (
           <button 
             onClick={handleStart}
-            className="w-full h-10 bg-green-700 hover:bg-green-800 text-white font-bold text-sm rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            className="w-full bg-green-700 hover:bg-green-800 text-white font-black rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            style={{ height: '48px', fontSize: '16px' }}
           >
             Commencer
             <ArrowRight className="w-4 h-4 text-white" />
