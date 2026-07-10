@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
-  Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon
+  Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -482,6 +482,9 @@ export default function MarketplacePage() {
             <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/vendeur">
+              <Store className="w-7 h-7 text-white hover:scale-110 transition" />
+            </Link>
             <Link to="/communaute">
               <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
             </Link>
