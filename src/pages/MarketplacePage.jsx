@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { Avatar, PremiumBadge, BottomSheet } from '@/components/ui'
 import { ProductCard } from '@/components/marketplace/ShopCard'
+import LocationModal from '@/components/marketplace/LocationModal'
+import InteractiveMap from '@/components/marketplace/InteractiveMap'
 
 // ============================================================
 // DISPONIBILITÉ
@@ -127,7 +129,10 @@ export default function MarketplacePage() {
   const [dbCategories, setDbCategories] = useState([])
   const [userCity, setUserCity] = useState(null)
   const [geolocError, setGeolocError] = useState(false)
-
+  const [locationModalOpen, setLocationModalOpen] = useState(false)
+  const [radius, setRadius] = useState(50) // Rayon par défaut de 50km
+  const [viewMode, setViewMode] = useState('list') // 'list' or 'map'
+  
   const [userLocation, setUserLocation] = useState(null)
   const [likedShops, setLikedShops] = useState(new Set())
   const [followedShops, setFollowedShops] = useState(new Set())
@@ -178,7 +183,7 @@ export default function MarketplacePage() {
     }
   }, [location])
 
-  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly, selectedGroup])
+  useEffect(() => { loadShops() }, [filters, sortBy, minRating, verifiedOnly, topShopsOnly, selectedGroup, userLocation, radius])
 
   useEffect(() => {
     if (!user) return
@@ -294,26 +299,40 @@ export default function MarketplacePage() {
       const { data } = await query
       let result = data || []
 
-      // Mode proximité
-      if (filters.nearby && userLocation) {
-        result = result
-          .map(s => ({
-            ...s,
-            distance: s.latitude && s.longitude
-              ? distanceKm(userLocation.lat, userLocation.lon, s.latitude, s.longitude)
-              : null
-          }))
-          .filter(s => s.distance !== null && s.distance <= 50)
-          .sort((a, b) => a.distance - b.distance)
+      // Calculer systématiquement la distance pour toutes les boutiques si la position de l'utilisateur est connue
+      if (userLocation) {
+        result = result.map(s => ({
+          ...s,
+          distance: s.latitude && s.longitude
+            ? distanceKm(userLocation.lat, userLocation.lon, s.latitude, s.longitude)
+            : null
+        }))
+
+        if (filters.nearby) {
+          result = result.filter(s => s.distance !== null && (radius === 999 || s.distance <= radius))
+          result.sort((a, b) => {
+            if (a.distance === null) return 1
+            if (b.distance === null) return -1
+            return a.distance - b.distance
+          })
+        }
       }
 
-      // Charger également les produits actifs pour la recherche produit
+      // Charger également les produits actifs pour la recherche produit avec leurs coordonnées de boutique
       const { data: prodsData } = await supabase
         .from('products')
-        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level)')
+        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level, latitude, longitude)')
         .eq('is_available', true)
       
-      const activeProducts = prodsData || []
+      const activeProducts = (prodsData || []).map(p => {
+        const shopLat = p.shop?.latitude
+        const shopLon = p.shop?.longitude
+        const distance = (userLocation && shopLat && shopLon)
+          ? distanceKm(userLocation.lat, userLocation.lon, shopLat, shopLon)
+          : null
+        return { ...p, distance }
+      })
+
       setAllProducts(activeProducts)
       setAllShops(result)
       applySearch(result, activeProducts, search)
@@ -526,55 +545,36 @@ export default function MarketplacePage() {
       }
     }
   }
+  const handleSelectLocation = async (cityName, lat, lon) => {
+    setUserCity(cityName)
+    setUserLocation({ lat, lon })
+    localStorage.setItem('mang_user_city', cityName)
+    localStorage.setItem('mang_user_lat', lat.toString())
+    localStorage.setItem('mang_user_lon', lon.toString())
 
-  const reverseGeocode = async (lat, lon) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
-      const data = await res.json()
-      if (data && data.address) {
-        const quartier = data.address.suburb || data.address.neighbourhood || data.address.quarter || ""
-        const ville = data.address.city || data.address.town || data.address.village || data.address.county || ""
-        if (quartier && ville) return `${quartier}, ${ville}`
-        if (ville) return ville
-        if (quartier) return quartier
-      }
-    } catch (e) {
-      console.error(e)
+    if (user?.id) {
+      await supabase.from('profiles').update({ city: cityName, latitude: lat, longitude: lon }).eq('id', user.id)
     }
-    return "Commune inconnue"
-  }
-
-  const triggerGeolocation = () => {
-    if (!navigator.geolocation) {
-      setGeolocError(true)
-      return
-    }
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords: { latitude, longitude } }) => {
-        setGeolocError(false)
-        const loc = { lat: latitude, lon: longitude }
-        setUserLocation(loc)
-        const cityName = await reverseGeocode(latitude, longitude)
-        setUserCity(cityName)
-        if (user?.id) {
-          await supabase.from('profiles').update({ city: cityName, latitude, longitude }).eq('id', user.id)
-        }
-      },
-      () => {
-        setGeolocError(true)
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
-    )
   }
 
   useEffect(() => {
+    const localCity = localStorage.getItem('mang_user_city')
+    const localLat = localStorage.getItem('mang_user_lat')
+    const localLon = localStorage.getItem('mang_user_lon')
+
     if (profile?.city) {
       setUserCity(profile.city)
       if (profile.latitude && profile.longitude) {
         setUserLocation({ lat: profile.latitude, lon: profile.longitude })
       }
+    } else if (localCity) {
+      setUserCity(localCity)
+      if (localLat && localLon) {
+        setUserLocation({ lat: parseFloat(localLat), lon: parseFloat(localLon) })
+      }
     } else {
-      triggerGeolocation()
+      // Force le modal d'onboarding s'il n'y a aucune localisation sauvegardée
+      setLocationModalOpen(true)
     }
   }, [profile])
 
@@ -582,10 +582,9 @@ export default function MarketplacePage() {
     if (userLocation) {
       setFilters(f => ({ ...f, nearby: !f.nearby }))
     } else {
-      triggerGeolocation()
+      setLocationModalOpen(true)
     }
   }
-
   const loadTop5Shops = async () => {
     const { data } = await supabase
       .from('shops')
@@ -934,6 +933,33 @@ export default function MarketplacePage() {
           ))}
         </div>
 
+        {/* FILTRE DU RAYON DE PROXIMITÉ SI PROCHES ACTIF */}
+        {filters.nearby && (
+          <div className="px-3 py-1 flex items-center gap-2 overflow-x-auto no-scrollbar animate-slide-up bg-surface-50 border-b border-surface-200/50 pb-2">
+            <span className="text-[10px] font-black text-dark-600/60 uppercase tracking-wider flex-shrink-0">Rayon :</span>
+            {[
+              { label: '5 km', val: 5 },
+              { label: '10 km', val: 10 },
+              { label: '25 km', val: 25 },
+              { label: '50 km', val: 50 },
+              { label: 'Tout le Bénin', val: 999 },
+            ].map(opt => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setRadius(opt.val)}
+                className={clsx(
+                  'px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wide uppercase transition active:scale-95 border leading-none',
+                  radius === opt.val
+                    ? 'bg-green-700 text-white border-green-700 shadow-sm'
+                    : 'bg-white text-dark-800 border-surface-200 hover:border-green-600'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
         {/* FILTRE ACTIF LABEL */}
         {selectedGroup && (
           <div className="px-3 pb-1 mt-2.5 animate-fade-in flex items-center justify-between">
@@ -981,11 +1007,21 @@ export default function MarketplacePage() {
               ? (searchTab === 'shops' ? 'Boutiques correspondantes' : 'Produits correspondants') 
               : 'Toutes les Boutiques'}
           </h2>
-          {activeFiltersCount > 0 && (
-            <button onClick={resetFilters} className="text-[10px] font-bold text-primary-600 hover:text-primary-700">
-              Réinitialiser ({activeFiltersCount})
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {(search.trim() === '' || searchTab === 'shops') && (
+              <button 
+                onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')}
+                className="text-[10px] font-black text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg tracking-wide uppercase hover:bg-primary-100 transition active:scale-95 flex items-center gap-1"
+              >
+                {viewMode === 'list' ? '🗺️ Vue Carte' : '📱 Vue Liste'}
+              </button>
+            )}
+            {activeFiltersCount > 0 && (
+              <button onClick={resetFilters} className="text-[10px] font-bold text-primary-600 hover:text-primary-700">
+                Réinitialiser
+              </button>
+            )}
+          </div>
         </div>
 
         {/* LISTE BOUTIQUES OU PRODUITS FILTRÉS */}
@@ -1020,6 +1056,14 @@ export default function MarketplacePage() {
             <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary-600 text-white font-bold rounded-xl text-xs active:scale-95 shadow-sm">
               Tout afficher
             </button>
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="px-3">
+            <InteractiveMap 
+              shops={shops} 
+              userLocation={userLocation} 
+              userCity={userCity} 
+            />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 px-3">
@@ -1115,6 +1159,12 @@ export default function MarketplacePage() {
           animation: scan-laser 2s infinite linear;
         }
       `}</style>
+      <LocationModal 
+        open={locationModalOpen} 
+        onClose={() => setLocationModalOpen(false)} 
+        onSelect={handleSelectLocation}
+        forceMandatory={!userCity}
+      />
     </div>
   )
 }

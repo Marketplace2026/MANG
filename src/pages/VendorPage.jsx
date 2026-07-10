@@ -692,7 +692,7 @@ function ProductItem({ product, onDelete, onToggle }) {
 // CREATE SHOP SHEET
 // ============================================================
 function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet }) {
-  const [form, setForm] = useState({ name:'', description:'', city:'', whatsapp:'', has_delivery: false })
+  const [form, setForm] = useState({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
   const [category, setCategory] = useState('')
   const [catOpen, setCatOpen] = useState(false)
   const [catSearch, setCatSearch] = useState('')
@@ -705,7 +705,7 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
   const coverRef = useRef()
 
   const reset = () => {
-    setForm({ name:'', description:'', city:'', whatsapp:'', has_delivery: false })
+    setForm({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
     setCategory(''); setCoverFile(null); setCoverPreview(null); setCoords(null)
   }
 
@@ -725,8 +725,9 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${c.latitude}&lon=${c.longitude}&format=json`)
         const data = await res.json()
         const city = data.address?.city || data.address?.town || data.address?.village || ''
-        setForm(p => ({ ...p, city }))
-        toast.success(`📍 ${city}`)
+        const quarter = data.address?.suburb || data.address?.neighbourhood || data.address?.quarter || ''
+        setForm(p => ({ ...p, city, quarter }))
+        toast.success(`📍 ${quarter ? `${quarter}, ${city}` : city}`)
       } catch { toast.success('Position enregistrée') }
       setLocating(false)
     }, () => { toast.error('GPS inaccessible'); setLocating(false) })
@@ -736,6 +737,10 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
     if (!form.name.trim()) { toast.error('Nom requis'); return }
     if (!category) { toast.error('Catégorie requise'); return }
     if (!coverFile) { toast.error('Photo de la boutique requise'); return }
+    if (!form.city.trim()) { toast.error('Ville requise'); return }
+    if (!form.quarter.trim()) { toast.error('Quartier requis'); return }
+    if (!form.address.trim()) { toast.error('Adresse exacte requise'); return }
+    if (!coords) { toast.error('Veuillez cliquer sur le bouton "GPS" pour localiser précisément votre boutique'); return }
     if ((pieces?.balance || 0) < 10) { toast.error('Pièces insuffisantes (10 🪙 requis)'); return }
 
     setLoading(true)
@@ -750,12 +755,13 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
       const { count } = await supabase.from('shops').select('id', { count: 'exact' }).eq('slug', slug)
       if (count > 0) slug = `${slug}-${Date.now()}`
 
+      const fullLocationString = `${form.address.trim()} (${form.quarter.trim()}, ${form.city.trim()})`
       const { error } = await supabase.from('shops').insert({
         owner_id: user.id,
         name: form.name.trim(),
         slug,
         description: form.description.trim() || null,
-        city: form.city.trim() || null,
+        city: fullLocationString,
         latitude: coords?.latitude || null,
         longitude: coords?.longitude || null,
         cover_url: coverUrl,
@@ -856,19 +862,48 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
           </button>
         </div>
 
-        {/* Ville + GPS */}
+        {/* Ville * + GPS */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-bold text-dark-700">Ville</label>
+          <label className="block text-sm font-bold text-dark-700">Ville *</label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>
-              <input type="text" placeholder="Ex: Cotonou" value={form.city}
+              <input type="text" required placeholder="Ex: Cotonou" value={form.city}
                 onChange={e => setForm(p => ({...p, city: e.target.value}))} className="input-field pl-10"/>
             </div>
             <button onClick={handleLocate} disabled={locating}
-              className="px-4 py-3 rounded-2xl bg-primary-50 text-primary-700 font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center gap-2">
-              {locating ? <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"/> : <><MapPin size={15}/> GPS</>}
+              className={clsx(
+                "px-4 py-3 rounded-2xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center gap-2",
+                coords ? "bg-emerald-600 text-white shadow-md shadow-emerald-100" : "bg-primary-50 text-primary-700"
+              )}>
+              {locating ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
+              ) : coords ? (
+                <>✓ Localisé</>
+              ) : (
+                <><MapPin size={15}/> GPS</>
+              )}
             </button>
+          </div>
+        </div>
+
+        {/* Quartier * */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-dark-700">Quartier / Zone *</label>
+          <div className="relative">
+            <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>
+            <input type="text" required placeholder="Ex: Fidjrossé" value={form.quarter}
+              onChange={e => setForm(p => ({...p, quarter: e.target.value}))} className="input-field pl-10"/>
+          </div>
+        </div>
+
+        {/* Adresse exacte * */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-dark-700">Adresse exacte *</label>
+          <div className="relative">
+            <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>
+            <input type="text" required placeholder="Ex: En face de la pharmacie, maison verte" value={form.address}
+              onChange={e => setForm(p => ({...p, address: e.target.value}))} className="input-field pl-10"/>
           </div>
         </div>
 

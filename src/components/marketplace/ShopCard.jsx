@@ -129,12 +129,16 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
           </button>
 
         </div>
-
         {/* Localisation */}
         {shop.city && (
-          <div className="flex items-center gap-1 mt-2">
+          <div className="flex items-center gap-1.5 mt-2">
             <MapPin size={9} className="text-dark-600/40"/>
-            <span className="text-dark-600/40 text-[10px] font-medium truncate">{shop.city}</span>
+            <span className="text-dark-600/40 text-[10px] font-medium truncate flex-1">{shop.city}</span>
+            {shop.distance !== undefined && shop.distance !== null && (
+              <span className="text-emerald-700 bg-emerald-50 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none">
+                📍 {shop.distance < 1 ? `${Math.round(shop.distance * 1000)}m` : `${shop.distance.toFixed(1)}km`}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -236,12 +240,16 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
             </span>
             <span className="text-dark-600/40 text-xs ml-1">FCFA</span>
           </div>
+          {product.distance !== undefined && product.distance !== null && (
+            <span className="text-emerald-700 bg-emerald-50 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5">
+              📍 {product.distance < 1 ? `${Math.round(product.distance * 1000)}m` : `${product.distance.toFixed(1)}km`}
+            </span>
+          )}
         </div>
       </div>
     </div>
   )
 }
-
 
 
 // ============================================================
