@@ -1,5 +1,6 @@
+
 import { clsx } from 'clsx'
-import { MapPin, Truck, Users } from 'lucide-react'
+import { MapPin, Truck, Users, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, PremiumBadge } from '@/components/ui'
 
@@ -185,9 +186,8 @@ export function TopShopCard({ shop, rank }) {
 }
 
 // ============================================================
-// PRODUCT CARD
-// ============================================================
 export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite = false }) {
+  const navigate = useNavigate()
   const AVAILABILITY_LABELS = {
     now: { label: 'Disponible', color: 'text-emerald-600 bg-emerald-50' },
     '1w': { label: 'Dans 1 semaine', color: 'text-blue-600 bg-blue-50' },
@@ -201,7 +201,10 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
   const avail = AVAILABILITY_LABELS[product.availability] || AVAILABILITY_LABELS.now
 
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+    <div 
+      className="bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-[0.98] hover:shadow-md transition-all duration-150"
+      onClick={() => navigate(`/produit/${product.id}`)}
+    >
       {/* Image */}
       <div className="relative h-40 bg-gradient-to-br from-surface-100 to-surface-200">
         {product.image_url
@@ -234,7 +237,7 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
             <span className="text-dark-600/40 text-xs ml-1">FCFA</span>
           </div>
           <button
-            onClick={onOrder}
+            onClick={e => { e.stopPropagation(); onOrder?.() }}
             className="px-3.5 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold active:scale-95 transition-transform shadow-green"
           >
             Commander
@@ -244,6 +247,8 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
     </div>
   )
 }
+
+
 
 // ============================================================
 // SHOP CARD SKELETON

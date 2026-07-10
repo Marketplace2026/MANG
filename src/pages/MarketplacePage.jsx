@@ -517,9 +517,11 @@ export default function MarketplacePage() {
       if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < suggestions.length) {
         e.preventDefault()
         const selected = suggestions[focusedSuggestionIndex]
-        setSearch(selected.name)
-        addToHistory(selected.name)
-        applySearch(allShops, allProducts, selected.name)
+        if (selected.type === 'product') {
+          navigate(`/produit/${selected.id}`)
+        } else {
+          navigate(`/boutique/${selected.slug || selected.id}`)
+        }
         setShowSuggestions(false)
       }
     }
@@ -800,9 +802,11 @@ export default function MarketplacePage() {
                       <button
                         key={s.type + s.id}
                         onClick={() => {
-                          setSearch(s.name)
-                          addToHistory(s.name)
-                          applySearch(allShops, allProducts, s.name)
+                          if (s.type === 'product') {
+                            navigate(`/produit/${s.id}`)
+                          } else {
+                            navigate(`/boutique/${s.slug || s.id}`)
+                          }
                           setShowSuggestions(false)
                         }}
                         className={clsx(
