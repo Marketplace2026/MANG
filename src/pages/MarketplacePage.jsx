@@ -692,7 +692,7 @@ export default function MarketplacePage() {
           >
             <button 
               onClick={handleNearby}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-green-700 hover:bg-green-800 border border-green-500/20 rounded-lg text-white font-black text-[11px] active:scale-95 transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-2.5 bg-green-700 hover:bg-green-800 border border-green-500/20 rounded-lg text-white font-black text-[11.5px] active:scale-95 transition-all shadow-sm h-[30px]"
             >
               <MapPin size={11} className={userCity ? "text-yellow-300 animate-bounce-gentle" : "text-red-400 animate-pulse"} />
               <span className="truncate max-w-[110px] leading-none">
