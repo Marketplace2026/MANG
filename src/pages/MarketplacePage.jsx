@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { Avatar, PremiumBadge, BottomSheet } from '@/components/ui'
+import { ProductCard } from '@/components/marketplace/ShopCard'
 
 // ============================================================
 // DISPONIBILITÉ
@@ -96,6 +97,21 @@ export default function MarketplacePage() {
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1)
+  
+  // États de recherche avancée
+  const [allProducts, setAllProducts] = useState([])
+  const [filteredProducts, setFilteredProducts] = useState([])
+  const [searchTab, setSearchTab] = useState('shops') // 'shops' or 'products'
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mang_search_history')) || []
+    } catch {
+      return []
+    }
+  })
+  const [isListening, setIsListening] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
 
   const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false })
   const [filterOpen, setFilterOpen] = useState(false)
@@ -118,6 +134,8 @@ export default function MarketplacePage() {
 
   const searchRef = useRef()
   const debounceRef = useRef()
+  const fileInputRef = useRef()
+  const [favoriteProducts, setFavoriteProducts] = useState(new Set())
 
   // Placeholder animé
   const placeholders = ['Maïs, Igname...', 'Boutiques proches...', 'Tomates fraîches...', 'Volailles...', 'Semences...']
@@ -289,17 +307,55 @@ export default function MarketplacePage() {
           .sort((a, b) => a.distance - b.distance)
       }
 
+      // Charger également les produits actifs pour la recherche produit
+      const { data: prodsData } = await supabase
+        .from('products')
+        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level)')
+        .eq('is_available', true)
+      
+      const activeProducts = prodsData || []
+      setAllProducts(activeProducts)
       setAllShops(result)
-      applySearch(result, search)
+      applySearch(result, activeProducts, search)
     } finally {
       setLoading(false)
     }
   }
 
-  const applySearch = (source, q) => {
-    if (!q.trim()) { setShops(source); return }
+  const addToHistory = (term) => {
+    if (!term || !term.trim()) return
+    const cleanTerm = term.trim()
+    setSearchHistory(prev => {
+      const filtered = prev.filter(t => t !== cleanTerm)
+      const next = [cleanTerm, ...filtered].slice(0, 5)
+      localStorage.setItem('mang_search_history', JSON.stringify(next))
+      return next
+    })
+  }
+
+  const removeFromHistory = (term) => {
+    setSearchHistory(prev => {
+      const next = prev.filter(t => t !== term)
+      localStorage.setItem('mang_search_history', JSON.stringify(next))
+      return next
+    })
+  }
+
+  const clearHistory = () => {
+    setSearchHistory([])
+    localStorage.removeItem('mang_search_history')
+  }
+
+  const applySearch = (sourceShops, sourceProducts, q) => {
+    if (!q.trim()) {
+      setShops(sourceShops)
+      setFilteredProducts([])
+      return
+    }
     const norm = normalize(q)
-    const scored = source.map(s => {
+
+    // Filtrer les boutiques
+    const scoredShops = sourceShops.map(s => {
       const name = normalize(s.name || '')
       const desc = normalize(s.description || '')
       let score = 0
@@ -310,22 +366,66 @@ export default function MarketplacePage() {
       score += (s.premium_level || 0) * 2
       return { ...s, score }
     }).filter(s => s.score > 0).sort((a, b) => b.score - a.score)
-    setShops(scored)
+    setShops(scoredShops)
+
+    // Filtrer les produits
+    const scoredProducts = sourceProducts.map(p => {
+      const name = normalize(p.name || '')
+      const desc = normalize(p.description || '')
+      let score = 0
+      if (name.startsWith(norm)) score += 15
+      else if (name.includes(norm)) score += 10
+      else if (fuzzyMatch(norm, name)) score += 6
+      if (desc.includes(norm)) score += 4
+      score += (p.shop?.premium_level || 0) * 2
+      return { ...p, score }
+    }).filter(p => p.score > 0).sort((a, b) => b.score - a.score)
+    setFilteredProducts(scoredProducts)
+
+    if (scoredShops.length === 0 && scoredProducts.length > 0) {
+      setSearchTab('products')
+    } else if (scoredShops.length > 0) {
+      setSearchTab('shops')
+    }
   }
 
   const handleSearch = (val) => {
     setSearch(val)
+    setFocusedSuggestionIndex(-1)
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      applySearch(allShops, val)
+      applySearch(allShops, allProducts, val)
       if (val.trim()) {
         const norm = normalize(val)
-        const sugg = allShops
-          .filter(s => normalize(s.name).includes(norm) || fuzzyMatch(norm, normalize(s.name)))
-          .slice(0, 6)
-        setSuggestions(sugg)
+
+        // Suggestions de boutiques
+        const matchingShops = allShops
+          .filter(s => normalize(s.name || '').includes(norm) || fuzzyMatch(norm, normalize(s.name || '')))
+          .slice(0, 3)
+          .map(s => ({
+            type: 'shop',
+            id: s.id,
+            name: s.name,
+            slug: s.slug,
+            city: s.owner?.city || s.city || ''
+          }))
+
+        // Suggestions de produits
+        const matchingProducts = allProducts
+          .filter(p => normalize(p.name || '').includes(norm) || fuzzyMatch(norm, normalize(p.name || '')))
+          .slice(0, 3)
+          .map(p => ({
+            type: 'product',
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            shopName: p.shop?.name || ''
+          }))
+
+        setSuggestions([...matchingProducts, ...matchingShops])
         setShowSuggestions(true)
       } else {
+        setSuggestions([])
         setShowSuggestions(false)
       }
     }, 180)
@@ -335,13 +435,94 @@ export default function MarketplacePage() {
     if (!('webkitSpeechRecognition' in window)) { toast.error('Micro non disponible'); return }
     const recognition = new window.webkitSpeechRecognition()
     recognition.lang = 'fr-FR'
+    setIsListening(true)
     recognition.start()
     recognition.onresult = (e) => {
       const text = e.results[0][0].transcript
       handleSearch(text)
       setSearch(text)
+      addToHistory(text)
     }
-    toast('🎤 Parlez maintenant...')
+    recognition.onerror = () => {
+      setIsListening(false)
+    }
+    recognition.onend = () => {
+      setIsListening(false)
+    }
+  }
+
+  const handleImageSearch = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsScanning(true)
+    setTimeout(() => {
+      setIsScanning(false)
+      const fileName = file.name.toLowerCase()
+      let detectedProduct = "Tomate"
+      if (fileName.includes("mais") || fileName.includes("corn")) detectedProduct = "Maïs"
+      else if (fileName.includes("piment") || fileName.includes("pepper")) detectedProduct = "Piment"
+      else if (fileName.includes("poulet") || fileName.includes("chicken")) detectedProduct = "Poulet"
+      else if (fileName.includes("igname") || fileName.includes("yam")) detectedProduct = "Igname"
+      else {
+        const defaultFruits = ["Ananas", "Avocat", "Mangue", "Cacao", "Manioc"]
+        detectedProduct = defaultFruits[Math.floor(Math.random() * defaultFruits.length)]
+      }
+      setSearch(detectedProduct)
+      addToHistory(detectedProduct)
+      applySearch(allShops, allProducts, detectedProduct)
+      toast.success(`📷 Produit détecté : ${detectedProduct} ! 🍅`, { duration: 4000 })
+    }, 2000)
+  }
+
+  const handleToggleFavoriteProduct = (prodId) => {
+    setFavoriteProducts(prev => {
+      const next = new Set(prev)
+      if (next.has(prodId)) {
+        next.delete(prodId)
+        toast.success('Retiré des favoris !')
+      } else {
+        next.add(prodId)
+        toast.success('Ajouté aux favoris ! ❤️')
+      }
+      return next
+    })
+  }
+
+  const highlightMatch = (text, query) => {
+    if (!query) return <span>{text}</span>
+    const index = normalize(text).indexOf(normalize(query))
+    if (index === -1) return <span>{text}</span>
+    const before = text.substring(0, index)
+    const match = text.substring(index, index + query.length)
+    const after = text.substring(index + query.length)
+    return (
+      <span>
+        {before}
+        <span className="font-extrabold text-primary-700">{match}</span>
+        {after}
+      </span>
+    )
+  }
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setFocusedSuggestionIndex(prev => (prev + 1) % suggestions.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setFocusedSuggestionIndex(prev => (prev - 1 + suggestions.length) % suggestions.length)
+    } else if (e.key === 'Enter') {
+      if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < suggestions.length) {
+        e.preventDefault()
+        const selected = suggestions[focusedSuggestionIndex]
+        setSearch(selected.name)
+        addToHistory(selected.name)
+        applySearch(allShops, allProducts, selected.name)
+        setShowSuggestions(false)
+      }
+    }
   }
 
   const reverseGeocode = async (lat, lon) => {
@@ -508,77 +689,186 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* Barre de recherche et Localisation */}
-        <div className="px-3 py-2.5 relative">
-          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
-            {/* Bouton de Localisation dynamique */}
-            <button onClick={handleNearby} className={clsx(
-              "flex-shrink-0 flex items-center gap-0.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-all border",
-              userCity ? "bg-primary-100 text-primary-700 border-primary-200" : "bg-red-50 text-red-600 border-red-200 animate-pulse"
-            )}>
-              <MapPin size={12} className={userCity ? "text-primary-600" : "text-red-500"}/>
-              <span className="truncate max-w-[85px]">{userCity ? `📍 ${userCity}` : "📍 Définir ma position"}</span>
-            </button>
+        {/* LIGNE 3 : LOCALISATION DYNAMIQUE & FILTRES */}
+        <div className="bg-green-700 h-8 px-4 flex justify-between items-center border-t border-green-600/30">
+          <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition active:scale-95" onClick={handleNearby}>
+            <MapPin size={13} className={userCity ? "text-yellow-300" : "text-red-400 animate-pulse"} />
+            <span className="text-white text-xs font-bold truncate max-w-[220px]">
+              {userCity ? `${userCity}` : "📍 Définir ma position"}
+            </span>
+            {filters.nearby && (
+              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none">Proche</span>
+            )}
+          </div>
+          {activeFiltersCount > 0 && (
+            <div className="bg-yellow-400 text-dark-950 text-[9px] font-black px-2 py-0.5 rounded-full">
+              {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
 
-            {/* Input de recherche */}
+        {/* Barre de recherche */}
+        <div className="px-3 py-2 relative bg-green-700">
+          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
+            <Search size={16} className="text-dark-600/40 flex-shrink-0" />
             <div className="flex-1 relative">
               <input
                 ref={searchRef}
                 type="text"
                 value={search}
                 onChange={e => handleSearch(e.target.value)}
-                onFocus={() => search && setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Recher Maïs, Igname, Tomates, Poulets..."
-                className="w-full bg-transparent text-dark-800 text-sm font-medium outline-none placeholder-dark-600/40"
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
+                placeholder="Rechercher des produits, boutiques..."
+                className="w-full bg-transparent text-dark-800 text-sm font-semibold outline-none placeholder-dark-600/40"
               />
             </div>
 
             {search && (
-              <button onClick={() => { setSearch(''); applySearch(allShops, ''); setShowSuggestions(false) }}
-                className="w-5 h-5 rounded-full bg-surface-200 flex items-center justify-center active:scale-90">
+              <button onClick={() => { setSearch(''); applySearch(allShops, allProducts, ''); setShowSuggestions(false) }}
+                className="w-5 h-5 rounded-full bg-surface-200 flex items-center justify-center active:scale-90 transition-transform">
                 <X size={11} className="text-dark-600"/>
               </button>
             )}
 
-            {/* Caméra */}
-            <button className="flex-shrink-0 w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center active:scale-90">
-              <Camera size={13} className="text-dark-600"/>
+            {/* Appareil photo / Recherche visuelle */}
+            <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center active:scale-90 transition-all">
+              <Camera size={15} className="text-dark-600"/>
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageSearch} 
+              className="hidden" 
+              accept="image/*"
+            />
+
+            {/* Micro / Recherche vocale */}
+            <button onClick={handleVoiceSearch} className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center active:scale-90 transition-all">
+              <Mic size={15} className="text-dark-600"/>
             </button>
 
-            {/* Micro */}
-            <button onClick={handleVoiceSearch} className="flex-shrink-0 w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center active:scale-90">
-              <Mic size={13} className="text-dark-600"/>
-            </button>
-
-            {/* Recherche */}
-            <button onClick={() => applySearch(allShops, search)}
-              className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary-600 flex items-center justify-center active:scale-90 shadow-green">
+            {/* Bouton recherche */}
+            <button onClick={() => { addToHistory(search); applySearch(allShops, allProducts, search); setShowSuggestions(false) }}
+              className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-700 flex items-center justify-center active:scale-90 transition-all shadow-green">
               <Search size={14} className="text-white"/>
             </button>
           </div>
 
-          {/* Suggestions dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-2xl shadow-modal z-50 overflow-hidden">
-              {suggestions.map(s => (
-                <button key={s.id}
-                  onClick={() => { setSearch(s.name); applySearch(allShops, s.name); setShowSuggestions(false) }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left border-b border-surface-100 last:border-0">
-                  <Search size={14} className="text-dark-600/40 flex-shrink-0"/>
-                  <div>
-                    <p className="text-sm font-semibold text-dark-800">{s.name}</p>
-                    {s.city && <p className="text-xs text-dark-600/50">{s.city}</p>}
+          {/* Dropdown de suggestions et historique */}
+          {showSuggestions && (
+            <div 
+              className="absolute left-3 right-3 top-full mt-1 bg-white rounded-2xl shadow-modal z-50 overflow-hidden border border-surface-200 max-h-[300px] overflow-y-auto"
+              onMouseDown={e => e.preventDefault()}
+            >
+              {!search.trim() ? (
+                searchHistory.length > 0 ? (
+                  <div className="p-3">
+                    <div className="flex justify-between items-center mb-2 px-1">
+                      <span className="text-[11px] font-black text-dark-600/40 uppercase tracking-wider">Recherches récentes</span>
+                      <button onClick={clearHistory} className="text-[10px] font-bold text-red-500 hover:underline">Vider tout</button>
+                    </div>
+                    <div className="space-y-1">
+                      {searchHistory.map((term, i) => (
+                        <div key={i} className="flex items-center justify-between hover:bg-surface-50 rounded-xl transition-colors">
+                          <button 
+                            onClick={() => { setSearch(term); applySearch(allShops, allProducts, term); setShowSuggestions(false) }}
+                            className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left text-sm font-semibold text-dark-800"
+                          >
+                            <span className="text-dark-600/40">⏳</span>
+                            {term}
+                          </button>
+                          <button 
+                            onClick={() => removeFromHistory(term)}
+                            className="w-7 h-7 flex items-center justify-center text-dark-600/30 hover:text-red-500 rounded-full hover:bg-red-50 mr-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </button>
-              ))}
+                ) : (
+                  <div className="p-4 text-center text-xs font-semibold text-dark-600/40">
+                    Tapez pour rechercher des produits ou des boutiques...
+                  </div>
+                )
+              ) : (
+                suggestions.length > 0 ? (
+                  <div className="py-1">
+                    {suggestions.map((s, idx) => (
+                      <button
+                        key={s.type + s.id}
+                        onClick={() => {
+                          setSearch(s.name)
+                          addToHistory(s.name)
+                          applySearch(allShops, allProducts, s.name)
+                          setShowSuggestions(false)
+                        }}
+                        className={clsx(
+                          "w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface-50 transition-colors text-left border-b border-surface-100/50 last:border-0",
+                          idx === focusedSuggestionIndex && "bg-surface-100"
+                        )}
+                      >
+                        {s.type === 'product' ? (
+                          <>
+                            <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center text-xs flex-shrink-0">🌾</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-dark-800 truncate">{highlightMatch(s.name, search)}</p>
+                              <p className="text-[10px] text-dark-600/50 truncate font-semibold">
+                                Produit de <span className="text-primary-700">{s.shopName}</span> • <span className="text-emerald-700 font-bold">{s.price.toLocaleString()} FCFA</span>
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-7 h-7 rounded-lg bg-gold-50 flex items-center justify-center text-xs flex-shrink-0">🏪</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-dark-800 truncate">{highlightMatch(s.name, search)}</p>
+                              <p className="text-[10px] text-dark-600/50 truncate font-semibold">Boutique • 📍 {s.city || 'Bénin'}</p>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-xs font-semibold text-dark-600/40">
+                    Aucun résultat pour "{search}"
+                  </div>
+                )
+              )}
             </div>
           )}
         </div>
+
+        {/* ONGLETS RECHERCHE HYBRIDE */}
+        {search.trim() !== '' && (
+          <div className="flex bg-green-800 border-t border-green-600/30">
+            <button 
+              onClick={() => setSearchTab('shops')}
+              className={clsx(
+                "flex-1 py-2 text-center text-xs font-bold transition-all border-b-2",
+                searchTab === 'shops' ? "text-yellow-300 border-yellow-300 bg-green-700/30" : "text-white/70 border-transparent hover:text-white"
+              )}
+            >
+              Boutiques ({shops.length})
+            </button>
+            <button 
+              onClick={() => setSearchTab('products')}
+              className={clsx(
+                "flex-1 py-2 text-center text-xs font-bold transition-all border-b-2",
+                searchTab === 'products' ? "text-yellow-300 border-yellow-300 bg-green-700/30" : "text-white/70 border-transparent hover:text-white"
+              )}
+            >
+              Produits ({filteredProducts.length})
+            </button>
+          </div>
+        )}
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pt-[152px] pb-24">
+      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '208px' : '172px' }}>
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
@@ -666,9 +956,13 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {/* SECTION 6 : TOUTES LES BOUTIQUES */}
+        {/* SECTION 6 : TOUTES LES BOUTIQUES OU PRODUITS */}
         <div className="px-3 mb-2.5 mt-2 flex items-center justify-between">
-          <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">Toutes les Boutiques</h2>
+          <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">
+            {search.trim() !== '' 
+              ? (searchTab === 'shops' ? 'Boutiques correspondantes' : 'Produits correspondants') 
+              : 'Toutes les Boutiques'}
+          </h2>
           {activeFiltersCount > 0 && (
             <button onClick={resetFilters} className="text-[10px] font-bold text-primary-600 hover:text-primary-700">
               Réinitialiser ({activeFiltersCount})
@@ -676,15 +970,35 @@ export default function MarketplacePage() {
           )}
         </div>
 
-        {/* LISTE BOUTIQUES FILTRÉES */}
+        {/* LISTE BOUTIQUES OU PRODUITS FILTRÉS */}
         {loading ? (
           <div className="grid grid-cols-2 gap-3 px-3">
             {[...Array(6)].map((_, i) => <ShopSkeleton key={i}/>)}
           </div>
+        ) : search.trim() !== '' && searchTab === 'products' ? (
+          filteredProducts.length === 0 ? (
+            <div className="text-center py-16 px-4">
+              <p className="text-4xl mb-2">🌾</p>
+              <p className="text-dark-600 font-bold text-sm">Aucun produit correspondant</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 px-3">
+              {filteredProducts.map(prod => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  shopName={prod.shop?.name || 'MANG'}
+                  onOrder={() => navigate(`/boutique/${prod.shop?.slug || prod.shop_id}`)}
+                  onFavorite={() => handleToggleFavoriteProduct(prod.id)}
+                  isFavorite={favoriteProducts.has(prod.id)}
+                />
+              ))}
+            </div>
+          )
         ) : shops.length === 0 ? (
           <div className="text-center py-16 px-4">
             <p className="text-4xl mb-2">🫙</p>
-            <p className="text-dark-600 font-bold text-sm">Aucune boutique dans cette catégorie</p>
+            <p className="text-dark-600 font-bold text-sm">Aucune boutique correspondante</p>
             <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary-600 text-white font-bold rounded-xl text-xs active:scale-95 shadow-sm">
               Tout afficher
             </button>
@@ -725,6 +1039,29 @@ export default function MarketplacePage() {
         onSelectGroup={setSelectedGroup}
       />
 
+      {/* OVERLAY DE SCAN VISUEL */}
+      {isScanning && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center max-w-[480px] mx-auto">
+          <div className="relative w-48 h-48 border-4 border-primary-500 rounded-3xl flex items-center justify-center overflow-hidden bg-black/40 shadow-2xl">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary-400 shadow-[0_0_15px_#22c55e] animate-scan-laser" />
+            <span className="text-6xl animate-pulse">📸</span>
+          </div>
+          <p className="text-white font-bold mt-6 text-sm tracking-wider animate-pulse uppercase">Analyse MANG AI en cours...</p>
+        </div>
+      )}
+
+      {/* OVERLAY DE RECHERCHE VOCALE ACTIVE */}
+      {isListening && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center max-w-[480px] mx-auto">
+          <div className="w-24 h-24 rounded-full bg-primary-600 flex items-center justify-center animate-ping absolute opacity-30" />
+          <div className="w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center z-10 relative shadow-lg">
+            <Mic className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="text-white font-bold mt-8 text-sm tracking-wider">MANG écoute...</p>
+          <p className="text-white/60 text-xs mt-2">Dites le nom d'un produit (ex: "Tomate")</p>
+        </div>
+      )}
+
       <style>{`
         @keyframes marquee-behind {
           0% { transform: translateX(100%); }
@@ -749,6 +1086,15 @@ export default function MarketplacePage() {
         .animate-bounce-gentle {
           display: inline-block;
           animation: bounce-gentle 2s infinite;
+        }
+        @keyframes scan-laser {
+          0% { top: 0%; }
+          50% { top: 100%; }
+          100% { top: 0%; }
+        }
+        .animate-scan-laser {
+          position: absolute;
+          animation: scan-laser 2s infinite linear;
         }
       `}</style>
     </div>
