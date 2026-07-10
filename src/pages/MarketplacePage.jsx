@@ -657,11 +657,10 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-green-700 shadow-lg max-w-[480px] mx-auto">
-        
         {/* LIGNE 1 : HEADER PRINCIPAL */}
-        <div className="bg-green-700 h-14 px-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-            <img src="/logo-mang.png" alt="MANG" className="w-10 h-10 hover:scale-105 active:scale-95 transition-transform duration-200" />
+        <div className="bg-green-700 h-14 pl-0 pr-4 flex justify-between items-center">
+          <div className="flex items-center gap-2 cursor-pointer h-full" onClick={() => navigate('/marketplace')}>
+            <img src="/logo-mang.png" alt="MANG" className="w-14 h-14 hover:scale-105 active:scale-95 transition-transform duration-200 object-cover" />
             <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
           <div className="flex items-center gap-3">
@@ -688,17 +687,21 @@ export default function MarketplacePage() {
           
           {/* Localisation Fixe à gauche */}
           <div 
-            onClick={handleNearby}
-            className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-1.5 px-3 bg-gradient-to-r from-green-600 via-green-600 to-transparent cursor-pointer hover:opacity-90 active:scale-95 transition-all"
-            style={{ paddingRight: '24px' }}
+            className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-r from-green-600 via-green-600 to-transparent"
+            style={{ paddingRight: '32px' }}
           >
-            <MapPin size={13} className={userCity ? "text-yellow-300 animate-bounce-gentle" : "text-red-400 animate-pulse"} />
-            <span className="text-white text-xs font-black truncate max-w-[120px]">
-              {userCity ? `${userCity}` : "Définir ma position"}
-            </span>
-            {filters.nearby && (
-              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none flex-shrink-0">Proche</span>
-            )}
+            <button 
+              onClick={handleNearby}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-green-700 hover:bg-green-800 border border-green-500/20 rounded-lg text-white font-black text-[11px] active:scale-95 transition-all shadow-sm"
+            >
+              <MapPin size={11} className={userCity ? "text-yellow-300 animate-bounce-gentle" : "text-red-400 animate-pulse"} />
+              <span className="truncate max-w-[110px] leading-none">
+                {userCity ? `${userCity}` : "Définir position"}
+              </span>
+              {filters.nearby && (
+                <span className="bg-yellow-400 text-dark-950 text-[8px] font-black px-1.5 py-0.5 rounded leading-none flex-shrink-0">Proche</span>
+              )}
+            </button>
           </div>
 
           {/* Texte Déroulant (défilement classique de droite à gauche, passant derrière la localisation) */}
