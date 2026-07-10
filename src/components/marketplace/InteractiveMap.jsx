@@ -1,6 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Navigation } from 'lucide-react'
+import { BENIN_CITY_COORDS } from '@/utils/beninCities'
+
+function getClosestBeninCity(lat, lon) {
+  let closestCity = "Bénin"
+  let minDistance = Infinity
+  
+  for (const [cityName, coords] of Object.entries(BENIN_CITY_COORDS)) {
+    const dist = Math.sqrt((coords.lat - lat) ** 2 + (coords.lon - lon) ** 2)
+    if (dist < minDistance) {
+      minDistance = dist
+      closestCity = cityName
+    }
+  }
+  return closestCity
+}
 
 export default function InteractiveMap({ shops, userLocation, userCity }) {
   const mapContainerRef = useRef(null)
@@ -95,12 +110,13 @@ export default function InteractiveMap({ shops, userLocation, userCity }) {
       const pos = [shop.latitude, shop.longitude]
       bounds.push(pos)
 
+      const resolvedCity = shop.city || getClosestBeninCity(shop.latitude, shop.longitude)
       const marker = L.marker(pos, { icon: shopIcon(shop.category?.icon) })
         .addTo(map)
         .bindPopup(`
           <div class="p-1 min-w-[140px] text-dark-800">
             <p class="text-xs font-black leading-tight text-green-800">${shop.name}</p>
-            <p class="text-[9px] text-dark-600/60 mt-0.5">${shop.city || "Ville non précisée"}</p>
+            <p class="text-[9px] text-dark-600/60 mt-0.5">${resolvedCity}</p>
             ${shop.distance !== undefined && shop.distance !== null ? `
               <span class="inline-block mt-1 bg-green-100 text-green-700 text-[8px] font-black px-1.5 py-0.5 rounded">
                 📍 à ${shop.distance.toFixed(1)} km
