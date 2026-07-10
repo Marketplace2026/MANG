@@ -683,28 +683,39 @@ export default function MarketplacePage() {
             </Link>
           </div>
         </div>
-        
-        {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT */}
-        <div className="bg-green-600 h-7 flex items-center overflow-hidden" style={{fontFamily: 'Poppins'}}>
-          <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm">
-            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | VENDEURS DE PRODUITS AGRICOLES 🥭 | LIVRAISON VRAIMENT MOBILE 🚚 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 📱
-          </div>
-        </div>
-
-        {/* LIGNE 3 : LOCALISATION DYNAMIQUE & FILTRES */}
-        <div className="bg-green-700 h-8 px-4 flex justify-between items-center border-t border-green-600/30">
-          <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition active:scale-95" onClick={handleNearby}>
-            <MapPin size={13} className={userCity ? "text-yellow-300" : "text-red-400 animate-pulse"} />
-            <span className="text-white text-xs font-bold truncate max-w-[220px]">
-              {userCity ? `${userCity}` : "📍 Définir ma position"}
+        {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT ET LOCALISATION DYNAMIQUE */}
+        <div className="relative bg-green-600 h-9 flex items-center overflow-hidden border-t border-green-600/30" style={{fontFamily: 'Poppins'}}>
+          
+          {/* Localisation Fixe à gauche */}
+          <div 
+            onClick={handleNearby}
+            className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-1.5 px-3 bg-gradient-to-r from-green-600 via-green-600 to-transparent cursor-pointer hover:opacity-90 active:scale-95 transition-all"
+            style={{ paddingRight: '24px' }}
+          >
+            <MapPin size={13} className={userCity ? "text-yellow-300 animate-bounce-gentle" : "text-red-400 animate-pulse"} />
+            <span className="text-white text-xs font-black truncate max-w-[120px]">
+              {userCity ? `${userCity}` : "Définir ma position"}
             </span>
             {filters.nearby && (
-              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none">Proche</span>
+              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none flex-shrink-0">Proche</span>
             )}
           </div>
+
+          {/* Texte Déroulant (défilement classique de droite à gauche, passant derrière la localisation) */}
+          <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm pl-[180px]">
+            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | VENDEURS DE PRODUITS AGRICOLES 🥭 | LIVRAISON VRAIMENT MOBILE 🚚 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 📱
+          </div>
+
+          {/* Filtres Actifs Fixes à droite */}
           {activeFiltersCount > 0 && (
-            <div className="bg-yellow-400 text-dark-950 text-[9px] font-black px-2 py-0.5 rounded-full">
-              {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
+            <div 
+              onClick={resetFilters}
+              className="absolute right-0 top-0 bottom-0 z-10 flex items-center px-3 bg-gradient-to-l from-green-600 via-green-600 to-transparent cursor-pointer active:scale-95 transition-all"
+              style={{ paddingLeft: '24px' }}
+            >
+              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
+              </span>
             </div>
           )}
         </div>
@@ -872,7 +883,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '208px' : '172px' }}>
+      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '202px' : '164px' }}>
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
