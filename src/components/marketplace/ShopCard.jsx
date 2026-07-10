@@ -236,12 +236,6 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
             </span>
             <span className="text-dark-600/40 text-xs ml-1">FCFA</span>
           </div>
-          <button
-            onClick={e => { e.stopPropagation(); onOrder?.() }}
-            className="px-3.5 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold active:scale-95 transition-transform shadow-green"
-          >
-            Commander
-          </button>
         </div>
       </div>
     </div>
