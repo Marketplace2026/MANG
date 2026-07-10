@@ -483,14 +483,14 @@ export default function MarketplacePage() {
           </div>
           <div className="flex items-center gap-3">
             <Link to="/vendeur">
-              <Store className="w-7 h-7 text-white hover:scale-110 transition" />
+              <Store className="w-7 h-7 text-white animate-bounce-gentle hover:scale-110 transition" />
             </Link>
             <Link to="/communaute">
               <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
             </Link>
             <Link to="/notifications">
               <div className="relative">
-                <BellIcon className="w-7 h-7 text-white hover:scale-110 transition" />
+                <BellIcon className="w-7 h-7 text-white animate-bounce-gentle hover:scale-110 transition" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 min-h-5 flex items-center justify-center px-1">
                     {unreadCount}
