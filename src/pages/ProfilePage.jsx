@@ -5,10 +5,10 @@ import {
   LogOut, ChevronRight, Shield, Bell, HelpCircle,
   Wallet, Coins, Copy, Check, Settings, Star,
   Lock, Eye, EyeOff, Globe, ChevronDown, ChevronUp,
-  AlertCircle, CheckCircle2, XCircle, ToggleLeft, ToggleRight,
+  AlertCircle, CheckCircle2, XCircle,
   Navigation, X, MessageCircle, Gift, Store, Package, Heart,
-  Truck, Clock, CheckCircle, ArrowUpRight, ArrowDownLeft,
-  Home, Plus, Trash2, PenLine, ShieldCheck, TrendingUp
+  Truck, Clock, CheckCircle, ArrowUpRight,
+  Plus, Trash2, TrendingUp, ZoomIn, Maximize2, RotateCcw, Move
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -53,6 +53,7 @@ export default function ProfilePage() {
   const [walletCopied,   setWalletCopied]   = useState(false)
   const [addressesOpen,  setAddressesOpen]  = useState(false)
   const [loyaltyOpen,    setLoyaltyOpen]    = useState(false)
+  const [avatarLightbox, setAvatarLightbox] = useState(false)
 
   // Données supplémentaires chargées
   const [orderStats,  setOrderStats]  = useState({ pending: 0, accepted: 0, paid: 0, delivered: 0 })
@@ -133,77 +134,143 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface-50">
 
-      {/* ── HERO HEADER ── */}
-      <div className="relative bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 pb-24 pt-4">
-        {/* Motif de fond */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-8 -right-8 w-56 h-56 rounded-full bg-gold-400/10 blur-3xl"/>
-          <div className="absolute bottom-0 left-0 w-72 h-36 rounded-full bg-primary-400/10 blur-2xl"/>
-          <div className="absolute inset-0 opacity-5"
-            style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'24px 24px'}}/>
+      {/* ── HERO HEADER PREMIUM V3.1 ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #006400 0%, #008000 45%, #00A000 100%)', minHeight: '280px' }}
+      >
+        {/* Motifs de fond décoratifs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Cercle clair en haut à droite */}
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }}/>
+          {/* Cercle sombre en bas à gauche */}
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(0,0,0,0.12) 0%, transparent 70%)' }}/>
+          {/* Motif points */}
+          <div className="absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '20px 20px' }}/>
+          {/* Ligne décorative en bas */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10"/>
         </div>
 
-        {/* Barre du haut */}
-        <div className="relative flex justify-between items-center px-5 mb-5">
-          <h1 className="font-display text-xl text-white font-bold">Mon MANG</h1>
+        {/* ── Barre du haut ── */}
+        <div className="relative flex justify-between items-center px-5 pt-5 pb-2">
+          <h1 className="text-white font-black text-xl tracking-tight">Mon MANG</h1>
           <div className="flex items-center gap-2">
-            {/* Badge Notifications */}
             {unreadCount > 0 && (
               <button onClick={() => navigate('/notifications')}
-                className="relative w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform">
+                className="relative w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
                 <Bell size={17} className="text-white"/>
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-primary-800">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-green-800">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               </button>
             )}
             <button onClick={() => setSettingsOpen(true)}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform">
+              className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
               <Settings size={17} className="text-white"/>
             </button>
           </div>
         </div>
 
-        {/* Infos profil */}
-        <div className="relative flex flex-col items-center px-5">
-          <AvatarUploader profile={profile} onUpdated={refreshProfile}/>
+        {/* ── Zone centrale : Photo + Infos ── */}
+        <div className="relative flex flex-col items-center px-5 pt-4 pb-16">
 
-          <div className="mt-3 text-center">
+          {/* Photo de profil avec lightbox + upload */}
+          <AvatarUploader
+            profile={profile}
+            onUpdated={refreshProfile}
+            onViewFull={() => setAvatarLightbox(true)}
+          />
+
+          {/* Nom */}
+          <div className="mt-4 text-center">
             <div className="flex items-center justify-center gap-2">
-              <h2 className="font-display text-2xl text-white font-bold">
+              <h2 className="text-white font-black text-2xl tracking-tight drop-shadow-sm">
                 {profile.full_name || profile.username}
               </h2>
-              {isOnline && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-primary-700 animate-pulse-dot"/>}
+              {isOnline && (
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 border-2 border-green-700 shadow-sm animate-pulse"/>
+              )}
             </div>
-            <p className="text-primary-300 text-sm font-medium mt-0.5">@{profile.username}</p>
 
-            {/* Badge ville */}
-            {profile.city && (
-              <div className="flex items-center justify-center gap-1 mt-1.5">
-                <MapPin size={11} className="text-primary-400"/>
-                <span className="text-primary-400 text-xs font-medium">
-                  {[profile.neighbourhood, profile.city].filter(Boolean).join(', ')}
-                </span>
-              </div>
-            )}
+            {/* Sous-titre : @pseudo + ville */}
+            <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
+              <span className="text-green-200 text-sm font-semibold">@{profile.username}</span>
+              {profile.city && (
+                <>
+                  <span className="text-green-200/40 text-sm">•</span>
+                  <div className="flex items-center gap-1">
+                    <MapPin size={11} className="text-green-300"/>
+                    <span className="text-green-200 text-sm font-medium">
+                      {[profile.neighbourhood, profile.city].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
 
-            {/* Badge niveau de membre */}
-            <div className={`inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full ${memberLevel.bg} border border-white/10`}>
-              <span className="text-xs">{memberLevel.icon}</span>
-              <span className={`text-[11px] font-black ${memberLevel.text}`}>{memberLevel.label}</span>
+            {/* Badge niveau — fond blanc texte orange */}
+            <div className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-full bg-white shadow-md">
+              <span className="text-sm">{memberLevel.icon}</span>
+              <span className="text-[12px] font-black text-orange-600 tracking-tight">{memberLevel.label}</span>
             </div>
           </div>
 
-          <button onClick={() => setEditOpen(true)}
-            className="mt-4 flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/15 active:bg-white/20 border border-white/20 transition-colors">
+          {/* Bouton Modifier le profil — style pill glassmorphism */}
+          <button
+            onClick={() => setEditOpen(true)}
+            className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full active:scale-95 transition-all duration-200 font-semibold text-sm text-white"
+            style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)' }}
+          >
             <Edit3 size={13} className="text-white"/>
-            <span className="text-white text-sm font-semibold">Modifier le profil</span>
+            Modifier le profil
           </button>
         </div>
       </div>
 
-      {/* ── CONTENU FLOTTANT ── */}
-      <div className="relative -mt-14 px-4 space-y-4 pb-28">
+      {/* Lightbox photo de profil */}
+      {avatarLightbox && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+          onClick={() => setAvatarLightbox(false)}
+        >
+          <button
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform z-10"
+            onClick={() => setAvatarLightbox(false)}
+          >
+            <X size={20} className="text-white"/>
+          </button>
+          <div className="flex flex-col items-center gap-4 px-8" onClick={e => e.stopPropagation()}>
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name || profile.username}
+                className="w-72 h-72 rounded-full object-cover shadow-2xl border-4 border-white/20"
+                style={{ maxWidth: '85vw', maxHeight: '85vw' }}
+              />
+            ) : (
+              <div className="w-72 h-72 rounded-full bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center shadow-2xl border-4 border-white/20"
+                style={{ maxWidth: '85vw', maxHeight: '85vw' }}>
+                <span className="text-white font-black text-8xl">
+                  {(profile.full_name || profile.username || '?')[0].toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div className="text-center">
+              <p className="text-white font-bold text-lg">{profile.full_name || profile.username}</p>
+              <p className="text-white/50 text-sm">@{profile.username}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONTENU FLOTTANT — déborde de 30px sur le header ── */}
+      <div className="relative -mt-10 px-4 space-y-4 pb-28">
 
         {/* ── WIDGET WALLET GLASSMORPHISM ── */}
         <WalletCard
@@ -407,39 +474,239 @@ function MenuItem({ icon: Icon, color, label, sub, onClick, last }) {
   )
 }
 
-// ─── AvatarUploader ───────────────────────────────────────────────────────────
+// ─── AvatarUploader (V3.1 — preview + crop + lightbox) ───────────────────────
 
-function AvatarUploader({ profile, onUpdated }) {
-  const inputRef = useRef()
-  const [uploading, setUploading] = useState(false)
+function AvatarUploader({ profile, onUpdated, onViewFull }) {
+  const inputRef   = useRef()
+  const canvasRef  = useRef()
+  const imgRef     = useRef()
 
-  const handleUpload = async (e) => {
+  const [uploading,   setUploading]   = useState(false)
+  const [previewSrc,  setPreviewSrc]  = useState(null)   // URL locale pour la prévisualisation
+  const [rawFile,     setRawFile]     = useState(null)    // fichier brut sélectionné
+  const [showPreview, setShowPreview] = useState(false)   // modal de prévisualisation
+
+  // Position et zoom pour recadrage manuel
+  const [zoom,      setZoom]      = useState(1)
+  const [offsetX,   setOffsetX]   = useState(0)
+  const [offsetY,   setOffsetY]   = useState(0)
+  const [dragging,  setDragging]  = useState(false)
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
+
+  // Sélection fichier → ouvrir prévisualisation
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
-    try {
-      const compressed = await compressImage(file, 400, 0.85)
-      const path = `${profile.id}/avatar.jpg`
-      const url = await uploadImage(BUCKETS.AVATARS, compressed, path)
-      await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
-      await onUpdated()
-      toast.success('Photo mise à jour !')
-    } catch { toast.error("Erreur lors de l'upload") }
-    finally { setUploading(false) }
+    // Reset position
+    setZoom(1); setOffsetX(0); setOffsetY(0)
+    setRawFile(file)
+    const url = URL.createObjectURL(file)
+    setPreviewSrc(url)
+    setShowPreview(true)
+    // Reset input pour permettre la re-sélection du même fichier
+    e.target.value = ''
   }
 
+  // Drag pour recadrer (desktop)
+  const onMouseDown = (e) => {
+    setDragging(true)
+    dragStart.current = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY }
+  }
+  const onMouseMove = (e) => {
+    if (!dragging) return
+    setOffsetX(dragStart.current.ox + (e.clientX - dragStart.current.x))
+    setOffsetY(dragStart.current.oy + (e.clientY - dragStart.current.y))
+  }
+  const onMouseUp = () => setDragging(false)
+
+  // Touch drag (mobile)
+  const onTouchStart = (e) => {
+    const t = e.touches[0]
+    setDragging(true)
+    dragStart.current = { x: t.clientX, y: t.clientY, ox: offsetX, oy: offsetY }
+  }
+  const onTouchMove = (e) => {
+    if (!dragging) return
+    const t = e.touches[0]
+    setOffsetX(dragStart.current.ox + (t.clientX - dragStart.current.x))
+    setOffsetY(dragStart.current.oy + (t.clientY - dragStart.current.y))
+  }
+  const onTouchEnd = () => setDragging(false)
+
+  // Valider : recadrer sur canvas 400×400 puis uploader
+  const handleValidate = async () => {
+    if (!rawFile) return
+    setUploading(true)
+    setShowPreview(false)
+    try {
+      // Créer un canvas 400×400 et y dessiner l'image avec le zoom/offset
+      const canvas = document.createElement('canvas')
+      canvas.width = 400
+      canvas.height = 400
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      img.src = previewSrc
+      await new Promise(res => { img.onload = res })
+      const size = 400
+      const scale = zoom
+      const sx = (img.naturalWidth / 2) - (size / (2 * scale)) - (offsetX / scale)
+      const sy = (img.naturalHeight / 2) - (size / (2 * scale)) - (offsetY / scale)
+      const sw = size / scale
+      const sh = size / scale
+      // Fond blanc
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(0, 0, 400, 400)
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400)
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9))
+      const path = `${profile.id}/avatar.jpg`
+      const url = await uploadImage(BUCKETS.AVATARS, blob, path)
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
+      await onUpdated()
+      toast.success('Photo mise à jour ✅')
+      URL.revokeObjectURL(previewSrc)
+      setPreviewSrc(null)
+      setRawFile(null)
+    } catch (err) {
+      console.error(err)
+      toast.error("Erreur lors de l'upload")
+    }
+    setUploading(false)
+  }
+
+  const handleCancel = () => {
+    setShowPreview(false)
+    if (previewSrc) URL.revokeObjectURL(previewSrc)
+    setPreviewSrc(null)
+    setRawFile(null)
+  }
+
+  const displayName = profile.full_name || profile.username || '?'
+
   return (
-    <div className="relative">
-      <Avatar src={profile.avatar_url} name={profile.full_name || profile.username} size="2xl"
-        className="ring-4 ring-white/30 ring-offset-2 ring-offset-primary-800"/>
-      <button onClick={() => inputRef.current?.click()} disabled={uploading}
-        className="absolute bottom-1 right-1 w-9 h-9 rounded-xl bg-primary-500 border-2 border-primary-800 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-        {uploading
-          ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-          : <Camera size={15} className="text-white"/>}
-      </button>
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden"/>
-    </div>
+    <>
+      {/* Avatar affiché dans le header */}
+      <div className="relative">
+        {/* Photo — clic = lightbox */}
+        <button
+          onClick={onViewFull}
+          className="block rounded-full active:scale-95 transition-transform"
+          style={{ boxShadow: '0 0 0 4px white, 0 8px 32px rgba(0,0,0,0.35)' }}
+        >
+          {profile.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={displayName}
+              className="w-28 h-28 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-green-600 to-green-900 flex items-center justify-center">
+              <span className="text-white font-black text-5xl">{displayName[0].toUpperCase()}</span>
+            </div>
+          )}
+          {/* Icône zoom discret */}
+          <div className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center">
+            <Maximize2 size={10} className="text-white"/>
+          </div>
+        </button>
+
+        {/* Bouton appareil photo */}
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform border-2 border-white disabled:opacity-60"
+          style={{ background: '#00A000' }}
+        >
+          {uploading
+            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+            : <Camera size={15} className="text-white"/>}
+        </button>
+      </div>
+
+      {/* Input fichier caché */}
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden"/>
+
+      {/* ── Modal Prévisualisation + Recadrage ── */}
+      {showPreview && previewSrc && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)' }}
+        >
+          {/* Header du modal */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <button
+              onClick={handleCancel}
+              className="text-white/70 font-semibold text-sm active:scale-95 transition-transform flex items-center gap-1"
+            >
+              <X size={16}/> Annuler
+            </button>
+            <p className="text-white font-bold text-sm">Recadrer la photo</p>
+            <button
+              onClick={handleValidate}
+              className="text-sm font-black px-4 py-1.5 rounded-full active:scale-95 transition-transform"
+              style={{ background: '#00A000', color: 'white' }}
+            >
+              Valider
+            </button>
+          </div>
+
+          {/* Zone de recadrage */}
+          <div className="flex flex-col items-center gap-5 pt-16 px-5 w-full max-w-sm">
+            {/* Preview cercle */}
+            <div
+              className="relative w-64 h-64 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl select-none cursor-grab active:cursor-grabbing"
+              style={{ background: '#111' }}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
+              <img
+                src={previewSrc}
+                alt="preview"
+                className="absolute w-full h-full object-cover pointer-events-none"
+                style={{
+                  transform: `scale(${zoom}) translate(${offsetX / zoom}px, ${offsetY / zoom}px)`,
+                  transformOrigin: 'center',
+                  transition: dragging ? 'none' : 'transform 0.1s'
+                }}
+                draggable={false}
+              />
+            </div>
+
+            {/* Slider zoom */}
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-xs font-semibold flex items-center gap-1"><ZoomIn size={12}/> Zoom</span>
+                <span className="text-white/50 text-xs">{Math.round(zoom * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="1" max="3" step="0.05"
+                value={zoom}
+                onChange={e => setZoom(parseFloat(e.target.value))}
+                className="w-full h-2 rounded-full accent-green-500"
+                style={{ accentColor: '#00A000' }}
+              />
+            </div>
+
+            {/* Bouton recadrage reset */}
+            <button
+              onClick={() => { setZoom(1); setOffsetX(0); setOffsetY(0) }}
+              className="flex items-center gap-1.5 text-white/50 text-xs font-semibold active:scale-95 transition-transform"
+            >
+              <RotateCcw size={12}/> Réinitialiser
+            </button>
+
+            <p className="text-white/30 text-xs text-center">
+              Faites glisser la photo pour la recadrer
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
