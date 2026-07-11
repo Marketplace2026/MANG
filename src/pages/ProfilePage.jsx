@@ -134,101 +134,95 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface-50">
 
-      {/* ── HERO HEADER PREMIUM V3.1 ── */}
+      {/* ── HERO HEADER COMPACT V3.2 — Facebook Style ── */}
       <div
         className="relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #006400 0%, #008000 45%, #00A000 100%)', minHeight: '280px' }}
+        style={{ background: '#008000', minHeight: '140px' }}
       >
-        {/* Motifs de fond décoratifs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Cercle clair en haut à droite */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }}/>
-          {/* Cercle sombre en bas à gauche */}
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(0,0,0,0.12) 0%, transparent 70%)' }}/>
-          {/* Motif points */}
-          <div className="absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '20px 20px' }}/>
-          {/* Ligne décorative en bas */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10"/>
-        </div>
+        {/* Motif points subtil */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '18px 18px' }}/>
+        {/* Reflet dégradé en bas */}
+        <div className="absolute bottom-0 left-0 right-0 h-12"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.15))' }}/>
 
-        {/* ── Barre du haut ── */}
-        <div className="relative flex justify-between items-center px-5 pt-5 pb-2">
-          <h1 className="text-white font-black text-xl tracking-tight">Mon MANG</h1>
+        {/* ── Ligne 1 : Titre + Icônes ── */}
+        <div className="relative flex justify-between items-center px-4 pt-4 pb-0">
+          <h1 className="text-white font-black text-[18px] tracking-tight">Mon MANG</h1>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button onClick={() => navigate('/notifications')}
-                className="relative w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-                <Bell size={17} className="text-white"/>
-                <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-green-800">
+                className="relative w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                style={{ background: 'rgba(255,255,255,0.18)' }}>
+                <Bell size={16} className="text-white"/>
+                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-0.5 border border-green-800">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               </button>
             )}
             <button onClick={() => setSettingsOpen(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-              style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
-              <Settings size={17} className="text-white"/>
+              className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Settings size={16} className="text-white"/>
             </button>
           </div>
         </div>
 
-        {/* ── Zone centrale : Photo + Infos ── */}
-        <div className="relative flex flex-col items-center px-5 pt-4 pb-16">
+        {/* ── Ligne 2 : Photo (gauche) + Infos (droite) ── */}
+        <div className="relative flex items-center gap-4 px-4 pt-3 pb-4">
 
-          {/* Photo de profil avec lightbox + upload */}
+          {/* Photo 80px */}
           <AvatarUploader
             profile={profile}
             onUpdated={refreshProfile}
             onViewFull={() => setAvatarLightbox(true)}
           />
 
-          {/* Nom */}
-          <div className="mt-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <h2 className="text-white font-black text-2xl tracking-tight drop-shadow-sm">
+          {/* Bloc texte */}
+          <div className="flex-1 min-w-0">
+            {/* Nom + indicateur online */}
+            <div className="flex items-center gap-2">
+              <h2 className="text-white font-black text-[18px] leading-tight truncate">
                 {profile.full_name || profile.username}
               </h2>
               {isOnline && (
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 border-2 border-green-700 shadow-sm animate-pulse"/>
+                <span className="w-2 h-2 rounded-full bg-emerald-300 flex-shrink-0 border border-green-700 animate-pulse"/>
               )}
             </div>
 
-            {/* Sous-titre : @pseudo + ville */}
-            <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
-              <span className="text-green-200 text-sm font-semibold">@{profile.username}</span>
+            {/* @pseudo • 📍 Ville */}
+            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+              <span className="text-green-200 text-[12px] font-semibold">@{profile.username}</span>
               {profile.city && (
                 <>
-                  <span className="text-green-200/40 text-sm">•</span>
-                  <div className="flex items-center gap-1">
-                    <MapPin size={11} className="text-green-300"/>
-                    <span className="text-green-200 text-sm font-medium">
-                      {[profile.neighbourhood, profile.city].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
+                  <span className="text-green-200/40 text-[11px]">•</span>
+                  <MapPin size={10} className="text-green-300 flex-shrink-0"/>
+                  <span className="text-green-200 text-[12px] font-medium truncate">
+                    {[profile.neighbourhood, profile.city].filter(Boolean).join(', ')}
+                  </span>
                 </>
               )}
             </div>
 
-            {/* Badge niveau — fond blanc texte orange */}
-            <div className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-full bg-white shadow-md">
-              <span className="text-sm">{memberLevel.icon}</span>
-              <span className="text-[12px] font-black text-orange-600 tracking-tight">{memberLevel.label}</span>
+            {/* Badge membre + Bouton modifier sur la même ligne */}
+            <div className="flex items-center justify-between mt-2">
+              {/* Badge niveau — fond blanc, texte orange */}
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white shadow-sm">
+                <span className="text-[11px]">{memberLevel.icon}</span>
+                <span className="text-[10px] font-black text-orange-600">{memberLevel.label}</span>
+              </div>
+
+              {/* Bouton Modifier le profil */}
+              <button
+                onClick={() => setEditOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-95 transition-all duration-150 font-semibold text-[11px] text-white flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)' }}
+              >
+                <Edit3 size={11} className="text-white"/>
+                Modifier
+              </button>
             </div>
           </div>
-
-          {/* Bouton Modifier le profil — style pill glassmorphism */}
-          <button
-            onClick={() => setEditOpen(true)}
-            className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full active:scale-95 transition-all duration-200 font-semibold text-sm text-white"
-            style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)' }}
-          >
-            <Edit3 size={13} className="text-white"/>
-            Modifier le profil
-          </button>
         </div>
       </div>
 
@@ -269,8 +263,8 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── CONTENU FLOTTANT — déborde de 30px sur le header ── */}
-      <div className="relative -mt-10 px-4 space-y-4 pb-28">
+      {/* ── CONTENU — directement sous le header compact ── */}
+      <div className="relative px-4 pt-3 space-y-4 pb-28">
 
         {/* ── WIDGET WALLET GLASSMORPHISM ── */}
         <WalletCard
@@ -474,102 +468,96 @@ function MenuItem({ icon: Icon, color, label, sub, onClick, last }) {
   )
 }
 
-// ─── AvatarUploader (V3.1 — preview + crop + lightbox) ───────────────────────
+// ─── AvatarUploader (V3.2 — compact 80px + fix cache-busting upload) ──────────
 
 function AvatarUploader({ profile, onUpdated, onViewFull }) {
-  const inputRef   = useRef()
-  const canvasRef  = useRef()
-  const imgRef     = useRef()
+  const inputRef = useRef()
 
-  const [uploading,   setUploading]   = useState(false)
-  const [previewSrc,  setPreviewSrc]  = useState(null)   // URL locale pour la prévisualisation
-  const [rawFile,     setRawFile]     = useState(null)    // fichier brut sélectionné
-  const [showPreview, setShowPreview] = useState(false)   // modal de prévisualisation
+  // URL locale affichée immédiatement après validation (avant refresh)
+  const [localPreview, setLocalPreview] = useState(null)
+  const [uploading,    setUploading]    = useState(false)
+  const [previewSrc,   setPreviewSrc]   = useState(null)
+  const [rawFile,      setRawFile]      = useState(null)
+  const [showPreview,  setShowPreview]  = useState(false)
 
-  // Position et zoom pour recadrage manuel
-  const [zoom,      setZoom]      = useState(1)
-  const [offsetX,   setOffsetX]   = useState(0)
-  const [offsetY,   setOffsetY]   = useState(0)
-  const [dragging,  setDragging]  = useState(false)
+  // Zoom + drag pour recadrage
+  const [zoom,     setZoom]     = useState(1)
+  const [offsetX,  setOffsetX]  = useState(0)
+  const [offsetY,  setOffsetY]  = useState(0)
+  const [dragging, setDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
 
-  // Sélection fichier → ouvrir prévisualisation
+  // Sélection fichier → ouvrir modal de prévisualisation
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset position
     setZoom(1); setOffsetX(0); setOffsetY(0)
     setRawFile(file)
-    const url = URL.createObjectURL(file)
-    setPreviewSrc(url)
+    setPreviewSrc(URL.createObjectURL(file))
     setShowPreview(true)
-    // Reset input pour permettre la re-sélection du même fichier
     e.target.value = ''
   }
 
-  // Drag pour recadrer (desktop)
-  const onMouseDown = (e) => {
-    setDragging(true)
-    dragStart.current = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY }
-  }
-  const onMouseMove = (e) => {
-    if (!dragging) return
-    setOffsetX(dragStart.current.ox + (e.clientX - dragStart.current.x))
-    setOffsetY(dragStart.current.oy + (e.clientY - dragStart.current.y))
-  }
-  const onMouseUp = () => setDragging(false)
+  // Drag desktop
+  const onMouseDown = (e) => { setDragging(true); dragStart.current = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY } }
+  const onMouseMove = (e) => { if (!dragging) return; setOffsetX(dragStart.current.ox + (e.clientX - dragStart.current.x)); setOffsetY(dragStart.current.oy + (e.clientY - dragStart.current.y)) }
+  const onMouseUp   = () => setDragging(false)
 
-  // Touch drag (mobile)
-  const onTouchStart = (e) => {
-    const t = e.touches[0]
-    setDragging(true)
-    dragStart.current = { x: t.clientX, y: t.clientY, ox: offsetX, oy: offsetY }
-  }
-  const onTouchMove = (e) => {
-    if (!dragging) return
-    const t = e.touches[0]
-    setOffsetX(dragStart.current.ox + (t.clientX - dragStart.current.x))
-    setOffsetY(dragStart.current.oy + (t.clientY - dragStart.current.y))
-  }
-  const onTouchEnd = () => setDragging(false)
+  // Touch mobile
+  const onTouchStart = (e) => { const t = e.touches[0]; setDragging(true); dragStart.current = { x: t.clientX, y: t.clientY, ox: offsetX, oy: offsetY } }
+  const onTouchMove  = (e) => { if (!dragging) return; const t = e.touches[0]; setOffsetX(dragStart.current.ox + (t.clientX - dragStart.current.x)); setOffsetY(dragStart.current.oy + (t.clientY - dragStart.current.y)) }
+  const onTouchEnd   = () => setDragging(false)
 
-  // Valider : recadrer sur canvas 400×400 puis uploader
+  // Valider : recadrer sur canvas 400×400 → upload → affichage immédiat
   const handleValidate = async () => {
-    if (!rawFile) return
+    if (!rawFile || !previewSrc) return
     setUploading(true)
     setShowPreview(false)
     try {
-      // Créer un canvas 400×400 et y dessiner l'image avec le zoom/offset
+      // Recadrage canvas
       const canvas = document.createElement('canvas')
-      canvas.width = 400
-      canvas.height = 400
+      canvas.width = 400; canvas.height = 400
       const ctx = canvas.getContext('2d')
       const img = new Image()
       img.src = previewSrc
       await new Promise(res => { img.onload = res })
-      const size = 400
-      const scale = zoom
-      const sx = (img.naturalWidth / 2) - (size / (2 * scale)) - (offsetX / scale)
-      const sy = (img.naturalHeight / 2) - (size / (2 * scale)) - (offsetY / scale)
-      const sw = size / scale
-      const sh = size / scale
-      // Fond blanc
+      const sz = 400, sc = zoom
       ctx.fillStyle = '#fff'
       ctx.fillRect(0, 0, 400, 400)
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400)
+      ctx.drawImage(
+        img,
+        (img.naturalWidth / 2) - (sz / (2 * sc)) - (offsetX / sc),
+        (img.naturalHeight / 2) - (sz / (2 * sc)) - (offsetY / sc),
+        sz / sc, sz / sc,
+        0, 0, 400, 400
+      )
       const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9))
+
+      // ✅ Affichage immédiat : convertir le blob en URL locale
+      const immediateUrl = URL.createObjectURL(blob)
+      setLocalPreview(immediateUrl)
+
+      // Upload vers Supabase Storage (avec cache-busting sur le chemin)
       const path = `${profile.id}/avatar.jpg`
-      const url = await uploadImage(BUCKETS.AVATARS, blob, path)
-      await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
+      const remoteUrl = await uploadImage(BUCKETS.AVATARS, blob, path)
+      // Forcer la mise à jour sans cache dans la DB
+      const cacheBustedUrl = `${remoteUrl.split('?')[0]}?t=${Date.now()}`
+      await supabase.from('profiles').update({ avatar_url: cacheBustedUrl }).eq('id', profile.id)
+
+      // Refresh du store (peut prendre un instant)
       await onUpdated()
       toast.success('Photo mise à jour ✅')
+
+      // Libérer les URLs temporaires
       URL.revokeObjectURL(previewSrc)
-      setPreviewSrc(null)
-      setRawFile(null)
+      // Ne pas révoquer immediateUrl tout de suite — sera remplacé par le store
     } catch (err) {
       console.error(err)
       toast.error("Erreur lors de l'upload")
+      setLocalPreview(null)
     }
+    setRawFile(null)
+    setPreviewSrc(null)
     setUploading(false)
   }
 
@@ -581,44 +569,42 @@ function AvatarUploader({ profile, onUpdated, onViewFull }) {
   }
 
   const displayName = profile.full_name || profile.username || '?'
+  // Afficher localPreview en priorité pour réactivité immédiate
+  const displaySrc  = localPreview || profile.avatar_url
 
   return (
     <>
-      {/* Avatar affiché dans le header */}
-      <div className="relative">
+      {/* ── Avatar 80px dans le header ── */}
+      <div className="relative flex-shrink-0">
         {/* Photo — clic = lightbox */}
         <button
           onClick={onViewFull}
           className="block rounded-full active:scale-95 transition-transform"
-          style={{ boxShadow: '0 0 0 4px white, 0 8px 32px rgba(0,0,0,0.35)' }}
+          style={{ boxShadow: '0 0 0 3px white, 0 4px 16px rgba(0,0,0,0.3)' }}
         >
-          {profile.avatar_url ? (
+          {displaySrc ? (
             <img
-              src={profile.avatar_url}
+              src={displaySrc}
               alt={displayName}
-              className="w-28 h-28 rounded-full object-cover"
+              className="w-20 h-20 rounded-full object-cover"
             />
           ) : (
-            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-green-600 to-green-900 flex items-center justify-center">
-              <span className="text-white font-black text-5xl">{displayName[0].toUpperCase()}</span>
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-600 to-green-900 flex items-center justify-center">
+              <span className="text-white font-black text-3xl">{displayName[0].toUpperCase()}</span>
             </div>
           )}
-          {/* Icône zoom discret */}
-          <div className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center">
-            <Maximize2 size={10} className="text-white"/>
-          </div>
         </button>
 
-        {/* Bouton appareil photo */}
+        {/* Bouton appareil photo vert */}
         <button
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform border-2 border-white disabled:opacity-60"
+          className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform border-2 border-white disabled:opacity-60"
           style={{ background: '#00A000' }}
         >
           {uploading
-            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-            : <Camera size={15} className="text-white"/>}
+            ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+            : <Camera size={12} className="text-white"/>}
         </button>
       </div>
 
