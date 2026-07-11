@@ -160,7 +160,7 @@ export default function ProfilePage() {
                 </span>
               </button>
             )}
-            <button onClick={() => setSettingsOpen(true)}
+            <button onClick={() => navigate('/parametres')}
               className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
               style={{ background: 'rgba(255,255,255,0.18)' }}>
               <Settings size={16} className="text-white"/>
@@ -361,13 +361,8 @@ export default function ProfilePage() {
         {/* ── INFORMATIONS PERSONNELLES ── */}
         <PersonalInfoCard profile={profile} onEdit={() => setEditOpen(true)}/>
 
-        {/* ── PARAMÈTRES ── */}
-        <MenuSection title="Paramètres" icon="⚙️">
-          <MenuItem icon={Shield}     color="text-dark-600 bg-surface-100"  label="Sécurité & Mot de passe"    onClick={() => setSecurityOpen(true)}/>
-          <MenuItem icon={Bell}       color="text-blue-600 bg-blue-50"      label="Notifications"              onClick={() => setNotifOpen(true)}/>
-          <MenuItem icon={MapPin}     color="text-emerald-600 bg-emerald-50" label="Confidentialité localisation" onClick={() => setPrivacyOpen(true)}/>
-          <MenuItem icon={Globe}      color="text-violet-600 bg-violet-50"  label="Langue de l'application"   onClick={() => setLanguageOpen(true)} last/>
-        </MenuSection>
+
+
 
         {/* ── SUPPORT ── */}
         <MenuSection title="Aide & Support" icon="💬">

@@ -27,6 +27,7 @@ const ReferralPage       = lazy(() => import('@/pages/ReferralPage'))
 const AdminVerificationPage = lazy(() => import('@/pages/AdminVerificationPage'))
 const ProductDetailPage  = lazy(() => import('@/pages/ProductDetailPage'))
 const CartPage           = lazy(() => import('@/pages/CartPage'))
+const SettingsPage       = lazy(() => import('@/pages/SettingsPage'))
 
 
 // ── Splash screen (photo existante) ──────────────────────
@@ -137,6 +138,7 @@ export default function App() {
             <Route path="/admin/verifications" element={<AdminVerificationPage />} />
             <Route path="/produit/:id"   element={<ProductDetailPage />} />
             <Route path="/panier"        element={<CartPage />} />
+            <Route path="/parametres"    element={<SettingsPage />} />
           </Route>
 
           {/* Fallback */}
