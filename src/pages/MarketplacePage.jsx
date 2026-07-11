@@ -321,7 +321,7 @@ export default function MarketplacePage() {
       // Charger également les produits actifs pour la recherche produit avec leurs coordonnées de boutique
       const { data: prodsData } = await supabase
         .from('products')
-        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level, latitude, longitude)')
+        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level, latitude, longitude, category_id)')
         .eq('is_available', true)
       
       const activeProducts = (prodsData || []).map(p => {
@@ -640,6 +640,7 @@ export default function MarketplacePage() {
     setSelectedGroup(null)
     setSearch('')
     setSuggestions([])
+    navigate('/marketplace', { replace: true, state: {} })
   }
 
   const handleTopBoutiquesToggle = () => {
@@ -913,55 +914,6 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* CARROUSEL HORIZONTAL DES CATÉGORIES POPULAIRES (STYLE ALIBABA / JUMIA) */}
-        <div className="px-3 mb-4">
-          <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
-            {[
-              { name: 'Maïs', icon: '🌽' },
-              { name: 'Igname', icon: '🍠' },
-              { name: 'Volaille', icon: '🐔' },
-              { name: 'Tomate', icon: '🍅' },
-              { name: 'Soja', icon: '🫘' },
-              { name: 'Engrais', icon: '🧪' },
-              { name: 'Poisson', icon: '🐟' },
-            ].map((pCat) => {
-              const catDb = dbCategories.find(c => c.name.toLowerCase() === pCat.name.toLowerCase())
-              const isActive = filters.category === catDb?.id
-
-              return (
-                <button
-                  key={pCat.name}
-                  onClick={() => {
-                    if (!catDb) return
-                    if (isActive) {
-                      setFilters(f => ({ ...f, category: null, categoryName: null }))
-                    } else {
-                      setFilters(f => ({ ...f, category: catDb.id, categoryName: catDb.name }))
-                      setSelectedGroup(null)
-                    }
-                  }}
-                  className="flex flex-col items-center flex-shrink-0 gap-1 active:scale-95 transition-all"
-                >
-                  <div className={clsx(
-                    "w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm transition-all border-2",
-                    isActive 
-                      ? "bg-primary-50 border-primary-500 scale-105 shadow-green" 
-                      : "bg-surface-50 border-surface-200"
-                  )}>
-                    {pCat.icon}
-                  </div>
-                  <span className={clsx(
-                    "text-[10px] font-black leading-tight transition-colors",
-                    isActive ? "text-primary-700 font-extrabold" : "text-dark-700"
-                  )}>
-                    {pCat.name}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
         {/* BARRE DES FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
@@ -1152,16 +1104,30 @@ export default function MarketplacePage() {
 
       <CategoryModal
         open={filterOpen}
-        onClose={() => setFilterOpen(false)}
+        onClose={() => {
+          setFilterOpen(false)
+          navigate(location.pathname, { replace: true, state: {} })
+        }}
         dbCategories={dbCategories}
         allShops={allShops}
+        allProducts={allProducts}
         onSelectGroup={(groupName) => {
           setSelectedGroup(groupName)
           setFilters(f => ({ ...f, category: null, categoryName: null }))
+          if (groupName) {
+            navigate('/marketplace?cat=true', { replace: true, state: { openCategories: false } })
+          } else {
+            navigate('/marketplace', { replace: true, state: {} })
+          }
         }}
         onSelectCategory={(catId, catName) => {
           setFilters(f => ({ ...f, category: catId, categoryName: catName }))
           setSelectedGroup(null)
+          if (catId) {
+            navigate('/marketplace?cat=true', { replace: true, state: { openCategories: false } })
+          } else {
+            navigate('/marketplace', { replace: true, state: {} })
+          }
         }}
       />
 
@@ -1498,7 +1464,7 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
 // ============================================================
 // MODAL CATÉGORIES EN SPLIT-PANEL (STYLE ALIBABA / JUMIA)
 // ============================================================
-function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup, onSelectCategory }) {
+function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = [], onSelectGroup, onSelectCategory }) {
   const [activeGroup, setActiveGroup] = useState('Céréales & Légumineuses')
 
   if (!open) return null
@@ -1587,22 +1553,30 @@ function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup, o
                 <span className="text-[10px] font-bold text-dark-600/50 mt-1">Bientôt disponible</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {subCategories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      onSelectCategory(cat.id, cat.name)
-                      onClose()
-                    }}
-                    className="flex items-center gap-2 p-2.5 rounded-xl border border-surface-200 hover:border-primary-400 hover:bg-primary-50/10 active:scale-95 transition text-left"
-                  >
-                    <span className="text-base">{cat.icon || '🌱'}</span>
-                    <span className="text-[10px] font-black text-dark-800 leading-tight truncate">
-                      {cat.name}
-                    </span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-1 gap-2">
+                {subCategories.map(cat => {
+                  const productCount = allProducts.filter(p => p.shop?.category_id === cat.id).length
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        onSelectCategory(cat.id, cat.name)
+                        onClose()
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-surface-200 hover:border-primary-400 hover:bg-primary-50/10 active:scale-95 transition text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base flex-shrink-0">{cat.icon || '🌱'}</span>
+                        <span className="text-[10px] font-black text-dark-800 leading-tight truncate">
+                          {cat.name}
+                        </span>
+                      </div>
+                      <span className="text-[8px] font-bold text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                        {productCount}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>

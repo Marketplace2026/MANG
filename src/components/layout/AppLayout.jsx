@@ -108,8 +108,16 @@ export default function AppLayout() {
         >
         <div className="mx-auto max-w-[var(--content-max-width)] flex items-center justify-around h-16 px-4">
           {NAV_ITEMS.map((item, idx) => {
+            let isActive = false
+            if (item.label === 'Catégories') {
+              isActive = location.pathname === '/marketplace' && (!!location.state?.openCategories || location.search.includes('cat=true'))
+            } else if (item.label === 'Accueil') {
+              isActive = location.pathname === '/marketplace' && !location.state?.openCategories && !location.search.includes('cat=true')
+            } else {
+              isActive = item.path && location.pathname.startsWith(item.path)
+            }
+
             const Icon     = item.icon
-            const isActive = item.path && location.pathname.startsWith(item.path)
 
             return (
               <button
