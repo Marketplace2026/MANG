@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
     )
   }
 
-  const unitPrice = getUnitPrice()
+  const unitPrice = getUnitPrice() || 0
   const totalPrice = unitPrice * quantity
   const priceBarre = Math.round(unitPrice * 1.25)
   const isOutofStock = product.stock_quantity !== null && product.stock_quantity <= 0
@@ -378,7 +378,7 @@ export default function ProductDetailPage() {
               </div>
               <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username}</p>
             </div>
-            <button onClick={() => navigate(`/boutique/${product.shop?.slug}`)}
+            <button onClick={() => navigate(`/boutique/${product.shop?.slug || product.shop_id}`)}
               className="px-3.5 py-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-700 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1">
               Visiter <ArrowRight size={12}/>
             </button>

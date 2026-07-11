@@ -913,6 +913,55 @@ export default function MarketplacePage() {
           </div>
         </div>
 
+        {/* CARROUSEL HORIZONTAL DES CATÉGORIES POPULAIRES (STYLE ALIBABA / JUMIA) */}
+        <div className="px-3 mb-4">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
+            {[
+              { name: 'Maïs', icon: '🌽' },
+              { name: 'Igname', icon: '🍠' },
+              { name: 'Volaille', icon: '🐔' },
+              { name: 'Tomate', icon: '🍅' },
+              { name: 'Soja', icon: '🫘' },
+              { name: 'Engrais', icon: '🧪' },
+              { name: 'Poisson', icon: '🐟' },
+            ].map((pCat) => {
+              const catDb = dbCategories.find(c => c.name.toLowerCase() === pCat.name.toLowerCase())
+              const isActive = filters.category === catDb?.id
+
+              return (
+                <button
+                  key={pCat.name}
+                  onClick={() => {
+                    if (!catDb) return
+                    if (isActive) {
+                      setFilters(f => ({ ...f, category: null, categoryName: null }))
+                    } else {
+                      setFilters(f => ({ ...f, category: catDb.id, categoryName: catDb.name }))
+                      setSelectedGroup(null)
+                    }
+                  }}
+                  className="flex flex-col items-center flex-shrink-0 gap-1 active:scale-95 transition-all"
+                >
+                  <div className={clsx(
+                    "w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm transition-all border-2",
+                    isActive 
+                      ? "bg-primary-50 border-primary-500 scale-105 shadow-green" 
+                      : "bg-surface-50 border-surface-200"
+                  )}>
+                    {pCat.icon}
+                  </div>
+                  <span className={clsx(
+                    "text-[10px] font-black leading-tight transition-colors",
+                    isActive ? "text-primary-700 font-extrabold" : "text-dark-700"
+                  )}>
+                    {pCat.name}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {/* BARRE DES FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
@@ -961,11 +1010,19 @@ export default function MarketplacePage() {
           </div>
         )}
         {/* FILTRE ACTIF LABEL */}
-        {selectedGroup && (
+        {(selectedGroup || filters.categoryName) && (
           <div className="px-3 pb-1 mt-2.5 animate-fade-in flex items-center justify-between">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-100">
-              <span className="text-primary-700 text-xs font-semibold">📂 {selectedGroup}</span>
-              <button onClick={() => setSelectedGroup(null)}>
+              <span className="text-primary-700 text-xs font-black">
+                {selectedGroup ? `📂 ${selectedGroup}` : `🌱 ${filters.categoryName}`}
+              </span>
+              <button onClick={() => {
+                if (selectedGroup) {
+                  setSelectedGroup(null)
+                } else {
+                  setFilters(f => ({ ...f, category: null, categoryName: null }))
+                }
+              }}>
                 <X size={12} className="text-primary-500"/>
               </button>
             </div>
@@ -1098,7 +1155,14 @@ export default function MarketplacePage() {
         onClose={() => setFilterOpen(false)}
         dbCategories={dbCategories}
         allShops={allShops}
-        onSelectGroup={setSelectedGroup}
+        onSelectGroup={(groupName) => {
+          setSelectedGroup(groupName)
+          setFilters(f => ({ ...f, category: null, categoryName: null }))
+        }}
+        onSelectCategory={(catId, catName) => {
+          setFilters(f => ({ ...f, category: catId, categoryName: catName }))
+          setSelectedGroup(null)
+        }}
       />
 
       {/* OVERLAY DE SCAN VISUEL */}
@@ -1432,13 +1496,14 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
 }
 
 // ============================================================
-// MODAL CATÉGORIES (GRILLE 3x3 ALIBABA)
+// MODAL CATÉGORIES EN SPLIT-PANEL (STYLE ALIBABA / JUMIA)
 // ============================================================
-function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup }) {
-  const [emptyGroup, setEmptyGroup] = useState(null)
+function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup, onSelectCategory }) {
+  const [activeGroup, setActiveGroup] = useState('Céréales & Légumineuses')
 
   if (!open) return null
 
+  // Groupes prédéfinis avec leurs labels et icônes
   const GROUPS = [
     { name: 'Céréales & Légumineuses', label: 'Céréales', icon: '🌽' },
     { name: 'Tubercules & Racines', label: 'Tubercules', icon: '🥔' },
@@ -1447,76 +1512,111 @@ function CategoryModal({ open, onClose, dbCategories, allShops, onSelectGroup })
     { name: 'Produits Transformés', label: 'Transformés', icon: '🍯' },
     { name: 'Épices & Condiments', label: 'Épices', icon: '🌶️' },
     { name: 'Intrants Agricoles', label: 'Intrants', icon: '🌿' },
-    { name: 'RESET', label: 'Tous', icon: '🔄' },
-    { name: 'CLOSE', label: 'Fermer', icon: '❌' },
   ]
 
-  const handleGroupClick = (group) => {
-    if (group.name === 'CLOSE') {
-      onClose()
-      return
-    }
-    if (group.name === 'RESET') {
-      onSelectGroup(null)
-      onClose()
-      return
-    }
-
-    // Compter les boutiques correspondantes
-    const count = allShops.filter(s => {
-      const cat = dbCategories.find(c => c.id === s.category_id)
-      return cat && cat.group_name === group.name
-    }).length
-
-    if (count === 0) {
-      setEmptyGroup(group.label)
-    } else {
-      onSelectGroup(group.name)
-      onClose()
-    }
-  }
+  // Récupérer les sous-catégories associées au groupe actif
+  const subCategories = dbCategories.filter(c => c.group_name === activeGroup)
 
   return (
     <>
       <div className="overlay" onClick={onClose}/>
-      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0 p-5">
-        <div className="flex justify-center pt-1 pb-3">
-          <div className="w-10 h-1 rounded-full bg-surface-300"/>
+      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0 p-0 rounded-t-3xl overflow-hidden bg-white animate-slide-up flex flex-col h-[480px]">
+        {/* En-tête */}
+        <div className="p-4 border-b border-surface-100 flex items-center justify-between bg-surface-50">
+          <h3 className="font-display font-black text-sm text-dark-800 uppercase tracking-wide">
+            Catégories Agricoles
+          </h3>
+          <button 
+            onClick={() => {
+              onSelectGroup(null)
+              onClose()
+            }}
+            className="text-[10px] font-black text-primary-600 bg-primary-50 px-2.5 py-1.5 rounded-lg tracking-wide uppercase active:scale-95 transition"
+          >
+            Tous les produits
+          </button>
         </div>
 
-        {emptyGroup ? (
-          <div className="text-center py-8 space-y-4">
-            <div className="text-4xl">🫙</div>
-            <p className="text-dark-800 font-bold text-sm">
-              Aucune boutique n'a cette catégorie pour le moment
-            </p>
-            <button
-              onClick={() => setEmptyGroup(null)}
-              className="px-5 py-2.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl text-xs shadow-md transition-all active:scale-95"
-            >
-              Retour
-            </button>
-          </div>
-        ) : (
-          <div>
-            <h3 className="font-display text-base font-black text-dark-800 text-center mb-4 uppercase tracking-wider">
-              Catégories MANG
-            </h3>
-            
-            <div className="grid grid-cols-3 gap-3.5">
-              {GROUPS.map((g, idx) => (
+        {/* Corps split-panel */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Panneau gauche : Catégories Parentes */}
+          <div className="w-[140px] bg-surface-50 border-r border-surface-100 overflow-y-auto no-scrollbar py-2">
+            {GROUPS.map((g, idx) => {
+              const isActive = activeGroup === g.name
+              return (
                 <button
                   key={idx}
-                  onClick={() => handleGroupClick(g)}
-                  className="flex flex-col items-center justify-center p-3 rounded-2xl bg-surface-50 border-2 border-surface-200 active:scale-95 hover:border-primary-400 transition-all text-center aspect-square"
+                  onClick={() => setActiveGroup(g.name)}
+                  className={clsx(
+                    "w-full px-3 py-4 flex flex-col items-center justify-center gap-1 transition text-center relative border-b border-surface-100/50",
+                    isActive 
+                      ? "bg-white text-primary-600 font-bold" 
+                      : "text-dark-800 hover:bg-surface-100/50"
+                  )}
                 >
-                  <span className="text-2xl mb-1.5">{g.icon}</span>
-                  <span className="text-[10px] font-black text-dark-800 leading-tight line-clamp-2">{g.label}</span>
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-md" />
+                  )}
+                  <span className="text-xl">{g.icon}</span>
+                  <span className="text-[10px] font-bold leading-tight">{g.label}</span>
                 </button>
-              ))}
-            </div>
+              )
+            })}
           </div>
-        )}
+
+          {/* Panneau droit : Sous-catégories */}
+          <div className="flex-1 bg-white overflow-y-auto p-4">
+            <div className="flex items-center justify-between mb-3 pb-1 border-b border-surface-100">
+              <span className="text-[10px] font-black text-dark-600/40 uppercase tracking-wider truncate max-w-[130px]">
+                {activeGroup}
+              </span>
+              <button
+                onClick={() => {
+                  onSelectGroup(activeGroup)
+                  onClose()
+                }}
+                className="text-[9px] font-black text-primary-700 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded flex-shrink-0"
+              >
+                Tout voir
+              </button>
+            </div>
+
+            {subCategories.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <span className="text-3xl opacity-30">🫙</span>
+                <span className="text-[10px] font-bold text-dark-600/50 mt-1">Bientôt disponible</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {subCategories.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      onSelectCategory(cat.id, cat.name)
+                      onClose()
+                    }}
+                    className="flex items-center gap-2 p-2.5 rounded-xl border border-surface-200 hover:border-primary-400 hover:bg-primary-50/10 active:scale-95 transition text-left"
+                  >
+                    <span className="text-base">{cat.icon || '🌱'}</span>
+                    <span className="text-[10px] font-black text-dark-800 leading-tight truncate">
+                      {cat.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bouton Fermer */}
+        <div className="p-3 border-t border-surface-100 bg-surface-50 text-center">
+          <button 
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-dark-800 hover:bg-dark-900 text-white font-bold text-xs active:scale-95 transition"
+          >
+            Fermer
+          </button>
+        </div>
       </div>
     </>
   )

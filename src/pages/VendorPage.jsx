@@ -693,7 +693,8 @@ function ProductItem({ product, onDelete, onToggle }) {
 // ============================================================
 function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
-  const [category, setCategory] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [dbCategories, setDbCategories] = useState([])
   const [catOpen, setCatOpen] = useState(false)
   const [catSearch, setCatSearch] = useState('')
   const [expandedGroup, setExpandedGroup] = useState(null)
@@ -704,9 +705,17 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
   const [coords, setCoords] = useState(null)
   const coverRef = useRef()
 
+  useEffect(() => {
+    const fetchCats = async () => {
+      const { data } = await supabase.from('categories').select('*').order('sort_order')
+      setDbCategories(data || [])
+    }
+    fetchCats()
+  }, [])
+
   const reset = () => {
     setForm({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
-    setCategory(''); setCoverFile(null); setCoverPreview(null); setCoords(null)
+    setSelectedCategory(null); setCoverFile(null); setCoverPreview(null); setCoords(null)
   }
 
   const handleCover = (e) => {
@@ -735,7 +744,7 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
 
   const handleCreate = async () => {
     if (!form.name.trim()) { toast.error('Nom requis'); return }
-    if (!category) { toast.error('Catégorie requise'); return }
+    if (!selectedCategory) { toast.error('Catégorie requise'); return }
     if (!coverFile) { toast.error('Photo de la boutique requise'); return }
     if (!form.city.trim()) { toast.error('Ville requise'); return }
     if (!form.quarter.trim()) { toast.error('Quartier requis'); return }
@@ -767,7 +776,7 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
         cover_url: coverUrl,
         has_delivery: form.has_delivery,
         whatsapp: form.whatsapp.trim() || null,
-        category_id: null, // On stocke le nom en attendant
+        category_id: selectedCategory.id,
       })
 
       if (error) throw error
@@ -798,10 +807,25 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
     } finally { setLoading(false) }
   }
 
-  // Filtrer catégories
-  const filtered = CATEGORIES.map(g => ({
-    ...g, items: g.items.filter(it => !catSearch || it.toLowerCase().includes(catSearch.toLowerCase()) || g.name.toLowerCase().includes(catSearch.toLowerCase()))
-  })).filter(g => g.items.length > 0)
+  // Groupement par group_name dynamique et filtrage de recherche
+  const groupMap = {}
+  dbCategories.forEach(cat => {
+    const matchesSearch = !catSearch 
+      || cat.name.toLowerCase().includes(catSearch.toLowerCase()) 
+      || cat.group_name.toLowerCase().includes(catSearch.toLowerCase())
+      
+    if (matchesSearch) {
+      if (!groupMap[cat.group_name]) {
+        groupMap[cat.group_name] = {
+          name: cat.group_name,
+          icon: cat.icon || '🌱',
+          items: []
+        }
+      }
+      groupMap[cat.group_name].items.push(cat)
+    }
+  })
+  const filtered = Object.values(groupMap)
 
   return (
     <BottomSheet open={open} onClose={() => { reset(); onClose() }} title="🏪 Créer une boutique">
@@ -856,8 +880,8 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
         <div className="space-y-1.5">
           <label className="block text-sm font-bold text-dark-700">Catégorie *</label>
           <button onClick={() => setCatOpen(true)}
-            className={clsx('input-field text-left flex items-center justify-between', !category && 'text-dark-600/40')}>
-            <span>{category || 'Choisir une catégorie'}</span>
+            className={clsx('input-field text-left flex items-center justify-between', !selectedCategory && 'text-dark-600/40')}>
+            <span>{selectedCategory ? `${selectedCategory.group_name} · ${selectedCategory.name}` : 'Choisir une catégorie'}</span>
             <ChevronDown size={16} className="text-dark-600/40"/>
           </button>
         </div>
@@ -966,17 +990,14 @@ function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet
                   </button>
                   {expandedGroup === group.name && (
                     <div className="grid grid-cols-2 gap-1.5 p-2 bg-white">
-                      {group.items.map(item => {
-                        const full = `${group.name} · ${item}`
-                        return (
-                          <button key={item} onClick={() => { setCategory(full); setCatOpen(false); setCatSearch('') }}
-                            className={clsx('flex items-center gap-2 p-2.5 rounded-xl text-left transition-all',
-                              category === full ? 'bg-primary-100 ring-2 ring-primary-400' : 'bg-surface-50 active:bg-primary-50')}>
-                            <span>{group.icon}</span>
-                            <span className="text-xs font-semibold text-dark-700 truncate">{item}</span>
-                          </button>
-                        )
-                      })}
+                      {group.items.map(cat => (
+                        <button key={cat.id} onClick={() => { setSelectedCategory(cat); setCatOpen(false); setCatSearch('') }}
+                          className={clsx('flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.98]',
+                            selectedCategory?.id === cat.id ? 'bg-primary-100 ring-2 ring-primary-400' : 'bg-surface-50 active:bg-primary-50')}>
+                          <span>{cat.icon || '🌱'}</span>
+                          <span className="text-xs font-bold text-dark-700 truncate">{cat.name}</span>
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
