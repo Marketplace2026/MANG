@@ -696,77 +696,106 @@ function AvatarUploader({ profile, onUpdated, onViewFull }) {
   )
 }
 
-// ─── WalletCard (Glassmorphism Premium) ───────────────────────────────────────
+// ─── WalletCard (Apple Wallet Style V2) ──────────────────────────────────────
 
 function WalletCard({ wallet, pieces, copied, onCopy, onNavigate }) {
-  const balance  = wallet ? Number(wallet.balance_available ?? 0).toLocaleString('fr-FR') : '—'
-  const reserved = wallet ? Number(wallet.balance_reserved ?? 0) : 0
+  const balance     = wallet ? Number(wallet.balance_available ?? 0).toLocaleString('fr-FR') : '—'
+  const reserved    = wallet ? Number(wallet.balance_reserved ?? 0) : 0
+  const piecesCount = pieces?.balance ?? 0
+  const walletNum   = wallet?.wallet_number ? `\u2022\u2022\u2022\u2022 ${wallet.wallet_number.slice(-4)}` : '\u2014\u2014\u2014\u2014'
 
   return (
     <div
       onClick={onNavigate}
-      className="relative overflow-hidden rounded-3xl cursor-pointer active:scale-[0.98] transition-transform shadow-modal"
-      style={{ background: 'linear-gradient(135deg, #0f2027, #1a3a2a, #0f2027)' }}
+      className="relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all duration-200"
+      style={{
+        background: 'linear-gradient(145deg, #1A2E1A 0%, #142414 50%, #0F1A0F 100%)',
+        borderRadius: '20px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+      }}
     >
-      {/* Effets de lumière */}
-      <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-primary-500/15 blur-3xl pointer-events-none"/>
-      <div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-gold-500/10 blur-2xl pointer-events-none"/>
-      <div className="absolute inset-0 opacity-5" style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'18px 18px'}}/>
+      {/* Reflet lumineux haut-gauche */}
+      <div className="absolute -top-6 -left-6 w-32 h-32 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(0,160,0,0.18) 0%, transparent 70%)' }}/>
+      {/* Reflet bas-droite */}
+      <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(255,200,0,0.08) 0%, transparent 70%)' }}/>
+      {/* Motif hexagonal discret */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }}/>
 
-      <div className="relative p-5">
-        {/* Header carte */}
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative px-5 py-4">
+
+        {/* Ligne 1 : Logo + Nom + Numéro masqué */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary-500/20 flex items-center justify-center">
-              <Wallet size={15} className="text-primary-400"/>
+            <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(0,160,0,0.25)', border: '1px solid rgba(0,200,0,0.2)' }}>
+              <Wallet size={13} className="text-green-400"/>
             </div>
-            <span className="text-white/70 text-sm font-semibold">MANG Wallet</span>
+            <span className="text-white/80 text-[13px] font-bold tracking-wide">MANG Wallet</span>
           </div>
-          <span className="text-white/30 text-xs font-mono tracking-widest">
-            {wallet?.wallet_number ? `•••• ${wallet.wallet_number.slice(-4)}` : '——'}
-          </span>
+          <span className="text-white/25 text-[11px] font-mono tracking-[0.2em]">{walletNum}</span>
         </div>
 
         {/* Solde principal */}
-        <div className="mb-4">
-          <p className="text-white/40 text-xs mb-1">Solde disponible</p>
-          <p className="font-display text-3xl font-bold text-white">
-            {balance} <span className="text-lg text-white/40">FCFA</span>
+        <div className="mb-3">
+          <p className="text-white/35 text-[10px] font-semibold uppercase tracking-wider mb-0.5">
+            Solde disponible
           </p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-white font-black leading-none" style={{ fontSize: '32px', letterSpacing: '-0.5px' }}>
+              {balance}
+            </p>
+            <span className="text-white/35 text-[13px] font-semibold">FCFA</span>
+          </div>
           {reserved > 0 && (
-            <p className="text-gold-400 text-xs mt-1">
-              {Number(reserved).toLocaleString('fr-FR')} FCFA en réserve
+            <p className="text-amber-400/80 text-[10px] font-medium mt-1">
+              + {Number(reserved).toLocaleString('fr-FR')} FCFA en réserve
             </p>
           )}
         </div>
 
         {/* Séparateur */}
-        <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Pièces MANG */}
-            <div className="flex items-center gap-1.5">
-              <Coins size={13} className="text-gold-400"/>
-              <span className="text-gold-400 text-xs font-bold">{pieces?.balance ?? 0} pièces</span>
-            </div>
+        <div className="border-t mb-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}/>
+
+        {/* Ligne 3 : Pièces + Actions */}
+        <div className="flex items-center justify-between">
+          {/* Badge pièces jaune */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.2)' }}>
+            <Coins size={11} className="text-amber-400"/>
+            <span className="text-amber-300 text-[11px] font-black">{piecesCount} pièces</span>
           </div>
+
+          {/* Boutons pill */}
           <div className="flex items-center gap-2">
             <button
               onClick={e => { e.stopPropagation(); onCopy() }}
-              className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
-              {copied ? <Check size={13} className="text-emerald-400"/> : <Copy size={13}/>}
-              <span className="text-[10px] font-medium">{copied ? 'Copié !' : 'Copier N°'}</span>
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full active:scale-95 transition-all"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              {copied
+                ? <Check size={10} className="text-emerald-400"/>
+                : <Copy size={10} className="text-white/50"/>}
+              <span className="text-[10px] font-semibold text-white/50">
+                {copied ? 'Copié !' : 'Copier N°'}
+              </span>
             </button>
-            {/* Badge 'Voir' */}
-            <div className="flex items-center gap-1 text-white/40">
-              <ArrowUpRight size={13}/>
-              <span className="text-[10px] font-medium">Gérer</span>
+
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(0,160,0,0.15)', border: '1px solid rgba(0,200,0,0.15)' }}>
+              <ArrowUpRight size={10} className="text-green-400"/>
+              <span className="text-[10px] font-semibold text-green-400">Gérer</span>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )
 }
+
 
 // ─── PersonalInfoCard ─────────────────────────────────────────────────────────
 
