@@ -1,48 +1,39 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { supabase } from '../lib/supabase'
-import { toast } from 'react-hot-toast'
-import { checkoutWithWallet as supabaseCheckout } from '@/lib/supabaseCart'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
+import { checkoutWithWallet as supabaseCheckout } from '@/lib/supabaseCart';
 
+// Simple cart item shape matching the UI expectations
 export type CartItem = {
-  id: string // composite id: productId + optional variant
-  product: {
-    id: string
-    name: string
-    price: number
-    image?: string
-    seller_id: string
-    stock: number
-    unit: 'kg' | 'sac' | 'tonne'
-  }
-  quantity: number
-  variant?: { name: string; extraPrice?: number }
-}
+  id: string;
+  name: string;
+  price: number;
+  image?: string;
+  qty: number;
+};
 
 export type CartState = {
-  items: CartItem[]
-  status: 'idle' | 'loading' | 'error'
-  error: string | null
-  // derived
-  totalQty: number
-  subTotal: number
+  items: CartItem[];
+  status: 'idle' | 'loading' | 'error';
+  error: string | null;
+  // derived values
+  totalQty: number;
+  subTotal: number;
   // actions
-  addItem: (product: CartItem['product'], qty?: number, variant?: CartItem['variant']) => Promise<void>
-  removeItem: (itemId: string) => void
-  updateQuantity: (itemId: string, qty: number) => void
-  clearCart: () => void
-  syncWithSupabase: (userId: string) => Promise<void>
-  checkoutWithWallet: (userId: string, walletBalance: number) => Promise<void>
-}
+  addItem: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
+  removeItem: (itemId: string) => void;
+  updateQuantity: (itemId: string, qty: number) => void;
+  clearCart: () => void;
+  checkoutWithWallet: (userId: string, walletBalance: number) => Promise<void>;
+  syncWithSupabase: (userId: string) => Promise<void>;
+};
 
 const calculateTotals = (items: CartItem[]) => {
-  const totalQty = items.reduce((sum, i) => sum + i.quantity, 0)
-  const subTotal = items.reduce((sum, i) => {
-    const variantPrice = i.variant?.extraPrice ?? 0
-    return sum + (i.product.price + variantPrice) * i.quantity
-  }, 0)
-  return { totalQty, subTotal }
-}
+  const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
+  const subTotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  return { totalQty, subTotal };
+};
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -52,112 +43,70 @@ export const useCartStore = create<CartState>()(
       error: null,
       totalQty: 0,
       subTotal: 0,
-      addItem: async (product, qty = 1, variant) => {
-        set({ status: 'loading' })
+      addItem: (item, qty = 1) => {
+        set({ status: 'loading' });
         try {
-          // Verify stock via Supabase
-          const { data, error } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', product.id)
-            .single()
-          if (error) throw error
-          if (data.stock < qty) {
-            toast.error('Stock insuffisant')
-            set({ status: 'idle' })
-            return
-          }
-          const id = product.id + (variant ? '_' + variant.name : '')
-          const existing = get().items.find(i => i.id === id)
+          const existing = get().items.find(i => i.id === item.id);
           const newItems = existing
-            ? get().items.map(i =>
-                i.id === id ? { ...i, quantity: i.quantity + qty } : i
-              )
-            : [
-                ...get().items,
-                { id, product, quantity: qty, variant }
-              ]
-          const { totalQty, subTotal } = calculateTotals(newItems)
-          set({ items: newItems, totalQty, subTotal, status: 'idle' })
-          // Persist locally
-          localStorage.setItem('mang_cart', JSON.stringify(newItems))
-          toast.success('Produit ajouté au panier')
+            ? get().items.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i)
+            : [...get().items, { ...item, qty }];
+          const { totalQty, subTotal } = calculateTotals(newItems);
+          set({ items: newItems, totalQty, subTotal, status: 'idle' });
+          toast.success('Produit ajouté au panier');
         } catch (e: any) {
-          console.error(e)
-          set({ error: e.message, status: 'error' })
-          toast.error('Erreur lors de l\'ajout au panier')
+          console.error(e);
+          set({ error: e.message, status: 'error' });
+          toast.error('Erreur lors de l\'ajout au panier');
         }
       },
       removeItem: (itemId) => {
-        const newItems = get().items.filter(i => i.id !== itemId)
-        const { totalQty, subTotal } = calculateTotals(newItems)
-        set({ items: newItems, totalQty, subTotal })
-        localStorage.setItem('mang_cart', JSON.stringify(newItems))
+        const newItems = get().items.filter(i => i.id !== itemId);
+        const { totalQty, subTotal } = calculateTotals(newItems);
+        set({ items: newItems, totalQty, subTotal });
       },
       updateQuantity: (itemId, qty) => {
-        const newItems = get().items.map(i =>
-          i.id === itemId ? { ...i, quantity: Math.max(1, qty) } : i
-        )
-        const { totalQty, subTotal } = calculateTotals(newItems)
-        set({ items: newItems, totalQty, subTotal })
-        localStorage.setItem('mang_cart', JSON.stringify(newItems))
+        const newItems = get().items.map(i => i.id === itemId ? { ...i, qty: Math.max(1, qty) } : i);
+        const { totalQty, subTotal } = calculateTotals(newItems);
+        set({ items: newItems, totalQty, subTotal });
       },
       clearCart: () => {
-        localStorage.removeItem('mang_cart')
-        set({ items: [], totalQty: 0, subTotal: 0 })
+        set({ items: [], totalQty: 0, subTotal: 0 });
       },
       checkoutWithWallet: async (userId: string, walletBalance: number) => {
-        set({ status: 'loading' })
+        set({ status: 'loading' });
         try {
-          const { subTotal } = get()
+          const { subTotal } = get();
           if (walletBalance < subTotal) {
-            toast.error('Solde insuffisant')
-            set({ status: 'idle' })
-            return
+            toast.error('Solde insuffisant');
+            set({ status: 'idle' });
+            return;
           }
-          // Call supabase function to create order & items
-          const success = await supabaseCheckout(userId, walletBalance, get().items)
+          const success = await supabaseCheckout(userId, walletBalance, get().items);
           if (success) {
-            // clear cart after successful order
-            get().clearCart()
-            toast.success('Commande créée avec succès')
+            get().clearCart();
+            toast.success('Commande créée avec succès');
           }
-          set({ status: 'idle' })
+          set({ status: 'idle' });
         } catch (e: any) {
-          console.error(e)
-          set({ error: e.message, status: 'error' })
-          toast.error('Erreur lors du paiement')
+          console.error(e);
+          set({ error: e.message, status: 'error' });
+          toast.error('Erreur lors du paiement');
         }
       },
       syncWithSupabase: async (userId) => {
-        set({ status: 'loading' })
+        set({ status: 'loading' });
         try {
-          // Upsert local cart to Supabase
           const { error } = await supabase.from('carts').upsert([
-            { user_id: userId, items: get().items }
-          ])
-          if (error) throw error
-          // Subscribe to realtime updates for this user's cart
-          const channel = supabase
-            .channel('public:carts')
-            .on(
-              'postgres_changes',
-              { event: 'UPDATE', schema: 'public', table: 'carts', filter: `user_id=eq.${userId}` },
-              (payload) => {
-                const newItems = payload.new.items as any[]
-                const { totalQty, subTotal } = calculateTotals(newItems)
-                set({ items: newItems, totalQty, subTotal, status: 'idle' })
-                localStorage.setItem('mang_cart', JSON.stringify(newItems))
-              }
-            )
-            .subscribe()
-          set({ status: 'idle' })
+            { user_id: userId, items: get().items },
+          ]);
+          if (error) throw error;
+          set({ status: 'idle' });
         } catch (e: any) {
-          console.error(e)
-          set({ error: e.message, status: 'error' })
+          console.error(e);
+          set({ error: e.message, status: 'error' });
         }
       },
     }),
-    { name: 'mang_cart' }
+    { name: 'cart-storage' }
   )
-)
+);
