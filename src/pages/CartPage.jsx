@@ -218,7 +218,7 @@ export default function CartPage() {
                 <span className="font-display font-black text-primary-700 text-lg">{cartTotal.toLocaleString('fr-FR')} FCFA</span>
               </div>
               <button
-                onClick={() => setCheckoutStep(2)}
+                onClick={() => navigate('/checkout')}
                 className="w-full py-4 rounded-2xl bg-primary-600 hover:bg-primary-500 text-white font-black text-sm tracking-wide shadow-green active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 Commander

@@ -13,6 +13,7 @@ const RegisterPage       = lazy(() => import('@/pages/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'))
 const ResetPasswordPage  = lazy(() => import('@/pages/ResetPasswordPage'))
 const MarketplacePage    = lazy(() => import('@/pages/MarketplacePage'))
+const CheckoutPage       = lazy(() => import('@/pages/CheckoutPage'))
 const ShopPublicPage     = lazy(() => import('@/pages/ShopPublicPage'))
 const ProfilePage        = lazy(() => import('@/pages/ProfilePage'))
 const OrdersPage         = lazy(() => import('@/pages/OrdersPage'))
@@ -138,6 +139,7 @@ export default function App() {
             <Route path="/admin/verifications" element={<AdminVerificationPage />} />
             <Route path="/produit/:id"   element={<ProductDetailPage />} />
             <Route path="/panier"        element={<CartPage />} />
+            <Route path="/checkout"      element={<CheckoutPage />} />
             <Route path="/parametres"    element={<SettingsPage />} />
           </Route>
 

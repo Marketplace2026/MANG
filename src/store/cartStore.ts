@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabase'
 import { toast } from 'react-hot-toast'
+import { checkoutWithWallet as supabaseCheckout } from '@/lib/supabaseCart'
 
 export type CartItem = {
   id: string // composite id: productId + optional variant
@@ -31,6 +32,7 @@ export type CartState = {
   updateQuantity: (itemId: string, qty: number) => void
   clearCart: () => void
   syncWithSupabase: (userId: string) => Promise<void>
+  checkoutWithWallet: (userId: string, walletBalance: number) => Promise<void>
 }
 
 const calculateTotals = (items: CartItem[]) => {
@@ -103,6 +105,29 @@ export const useCartStore = create<CartState>()(
       clearCart: () => {
         localStorage.removeItem('mang_cart')
         set({ items: [], totalQty: 0, subTotal: 0 })
+      },
+      checkoutWithWallet: async (userId: string, walletBalance: number) => {
+        set({ status: 'loading' })
+        try {
+          const { subTotal } = get()
+          if (walletBalance < subTotal) {
+            toast.error('Solde insuffisant')
+            set({ status: 'idle' })
+            return
+          }
+          // Call supabase function to create order & items
+          const success = await supabaseCheckout(userId, walletBalance, get().items)
+          if (success) {
+            // clear cart after successful order
+            get().clearCart()
+            toast.success('Commande créée avec succès')
+          }
+          set({ status: 'idle' })
+        } catch (e: any) {
+          console.error(e)
+          set({ error: e.message, status: 'error' })
+          toast.error('Erreur lors du paiement')
+        }
       },
       syncWithSupabase: async (userId) => {
         set({ status: 'loading' })
