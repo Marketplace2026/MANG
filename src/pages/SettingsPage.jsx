@@ -470,9 +470,6 @@ export default function SettingsPage() {
           <Item icon={MessageCircle} iconBg="bg-emerald-50" iconColor="text-emerald-600"
             label={t.whatsapp} sub={t.whatsappSub}
             onClick={() => window.open('https://wa.me/2290197293196?text=Bonjour%20MANG%20support', '_blank')} />
-          <Item icon={Star} iconBg="bg-amber-50" iconColor="text-amber-500"
-            label={t.rateApp} sub={t.rateAppSub}
-            onClick={() => window.open('https://play.google.com/store', '_blank')} />
           <Item icon={AlertTriangle} iconBg="bg-orange-50" iconColor="text-orange-500"
             label={t.reportProblem} sub={t.reportProblemSub}
             onClick={() => window.open('https://wa.me/2290197293196?text=Signalement%20bug%20MANG%20:', '_blank')} />
@@ -770,63 +767,18 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
 // ─── TwoFASheet ───────────────────────────────────────────────────────────────
 
 function TwoFASheet({ open, onClose, user, t }) {
-  const [step,    setStep]    = useState(1) // 1=info, 2=email envoyé
-  const [loading, setLoading] = useState(false)
-
-  const handleEnable = async () => {
-    setLoading(true)
-    // Supabase 2FA via OTP email — envoi d'un code de vérification
-    const { error } = await supabase.auth.signInWithOtp({ email: user?.email, options: { shouldCreateUser: false } })
-    setLoading(false)
-    if (error) { toast.error('Erreur : ' + error.message); return }
-    setStep(2)
-  }
-
-  useEffect(() => { if (!open) setStep(1) }, [open])
-
+<!-- Placeholder TwoFA Sheet -->
+function TwoFASheet({ open, onClose, user, t }) {
   return (
     <BottomSheet open={open} onClose={onClose} title={t.twoFA}>
       <div className="px-5 pt-4 pb-6 space-y-4">
-        {step === 1 ? (
-          <>
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center">
-                <ShieldCheck size={32} className="text-green-500" />
-              </div>
-              <p className="text-center text-sm text-gray-600 leading-relaxed max-w-xs">
-                L'authentification à 2 facteurs renforce la sécurité de votre compte MANG.
-                Un code vous sera envoyé par email à chaque connexion.
-              </p>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-              <p className="text-xs text-amber-700 font-semibold">📧 Code OTP envoyé à : {user?.email}</p>
-            </div>
-            <button onClick={handleEnable} disabled={loading}
-              className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
-              style={{ background: '#008000' }}>
-              {loading ? 'Envoi du code...' : 'Activer la 2FA'}
-            </button>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <Check size={28} className="text-green-600" />
-            </div>
-            <p className="text-center font-bold text-gray-800">Code envoyé !</p>
-            <p className="text-center text-sm text-gray-500 leading-relaxed">
-              Vérifiez votre boîte email <span className="font-semibold text-gray-700">{user?.email}</span>.
-              Reconnectez-vous pour valider la 2FA.
-            </p>
-            <button onClick={onClose}
-              className="w-full py-3.5 rounded-2xl font-bold text-white text-sm"
-              style={{ background: '#008000' }}>
-              Compris
-            </button>
-          </div>
-        )}
+        <p className="text-center text-gray-600">L'authentification à deux facteurs n'est pas encore disponible.</p>
+        <button onClick={onClose} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{ background: '#008000' }}>
+          {t.cancel}
+        </button>
       </div>
     </BottomSheet>
-  )
+  );
 }
 
 // ─── HelpSheet ────────────────────────────────────────────────────────────────

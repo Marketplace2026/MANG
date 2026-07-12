@@ -268,7 +268,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
                 { icon: Reply,   label: 'Répondre',   action: () => { onReply(); setMenuOpen(false) } },
                 { icon: Copy,    label: 'Copier',      action: () => { onCopy(); setMenuOpen(false) } },
                 { icon: Star,    label: msg.is_starred ? 'Retirer favori' : 'Mettre en favori', action: () => setMenuOpen(false) },
-                { icon: Forward, label: 'Transférer',  action: () => { toast('Bientôt disponible'); setMenuOpen(false) } },
+                { icon: Forward, label: 'Transférer',  action: () => { setMenuOpen(false) } },
                 ...(isMe ? [{ icon: Trash2, label: 'Supprimer', action: () => { onDelete(); setMenuOpen(false) }, red: true }] : []),
               ].map(item => {
                 const Icon = item.icon
@@ -555,7 +555,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Search size={16} className="text-white"/>
             </button>
-            <button onClick={() => toast('Appel bientôt disponible')}
+            <button onClick={() => setMenuOpen(false)}
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
               <Phone size={16} className="text-white"/>
             </button>

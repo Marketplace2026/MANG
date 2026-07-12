@@ -1550,7 +1550,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
             {subCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <span className="text-3xl opacity-30">🫙</span>
-                <span className="text-[10px] font-bold text-dark-600/50 mt-1">Bientôt disponible</span>
+                <span className="text-[10px] font-bold text-dark-600/50 mt-1">Aucune sous-catégorie disponible</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-2">
