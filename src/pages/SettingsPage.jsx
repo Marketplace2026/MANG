@@ -766,8 +766,7 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
 
 // ─── TwoFASheet ───────────────────────────────────────────────────────────────
 
-function TwoFASheet({ open, onClose, user, t }) {
-<!-- Placeholder TwoFA Sheet -->
+
 function TwoFASheet({ open, onClose, user, t }) {
   return (
     <BottomSheet open={open} onClose={onClose} title={t.twoFA}>
