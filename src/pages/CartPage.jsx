@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Trash2, MapPin, Phone, ShieldCheck, Wallet,
+  ArrowLeft, Trash2, MapPin, Phone, ShieldCheck, Wallet, Store,
   Lock, ShoppingCart, ShoppingBag, Plus, Minus, CheckCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
-import { useCartStore } from '@/store/useCartStore'
+import { useCartStore } from '@/store/cartStore'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui'
 
