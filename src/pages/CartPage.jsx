@@ -31,11 +31,14 @@ function ListeDesItems({ items }) {
     <div className="min-h-screen bg-surface-50 pb-36">
       <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
         {items.map(item => (
-          <div key={item.id} className="flex justify-between items-center py-2 border-b border-surface-50">
-            <span>{item.product?.name || 'Produit'}</span>
-            <span>{item.quantity} × {(item.variant?.price || item.product?.price || 0).toLocaleString('fr-FR')} FCFA</span>
+          <div key={item.id} className="flex justify-between items-center py-2 border-b">
+            <img src={item.image} className="w-16 h-16 object-cover rounded" />
+            <div className="flex-1 px-4">
+              <span className="font-bold">{item.name}</span>
+              <span className="block text-sm">{item.qty} × {item.price.toLocaleString('fr-FR')} FCFA</span>
+            </div>
             <button onClick={() => removeItem(item.id)} className="text-red-500">
-              <Trash2 size={13} />
+              <Trash2 size={16} />
             </button>
           </div>
         ))}
