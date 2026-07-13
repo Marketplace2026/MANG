@@ -20,7 +20,7 @@ export const useAuthStore = create((set, get) => ({
   setPieces: (pieces) => set({ pieces }),
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession() // <- CORRIGÉ ICI
+    const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) {
       await get().fetchUserData(session.user)
     }
@@ -169,24 +169,41 @@ export const useUIStore = create((set) => ({
 }))
 
 // ============================================================
-// CART STORE - VERSION FINALE QUI TUE LE BUG "2"
+// CART STORE - AVEC PERSISTENCE
 // ============================================================
 export const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
+
       addItem: (item, qty = 1) => {
         const existing = get().items.find(i => i.id === item.id)
-        const newItems = existing ? get().items.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i) : [...get().items, { ...item, qty }]
+        const newItems = existing 
+          ? get().items.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i) 
+          : [...get().items, { ...item, qty }]
         set({ items: newItems })
         toast.success('Produit ajouté au panier')
       },
+
       removeItem: (itemId) => set({ items: get().items.filter(i => i.id !== itemId) }),
-      updateQuantity: (itemId, qty) => set({ items: get().items.map(i => i.id === itemId ? { ...i, qty: Math.max(1, qty) } : i) }),
+      
+      updateQuantity: (itemId, qty) => set({ 
+        items: get().items.map(i => i.id === itemId ? { ...i, qty: Math.max(1, qty) } : i) 
+      }),
+      
       clearCart: () => set({ items: [] }),
-      get totalQty() { return get().items.reduce((sum, i) => sum + i.qty, 0) },
-      get subTotal() { return get().items.reduce((sum, i) => sum + i.price * i.qty, 0) },
+
+      // GETTERS POUR L'APPLAYOUT
+      get totalQty() { 
+        return get().items.reduce((sum, i) => sum + i.qty, 0) 
+      },
+      get subTotal() { 
+        return get().items.reduce((sum, i) => sum + i.price * i.qty, 0) 
+      },
     }),
-    { name: 'mangafrica-cart-v2', partialize: (state) => ({ items: state.items }) }
+    { 
+      name: 'mangafrica-cart-v2', // nom dans localStorage
+      partialize: (state) => ({ items: state.items }) // on sauvegarde que items
+    }
   )
 )
