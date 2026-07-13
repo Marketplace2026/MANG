@@ -22,7 +22,8 @@ export default function AppLayout() {
   const { user, profile }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const { unreadCount: unreadMessages, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
-  const { totalQty: cartCount } = useCartStore()
+const { items } = useCartStore()
+const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
   const isProductPage = location.pathname.startsWith('/produit/')
 
   useEffect(() => {
