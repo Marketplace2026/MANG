@@ -250,7 +250,7 @@ export default function ProductDetailPage() {
     'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800', // Inspection qualité MANG
   ].filter(Boolean)
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
 
   return (
     <div className="min-h-screen bg-surface-100 pb-36 text-dark-900 font-sans">
