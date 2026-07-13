@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCartStore } from '@/store/cartStore';
-import { useAuthStore } from '@/store';
+import { useCartStore, useAuthStore } from '@/store';
 import { toast } from 'react-hot-toast';
 
 export default function CheckoutPage() {
@@ -69,8 +68,8 @@ export default function CheckoutPage() {
         <ul className="space-y-1">
           {items.map(item => (
             <li key={item.id} className="flex justify-between">
-              <span>{item.product.name} x{item.quantity}</span>
-              <span>{new Intl.NumberFormat('fr-FR').format(item.product.price * item.quantity)} XOF</span>
+        <span>{item.name} x{item.qty}</span>
+<span>{new Intl.NumberFormat('fr-FR').format(item.price * item.qty)} XOF</span>
             </li>
           ))}
         </ul>
