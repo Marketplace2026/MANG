@@ -18,8 +18,12 @@ function PageVide() {
 }
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, subTotal, totalQty } = useCartStore();
+  const { items, removeItem, updateQuantity } = useCartStore();
   const navigate = useNavigate();
+
+  // Calcul du total et quantité directement depuis items
+  const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+  const subTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   if (items.length === 0) return <PageVide />;
 
@@ -33,16 +37,36 @@ export default function CartPage() {
             <span className="font-bold">{item.name}</span>
             <span className="block text-sm">{item.price.toLocaleString('fr-FR')} FCFA</span>
             <div className="flex items-center gap-2 mt-1">
-              <button onClick={() => updateQuantity(item.id, item.qty - 1)}><Minus size={16}/></button>
-              <span>{item.qty}</span>
-              <button onClick={() => updateQuantity(item.id, item.qty + 1)}><Plus size={16}/></button>
+              <button 
+                onClick={() => updateQuantity(item.id, item.qty - 1)}
+                className="w-8 h-8 rounded-lg bg-surface-100 flex items-center justify-center"
+              >
+                <Minus size={16}/>
+              </button>
+              <span className="font-bold w-6 text-center">{item.qty}</span>
+              <button 
+                onClick={() => updateQuantity(item.id, item.qty + 1)}
+                className="w-8 h-8 rounded-lg bg-surface-100 flex items-center justify-center"
+              >
+                <Plus size={16}/>
+              </button>
             </div>
           </div>
-          <button onClick={() => removeItem(item.id)}><Trash2 size={16} /></button>
+          <button onClick={() => removeItem(item.id)} className="text-red-500">
+            <Trash2 size={18} />
+          </button>
         </div>
       ))}
-      <div className="font-bold text-lg mt-4">Total: {subTotal.toLocaleString('fr-FR')} FCFA</div>
-      <button onClick={() => navigate('/checkout')} className="w-full mt-4 py-4 rounded-2xl bg-primary-600 text-white font-black">
+      
+      <div className="flex justify-between items-center font-bold text-xl mt-4 p-4 bg-white rounded-2xl">
+        <span>Total:</span>
+        <span>{subTotal.toLocaleString('fr-FR')} FCFA</span>
+      </div>
+      
+      <button 
+        onClick={() => navigate('/checkout')} 
+        className="w-full mt-4 py-4 rounded-2xl bg-primary-600 text-white font-black hover:bg-primary-700 transition"
+      >
         Commander
       </button>
     </div>
