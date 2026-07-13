@@ -1,11 +1,15 @@
-import { useNavigate } from 'react-router-dom';
+'use client' // <- IMPORTANT POUR NEXT.JS
+
+import Link from 'next/link'; // <- REMPLACE useNavigate
+import { useRouter } from 'next/navigation'; // <- POUR NAVIGUER
 import { ShoppingCart, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { Button } from '@/components/ui';
+import Image from 'next/image'; // <- Mieux pour Next
 
 // Empty cart view
 function PageVide() {
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-surface-50">
       <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mb-4">
@@ -15,7 +19,7 @@ function PageVide() {
       <p className="text-dark-600/50 text-xs max-w-xs">
         Explorez la marketplace pour ajouter des produits.
       </p>
-      <Button onClick={() => navigate('/marketplace')} className="mt-6 px-6 bg-primary-600 text-white font-bold rounded-2xl shadow-green">
+      <Button onClick={() => router.push('/marketplace')} className="mt-6 px-6 bg-primary-600 text-white font-bold rounded-2xl shadow-green">
         Découvrir les produits
       </Button>
     </div>
@@ -24,7 +28,7 @@ function PageVide() {
 
 // List of cart items
 function ListeDesItems({ items }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { removeItem, subTotal, totalQty } = useCartStore();
 
   return (
@@ -32,7 +36,7 @@ function ListeDesItems({ items }) {
       <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
         {items.map(item => (
           <div key={item.id} className="flex justify-between items-center py-2 border-b">
-            <img src={item.image} className="w-16 h-16 object-cover rounded" />
+            {item.image && <Image src={item.image} width={64} height={64} className="w-16 h-16 object-cover rounded" alt={item.name}/>}
             <div className="flex-1 px-4">
               <span className="font-bold">{item.name}</span>
               <span className="block text-sm">{item.qty} × {item.price.toLocaleString('fr-FR')} FCFA</span>
@@ -47,7 +51,7 @@ function ListeDesItems({ items }) {
           <span>{subTotal.toLocaleString('fr-FR')} FCFA</span>
         </div>
         <button
-          onClick={() => navigate('/checkout')}
+          onClick={() => router.push('/checkout')}
           className="w-full py-4 rounded-2xl bg-primary-600 hover:bg-primary-500 text-white font-black text-sm tracking-wide shadow-green"
         >
           Commander
