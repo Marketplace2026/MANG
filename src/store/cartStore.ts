@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { checkoutWithWallet as supabaseCheckout } from '@/lib/supabaseCart';
 
-// Simple cart item shape matching the UI expectations
 export type CartItem = {
   id: string;
   name: string;
@@ -13,13 +12,10 @@ export type CartItem = {
   qty: number;
 };
 
-export type CartState = {
+type CartState = {
   items: CartItem[];
   status: 'idle' | 'loading' | 'error';
   error: string | null;
-  // derived values
-  totalQty: number;
-  subTotal: number;
   // actions
   addItem: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
   removeItem: (itemId: string) => void;
@@ -27,12 +23,9 @@ export type CartState = {
   clearCart: () => void;
   checkoutWithWallet: (userId: string, walletBalance: number) => Promise<void>;
   syncWithSupabase: (userId: string) => Promise<void>;
-};
-
-const calculateTotals = (items: CartItem[]) => {
-  const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
-  const subTotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  return { totalQty, subTotal };
+  // derived values en GETTER pour ne pas les sauvegarder
+  get totalQty(): number;
+  get subTotal(): number;
 };
 
 export const useCartStore = create<CartState>()(
@@ -41,8 +34,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       status: 'idle',
       error: null,
-      totalQty: 0,
-      subTotal: 0,
+      
       addItem: (item, qty = 1) => {
         set({ status: 'loading' });
         try {
@@ -50,8 +42,7 @@ export const useCartStore = create<CartState>()(
           const newItems = existing
             ? get().items.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i)
             : [...get().items, { ...item, qty }];
-          const { totalQty, subTotal } = calculateTotals(newItems);
-          set({ items: newItems, totalQty, subTotal, status: 'idle' });
+          set({ items: newItems, status: 'idle' });
           toast.success('Produit ajouté au panier');
         } catch (e: any) {
           console.error(e);
@@ -61,21 +52,19 @@ export const useCartStore = create<CartState>()(
       },
       removeItem: (itemId) => {
         const newItems = get().items.filter(i => i.id !== itemId);
-        const { totalQty, subTotal } = calculateTotals(newItems);
-        set({ items: newItems, totalQty, subTotal });
+        set({ items: newItems });
       },
       updateQuantity: (itemId, qty) => {
         const newItems = get().items.map(i => i.id === itemId ? { ...i, qty: Math.max(1, qty) } : i);
-        const { totalQty, subTotal } = calculateTotals(newItems);
-        set({ items: newItems, totalQty, subTotal });
+        set({ items: newItems });
       },
       clearCart: () => {
-        set({ items: [], totalQty: 0, subTotal: 0 });
+        set({ items: [] });
       },
       checkoutWithWallet: async (userId: string, walletBalance: number) => {
         set({ status: 'loading' });
         try {
-          const { subTotal } = get();
+          const subTotal = get().subTotal;
           if (walletBalance < subTotal) {
             toast.error('Solde insuffisant');
             set({ status: 'idle' });
@@ -96,9 +85,7 @@ export const useCartStore = create<CartState>()(
       syncWithSupabase: async (userId) => {
         set({ status: 'loading' });
         try {
-          const { error } = await supabase.from('carts').upsert([
-            { user_id: userId, items: get().items },
-          ]);
+          const { error } = await supabase.from('carts').upsert([{ user_id: userId, items: get().items }]);
           if (error) throw error;
           set({ status: 'idle' });
         } catch (e: any) {
@@ -106,7 +93,18 @@ export const useCartStore = create<CartState>()(
           set({ error: e.message, status: 'error' });
         }
       },
+
+      // GETTERS : ne sont PAS sauvegardés dans localStorage
+      get totalQty() { 
+        return get().items.reduce((sum, i) => sum + i.qty, 0) 
+      },
+      get subTotal() { 
+        return get().items.reduce((sum, i) => sum + i.price * i.qty, 0) 
+      },
     }),
-    { name: 'cart-storage' }
+    { 
+      name: 'mangafrica-cart-v2', // <- ON CHANGE LE NOM POUR OUBLIER L'ANCIEN
+      partialize: (state) => ({ items: state.items }) // <- On sauvegarde SEULEMENT items
+    }
   )
 );
