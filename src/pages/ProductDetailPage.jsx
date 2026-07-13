@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
-import { useCartStore } from '@/store/useCartStore'
+import { useCartStore } from '@/store'
 import { Avatar, BottomSheet, Button } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
