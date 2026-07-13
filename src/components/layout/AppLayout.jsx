@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react'
 import {
   Home, ShoppingCart, User, LayoutGrid, Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle, Bell
 } from 'lucide-react'
-import { useAuthStore, useNotificationsStore, useMessagesStore } from '@/store'
-import { useCartStore } from '@/store/useCartStore'
+import { useAuthStore, useNotificationsStore, useMessagesStore, useCartStore } from '@/store' // <- TOUT ICI
 import { clsx } from 'clsx'
 
 const NAV_ITEMS = [
@@ -23,8 +22,7 @@ export default function AppLayout() {
   const { user, profile }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const { unreadCount: unreadMessages, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
-  const cartItems = useCartStore(state => state.items)
-  const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
+  const { totalQty: cartCount } = useCartStore()
   const isProductPage = location.pathname.startsWith('/produit/')
 
   useEffect(() => {
