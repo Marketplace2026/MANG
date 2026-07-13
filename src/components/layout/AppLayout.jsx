@@ -24,7 +24,7 @@ export default function AppLayout() {
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const { unreadCount: unreadMessages, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
   const cartItems = useCartStore(state => state.items)
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
   const isProductPage = location.pathname.startsWith('/produit/')
 
   useEffect(() => {
