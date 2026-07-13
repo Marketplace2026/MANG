@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Trash2, Minus, Plus } from 'lucide-react';
-import { useCartStore } from '@/store/cartStore';
+import { useCartStore } from '@/store';
 import { Button } from '@/components/ui';
 
 function PageVide() {
