@@ -20,11 +20,12 @@ export const useAuthStore = create((set, get) => ({
   setPieces: (pieces) => set({ pieces }),
 
   initialize: async () => {
-    const { data: { session } = await supabase.auth.getSession()
+    const { data: { session } } = await supabase.auth.getSession() // <- CORRIGÉ ICI
     if (session?.user) {
       await get().fetchUserData(session.user)
     }
     set({ loading: false, initialized: true })
+    
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         await get().fetchUserData(session.user)
@@ -168,7 +169,7 @@ export const useUIStore = create((set) => ({
 }))
 
 // ============================================================
-// CART STORE - VERSION FINALE
+// CART STORE - VERSION FINALE QUI TUE LE BUG "2"
 // ============================================================
 export const useCartStore = create(
   persist(
