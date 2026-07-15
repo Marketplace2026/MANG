@@ -282,6 +282,7 @@ function PostsTab({ user, profile, mode }) {
   const [activeStoryIdx, setActiveStoryIdx] = useState(null)
   const [lightboxImg, setLightboxImg]       = useState(null)
   const [reportedPostIds, setReportedPostIds] = useState(new Set())
+  const [reportingPostId, setReportingPostId] = useState(null)
 
   const PAGE_SIZE = 20
   const location = useLocation()
@@ -457,8 +458,41 @@ function PostsTab({ user, profile, mode }) {
 
   const handleReport = (postId) => {
     if (!user) return toast.error('Connectez-vous d\'abord')
-    setReportedPostIds(prev => new Set([...prev, postId]))
-    toast.success('Publication signalée et masquée de votre fil ! 🛡️')
+    setReportingPostId(postId)
+  }
+
+  const executeReport = async (postId, reason) => {
+    if (!user) return
+    
+    // Optimistic local hide
+    setReportedPostIds(prev => {
+      const copy = new Set(prev)
+      copy.add(postId)
+      return copy
+    })
+    setReportingPostId(null)
+
+    try {
+      const { error } = await supabase
+        .from('post_reports')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          reason
+        })
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Vous avez déjà signalé cette publication.')
+        } else {
+          console.error('Error reporting post:', error)
+        }
+      } else {
+        toast.success('Publication signalée et masquée ! 🛡️')
+      }
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const onPostCreated = (newPost) => {
@@ -466,8 +500,9 @@ function PostsTab({ user, profile, mode }) {
     setComposerOpen(false)
   }
 
-  // Filtrage local par mot-clé / Hashtag
+  // Filtrage local par mot-clé / Hashtag / Quarantaine
   const displayedPosts = posts
+    .filter(p => p.status !== 'quarantined')
     .filter(p => !reportedPostIds.has(p.id))
     .filter(p => {
       if (!searchQuery.trim()) return true
@@ -600,6 +635,15 @@ function PostsTab({ user, profile, mode }) {
       {/* Lightbox full screen */}
       {lightboxImg && (
         <Lightbox imageUrl={lightboxImg} onClose={() => setLightboxImg(null)} />
+      )}
+
+      {/* Report BottomSheet */}
+      {reportingPostId && (
+        <ReportSheet
+          open={!!reportingPostId}
+          onClose={() => setReportingPostId(null)}
+          onReportConfirmed={(reason) => executeReport(reportingPostId, reason)}
+        />
       )}
     </div>
   )
@@ -1706,5 +1750,65 @@ function PostSkeleton() {
       </div>
       <div className="h-36 skeleton rounded-2xl mt-3"/>
     </div>
+  )
+}
+
+// ============================================================
+// MODAL SIGNALEMENT (TÂCHE D)
+// ============================================================
+const REPORT_REASONS = [
+  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou frauduleux' },
+  { key: 'prix_abusif', label: 'Prix Abusif 💸', desc: 'Prix anormalement élevé ou mensonger' },
+  { key: 'harcelement', label: 'Harcèlement ⚠️', desc: 'Contenu agressif, haineux ou insultes' },
+  { key: 'hors_sujet', label: 'Hors-sujet 📯', desc: 'N\'a aucun rapport avec l\'agriculture ou MANG' }
+]
+
+function ReportSheet({ open, onClose, onReportConfirmed }) {
+  const [selected, setSelected] = useState('')
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="🛡️ Signaler cette publication">
+      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        <p className="text-xs font-semibold text-dark-600/70">
+          Pourquoi souhaitez-vous signaler cette publication ? Votre signalement sera examiné par l'équipe de modération.
+        </p>
+
+        <div className="space-y-2">
+          {REPORT_REASONS.map(r => (
+            <button
+              key={r.key}
+              onClick={() => setSelected(r.key)}
+              className={clsx(
+                "w-full text-left p-3.5 rounded-2xl border text-sm font-semibold transition-all flex flex-col gap-0.5",
+                selected === r.key
+                  ? "border-primary-600 bg-primary-50/50 text-primary-900"
+                  : "border-surface-200 hover:border-surface-300 text-dark-800"
+              )}
+            >
+              <span>{r.label}</span>
+              <span className="text-[10px] font-medium text-dark-600/50">{r.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3.5 bg-surface-100 hover:bg-surface-200 text-dark-800 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => {
+              if (!selected) { toast.error('Veuillez sélectionner un motif'); return }
+              onReportConfirmed(selected)
+            }}
+            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md"
+          >
+            Signaler
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
   )
 }
