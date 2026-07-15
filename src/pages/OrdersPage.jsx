@@ -261,30 +261,58 @@ export default function OrdersPage() {
   }
 
   // ── Messagerie Instantanée Directe ──
-  const handleContact = async (buyerId, sellerId) => {
+  const handleContact = async (buyerId, sellerId, shopId) => {
+    console.log('[handleContact] Initiated with:', { buyerId, sellerId, shopId })
     try {
-      const { data: existing } = await supabase
+      if (!buyerId || !sellerId || !shopId) {
+        const missing = []
+        if (!buyerId) missing.push('buyerId')
+        if (!sellerId) missing.push('sellerId')
+        if (!shopId) missing.push('shopId')
+        console.error('[handleContact] Error: Missing ID!', { buyerId, sellerId, shopId })
+        throw new Error(`ID manquant (${missing.join(', ')})`)
+      }
+
+      // Rechercher si la conversation existe déjà par UNIQUE(shop_id, buyer_id)
+      const { data: existing, error: findError } = await supabase
         .from('conversations')
         .select('id')
+        .eq('shop_id', shopId)
         .eq('buyer_id', buyerId)
-        .eq('seller_id', sellerId)
         .limit(1)
+
+      if (findError) {
+        console.error('[handleContact] Search error:', findError)
+        throw findError
+      }
 
       let convId
       if (existing && existing.length > 0) {
         convId = existing[0].id
+        console.log('[handleContact] Found existing conversation:', convId)
       } else {
-        const { data: created, error } = await supabase
+        console.log('[handleContact] Creating new conversation...')
+        const { data: created, error: createError } = await supabase
           .from('conversations')
-          .insert({ buyer_id: buyerId, seller_id: sellerId })
+          .insert({
+            buyer_id: buyerId,
+            seller_id: sellerId,
+            shop_id: shopId
+          })
           .select('id')
           .single()
-        if (error) throw error
+        
+        if (createError) {
+          console.error('[handleContact] Insert error:', createError)
+          throw createError
+        }
         convId = created.id
+        console.log('[handleContact] Created new conversation ID:', convId)
       }
       navigate(`/messages?conv=${convId}`)
     } catch (err) {
-      toast.error('Erreur lors de la création de la messagerie')
+      console.error('[handleContact] Failed:', err)
+      toast.error(err.message || 'Erreur lors de la création de la messagerie')
     }
   }
 
@@ -942,7 +970,7 @@ function OrderDetailSheet({
             📄 Reçu PDF
           </button>
           <button
-            onClick={() => onContact(order.buyer_id, order.seller_id)}
+            onClick={() => onContact(order.buyer_id, order.seller_id, order.shop_id)}
             className="py-3 bg-primary-50 text-primary-700 hover:bg-primary-100 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5"
           >
             💬 Discuter
