@@ -283,6 +283,7 @@ function PostsTab({ user, profile, mode }) {
   const [lightboxImg, setLightboxImg]       = useState(null)
   const [reportedPostIds, setReportedPostIds] = useState(new Set())
   const [reportingPostId, setReportingPostId] = useState(null)
+  const [repostQuotePost, setRepostQuotePost] = useState(null)
 
   const PAGE_SIZE = 20
   const location = useLocation()
@@ -302,7 +303,7 @@ function PostsTab({ user, profile, mode }) {
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
       .from('posts')
-      .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url))`)
+      .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))`)
       .range(from, from + PAGE_SIZE - 1)
 
     if (mode === 'trending') {
@@ -385,7 +386,7 @@ function PostsTab({ user, profile, mode }) {
         if (mode === 'trending') return
         const { data: p } = await supabase
           .from('posts')
-          .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url))`)
+          .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))`)
           .eq('id', payload.new.id).single()
         if (p) setPosts(prev => [p, ...prev])
       })
@@ -587,6 +588,7 @@ function PostsTab({ user, profile, mode }) {
               onReport={() => handleReport(post.id)}
               onImageClick={(url) => setLightboxImg(url)}
               onHashtagClick={(tag) => setSearchQuery(tag)}
+              onRepost={() => setRepostQuotePost(post)}
             />
           ))}
           {/* Scroll observer element for infinite scroll */}
@@ -643,6 +645,21 @@ function PostsTab({ user, profile, mode }) {
           open={!!reportingPostId}
           onClose={() => setReportingPostId(null)}
           onReportConfirmed={(reason) => executeReport(reportingPostId, reason)}
+        />
+      )}
+
+      {/* Repost / Quote Post BottomSheet */}
+      {repostQuotePost && (
+        <RepostComposer
+          open={!!repostQuotePost}
+          onClose={() => setRepostQuotePost(null)}
+          postToQuote={repostQuotePost}
+          user={user}
+          profile={profile}
+          onPosted={(newPost) => {
+            setPosts(prev => [newPost, ...prev])
+            setRepostQuotePost(null)
+          }}
         />
       )}
     </div>
@@ -998,7 +1015,7 @@ function ShopPicker({ open, onClose, onSelect }) {
 // ============================================================
 function PostCard({
   post, userId, isLiked, onLike, onComment, onLikers, onDelete,
-  onReport, onImageClick, onHashtagClick
+  onReport, onImageClick, onHashtagClick, onRepost
 }) {
   const navigate = useNavigate()
   const isOwner = post.user_id === userId
@@ -1007,6 +1024,7 @@ function PostCard({
   
   const [menuOpen, setMenuOpen] = useState(false)
   const [reactionPanelOpen, setReactionPanelOpen] = useState(false)
+  const [shareMenuOpen, setShareMenuOpen] = useState(false)
   const [localReaction, setLocalReaction] = useState(() => {
     return localStorage.getItem(`post_reaction_${post.id}`) || null
   })
@@ -1214,6 +1232,37 @@ function PostCard({
         )
       )}
 
+      {/* QUOTED POST / REPOST SECTION (TÂCHE A) */}
+      {post.parent_post && (
+        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-3.5 mb-3.5 flex flex-col gap-2 relative">
+          <div className="flex items-center gap-2">
+            <Avatar src={post.parent_post.user?.avatar_url} name={post.parent_post.user?.username} size="xs"/>
+            <div>
+              <p className="font-bold text-dark-800 text-xs">@{post.parent_post.user?.username}</p>
+              <p className="text-[9px] text-dark-600/40 font-semibold">
+                {formatDistanceToNow(new Date(post.parent_post.created_at), { addSuffix: true, locale: fr })}
+              </p>
+            </div>
+          </div>
+          <p className="text-dark-700 text-xs leading-relaxed">
+            {post.parent_post.content?.startsWith('{"is_poll"') 
+              ? '📊 Sondage de la communauté' 
+              : renderContentWithHashtags(post.parent_post.content)}
+          </p>
+          {post.parent_post.image_url && (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                onImageClick(post.parent_post.image_url);
+              }}
+              className="mt-1 max-w-full rounded-xl overflow-hidden cursor-zoom-in active:opacity-95 transition-opacity"
+            >
+              <img src={post.parent_post.image_url} alt="quoted post media" className="max-h-48 object-cover rounded-xl" />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Image */}
       {post.image_url && (
         <div
@@ -1310,10 +1359,39 @@ function PostCard({
           <span className="text-xs">Commenter</span>
         </button>
 
-        <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 hover:bg-surface-100 active:scale-95">
+        <button 
+          onClick={() => setShareMenuOpen(v => !v)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 hover:bg-surface-100 active:scale-95 relative"
+        >
           <Share2 size={17} strokeWidth={1.8}/>
           <span className="text-xs">Partager</span>
         </button>
+
+        {shareMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShareMenuOpen(false)} />
+            <div className="absolute bottom-11 right-2 z-40 bg-white shadow-modal border border-surface-100 rounded-2xl py-1 flex flex-col min-w-[170px] animate-scale-in">
+              <button
+                onClick={() => {
+                  handleShare()
+                  setShareMenuOpen(false)
+                }}
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 hover:bg-surface-50 flex items-center gap-2"
+              >
+                <span>🔗 Copier le lien</span>
+              </button>
+              <button
+                onClick={() => {
+                  onRepost()
+                  setShareMenuOpen(false)
+                }}
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 hover:bg-surface-50 flex items-center gap-2 border-t border-surface-100"
+              >
+                <span>🔄 Republier (Quote Post)</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -1806,6 +1884,105 @@ function ReportSheet({ open, onClose, onReportConfirmed }) {
             className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md"
           >
             Signaler
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
+// ============================================================
+// COMPOSER DE REPOST / QUOTE POST (TÂCHE A)
+// ============================================================
+function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted }) {
+  const [content, setContent] = useState('')
+  const [posting, setPosting] = useState(false)
+
+  const handleClose = () => { setContent(''); onClose() }
+
+  const publish = async () => {
+    setPosting(true)
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          content: content.trim(),
+          parent_post_id: postToQuote.id
+        })
+        .select(`
+          *,
+          user:profiles(id, username, avatar_url, last_seen_at),
+          shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)),
+          parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))
+        `)
+        .single()
+
+      if (error) throw error
+      
+      toast.success('Republié avec succès ! 🔄')
+      onPosted(data)
+      handleClose()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors du repost')
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  if (!postToQuote) return null
+
+  return (
+    <BottomSheet open={open} onClose={handleClose} title="🔄 Republier la publication">
+      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        
+        {/* Auteur du Repost */}
+        <div className="flex items-center gap-3">
+          <Avatar src={profile?.avatar_url} name={profile?.username} size="sm"/>
+          <div>
+            <p className="font-bold text-dark-800 text-sm">@{profile?.username}</p>
+            <p className="text-dark-600/40 text-xs">Partage sur votre fil d'actualité</p>
+          </div>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          placeholder="Ajouter une remarque..."
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={3}
+          className="w-full bg-surface-50 rounded-2xl px-4 py-3 text-sm text-dark-800 placeholder-dark-600/40 outline-none resize-none font-medium border border-surface-200 focus:border-primary-400 transition-colors"
+        />
+
+        {/* Aperçu du post original à citer */}
+        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-3.5 flex flex-col gap-2 pointer-events-none select-none">
+          <div className="flex items-center gap-2">
+            <Avatar src={postToQuote.user?.avatar_url} name={postToQuote.user?.username} size="xs"/>
+            <p className="font-bold text-dark-800 text-xs">@{postToQuote.user?.username}</p>
+          </div>
+          <p className="text-dark-700 text-xs line-clamp-3 leading-relaxed">
+            {postToQuote.content?.startsWith('{"is_poll"') ? '📊 Sondage communauté' : postToQuote.content}
+          </p>
+          {postToQuote.image_url && (
+            <img src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />
+          )}
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={handleClose}
+            className="flex-1 py-3.5 bg-surface-100 hover:bg-surface-200 text-dark-800 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={publish}
+            disabled={posting}
+            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md disabled:opacity-50"
+          >
+            {posting ? 'Publication...' : 'Republier'}
           </button>
         </div>
       </div>
