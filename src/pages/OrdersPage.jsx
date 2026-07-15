@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Package, CheckCircle, XCircle, Clock, CreditCard,
   ChevronRight, RefreshCw, Truck, MapPin, Phone,
-  Hash, AlertCircle, Shield, X, Loader2, User
+  Hash, AlertCircle, Shield, X, Loader2, User, Search
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -78,6 +79,7 @@ function PinInput({ value, onChange, error }) {
 // ══════════════════════════════════════════════════════════════
 export default function OrdersPage() {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const [orders, setOrders]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState('all')
@@ -86,54 +88,85 @@ export default function OrdersPage() {
   const [reviewOrder, setReviewOrder] = useState(null)
   const [disputeOrder, setDisputeOrder] = useState(null)
 
+  // Search & Batch Selection
+  const [search, setSearch]                   = useState('')
+  const [ordersLimit, setOrdersLimit]         = useState(15)
+  const [hasMore, setHasMore]                 = useState(false)
+  const [moreLoading, setMoreLoading]         = useState(false)
+  const [selectedOrderIds, setSelectedOrderIds] = useState([])
+  const [selectionMode, setSelectionMode]     = useState(false)
+
   // PIN payment
   const [pinModal, setPinModal]     = useState(null)
   const [pin, setPin]               = useState('')
   const [pinError, setPinError]     = useState(false)
   const [processing, setProcessing] = useState(false)
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (isMore = false) => {
     if (!user) return
-    setLoading(true)
+    if (!isMore) {
+      setLoading(true)
+    } else {
+      setMoreLoading(true)
+    }
     try {
+      const currentLimit = isMore ? ordersLimit + 15 : 15
       const [bRes, sRes] = await Promise.all([
         supabase.from('orders').select(`
           *, 
           seller:profiles!orders_seller_id_fkey(id, username, avatar_url),
           product:products(id, name, image_url, price),
           shop:shops(id, name)
-        `).eq('buyer_id', user.id).order('created_at', { ascending: false }),
+        `).eq('buyer_id', user.id).order('created_at', { ascending: false }).limit(currentLimit),
 
         supabase.from('orders').select(`
           *,
           buyer:profiles!orders_buyer_id_fkey(id, username, avatar_url),
           product:products(id, name, image_url, price),
           shop:shops(id, name)
-        `).eq('seller_id', user.id).order('created_at', { ascending: false }),
+        `).eq('seller_id', user.id).order('created_at', { ascending: false }).limit(currentLimit),
       ])
       const all = [
         ...(bRes.data || []).map(o => ({ ...o, role: 'buyer' })),
         ...(sRes.data || []).map(o => ({ ...o, role: 'seller' })),
       ].sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
       setOrders(all)
-    } finally { setLoading(false) }
-  }, [user])
+      setOrdersLimit(currentLimit)
+      setHasMore((bRes.data?.length === currentLimit) || (sRes.data?.length === currentLimit))
+    } finally {
+      setLoading(false)
+      setMoreLoading(false)
+    }
+  }, [user, ordersLimit])
 
-  useEffect(() => { loadOrders() }, [loadOrders])
+  useEffect(() => {
+    loadOrders(false)
+  }, [user])
 
   // Realtime
   useEffect(() => {
     if (!user) return
     const ch = supabase.channel('orders_rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders(false))
       .subscribe()
     return () => supabase.removeChannel(ch)
   }, [user, loadOrders])
 
+  // Advanced search filter
   const filtered = orders.filter(o => {
     if (tab === 'buyer'  && o.role !== 'buyer')  return false
     if (tab === 'seller' && o.role !== 'seller') return false
     if (filterStatus !== 'all' && o.status !== filterStatus) return false
+    if (search.trim()) {
+      const s = search.toLowerCase()
+      const idMatch = o.id.toLowerCase().includes(s)
+      const prodMatch = (o.product?.name || '').toLowerCase().includes(s)
+      const shopMatch = (o.shop?.name || '').toLowerCase().includes(s)
+      const userMatch = o.role === 'buyer'
+        ? (o.seller?.username || '').toLowerCase().includes(s)
+        : (o.buyer?.username || '').toLowerCase().includes(s)
+      if (!idMatch && !prodMatch && !shopMatch && !userMatch) return false
+    }
     return true
   })
 
@@ -152,7 +185,7 @@ export default function OrdersPage() {
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
       toast.success('✅ Commande acceptée !')
-      loadOrders(); setSelected(null)
+      loadOrders(false); setSelected(null)
     } catch (err) { toast.error(err.message || 'Erreur lors de l\'acceptation') }
     finally { setProcessing(false) }
   }
@@ -169,7 +202,7 @@ export default function OrdersPage() {
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
       toast.success('Commande refusée — remboursement effectué')
-      loadOrders(); setSelected(null)
+      loadOrders(false); setSelected(null)
     } catch (err) { toast.error(err.message || 'Erreur lors du refus') }
     finally { setProcessing(false) }
   }
@@ -205,7 +238,7 @@ export default function OrdersPage() {
 
       toast.success(`🎉 Paiement de ${data.amount_paid_fcfa?.toLocaleString('fr-FR')} FCFA effectué !`)
       setPinModal(null); setPin(''); setSelected(null)
-      loadOrders()
+      loadOrders(false)
     } catch (err) { toast.error(err.message || 'Erreur lors du paiement') }
     finally { setProcessing(false) }
   }
@@ -222,9 +255,248 @@ export default function OrdersPage() {
       })
       if (error) throw new Error(error.message)
       toast.success(`✅ Statut mis à jour : ${labels[status]}`)
-      loadOrders(); setSelected(null)
+      loadOrders(false); setSelected(null)
     } catch (err) { toast.error(err.message) }
     finally { setProcessing(false) }
+  }
+
+  // ── Messagerie Instantanée Directe ──
+  const handleContact = async (buyerId, sellerId) => {
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', buyerId)
+        .eq('seller_id', sellerId)
+        .limit(1)
+
+      let convId
+      if (existing && existing.length > 0) {
+        convId = existing[0].id
+      } else {
+        const { data: created, error } = await supabase
+          .from('conversations')
+          .insert({ buyer_id: buyerId, seller_id: sellerId })
+          .select('id')
+          .single()
+        if (error) throw error
+        convId = created.id
+      }
+      navigate(`/messages?conv=${convId}`)
+    } catch (err) {
+      toast.error('Erreur lors de la création de la messagerie')
+    }
+  }
+
+  // ── Impression Bon / Facture PDF (A4) ──
+  const downloadOrderPDF = async (order) => {
+    try {
+      const { jsPDF } = await import('jspdf')
+      const receiptNum = `MANG-ORD-${order.id.slice(0,8).toUpperCase()}`
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+
+      const logoImg = await new Promise((resolve) => {
+        const img = new Image()
+        img.src = '/logo-mang.png'
+        img.onload = () => resolve(img)
+        img.onerror = () => resolve(null)
+      })
+
+      // Header MANG
+      doc.setFillColor(11, 61, 46)
+      doc.rect(0, 0, 595, 100, 'F')
+
+      if (logoImg) {
+        doc.addImage(logoImg, 'PNG', 35, 25, 50, 50)
+      }
+
+      const startX = logoImg ? 100 : 35
+      doc.setTextColor('#ffffff')
+      doc.setFontSize(22); doc.setFont(undefined, 'bold')
+      doc.text('MANG Marketplace', startX, 55)
+      doc.setFontSize(10); doc.setFont(undefined, 'normal')
+      doc.text('Marché Agricole Nouvelle Génération', startX, 75)
+      doc.setFontSize(12); doc.setFont(undefined, 'bold')
+      doc.text(order.role === 'buyer' ? 'FACTURE ACHAT' : 'BON DE LIVRAISON', 560, 60, { align: 'right' })
+
+      // Grid Details
+      doc.setTextColor('#374151')
+      doc.setFontSize(10)
+      
+      doc.setFont(undefined, 'bold')
+      doc.text('Commande N° :', 35, 140)
+      doc.setFont(undefined, 'normal')
+      doc.text(receiptNum, 120, 140)
+
+      doc.setFont(undefined, 'bold')
+      doc.text('Date :', 35, 160)
+      doc.setFont(undefined, 'normal')
+      doc.text(new Date(order.created_at).toLocaleDateString('fr-FR'), 120, 160)
+
+      doc.setFont(undefined, 'bold')
+      doc.text('Statut Paye :', 35, 180)
+      doc.setFont(undefined, 'normal')
+      doc.text(order.status === 'paid' ? 'Payé' : 'En attente', 120, 180)
+
+      doc.setFont(undefined, 'bold')
+      doc.text('Boutique :', 320, 140)
+      doc.setFont(undefined, 'normal')
+      doc.text(order.shop?.name || 'MANG Shop', 400, 140)
+
+      doc.setFont(undefined, 'bold')
+      doc.text('Acheteur :', 320, 160)
+      doc.setFont(undefined, 'normal')
+      doc.text(`@${order.buyer?.username || 'Client'}`, 400, 160)
+
+      doc.setFont(undefined, 'bold')
+      doc.text('Téléphone :', 320, 180)
+      doc.setFont(undefined, 'normal')
+      doc.text(order.delivery_phone || '—', 400, 180)
+
+      // Separator
+      doc.setDrawColor('#e5e7eb')
+      doc.line(35, 205, 560, 205)
+
+      // Product section
+      doc.setFont(undefined, 'bold')
+      doc.setTextColor('#111111')
+      doc.setFontSize(12)
+      doc.text('DÉTAILS DU PRODUIT', 35, 230)
+
+      doc.setFillColor(243, 244, 246)
+      doc.rect(35, 245, 525, 25, 'F')
+      doc.setFontSize(10)
+      doc.setTextColor('#374151')
+      doc.text('Produit', 45, 261)
+      doc.text('Quantité', 320, 261, { align: 'center' })
+      doc.text('Prix unitaire', 420, 261, { align: 'right' })
+      doc.text('Total', 540, 261, { align: 'right' })
+
+      doc.setFont(undefined, 'normal')
+      doc.setTextColor('#111111')
+      doc.text(order.product?.name || 'Produit', 45, 292)
+      doc.text(String(order.quantity), 320, 292, { align: 'center' })
+      doc.text(formatFCFA(order.unit_price || order.product?.price || 0), 420, 292, { align: 'right' })
+      doc.text(formatFCFA(order.total_amount), 540, 292, { align: 'right' })
+
+      doc.line(35, 310, 560, 310)
+
+      // Totals
+      let summaryY = 335
+      doc.setFont(undefined, 'bold')
+      doc.text('Sous-total :', 400, summaryY)
+      doc.setFont(undefined, 'normal')
+      doc.text(formatFCFA(order.total_amount), 540, summaryY, { align: 'right' })
+
+      summaryY += 20
+      doc.setFont(undefined, 'bold')
+      doc.text('Livraison :', 400, summaryY)
+      doc.setFont(undefined, 'normal')
+      doc.text('Gratuit', 540, summaryY, { align: 'right' })
+
+      summaryY += 25
+      doc.setFillColor(243, 244, 246)
+      doc.rect(380, summaryY - 15, 180, 25, 'F')
+      doc.setFont(undefined, 'bold')
+      doc.setTextColor('#111111')
+      doc.text('Total payé :', 400, summaryY)
+      doc.text(formatFCFA(order.total_amount), 540, summaryY, { align: 'right' })
+
+      // Address
+      let shipY = 430
+      doc.setFont(undefined, 'bold')
+      doc.setFontSize(12)
+      doc.text('ADRESSE DE LIVRAISON', 35, shipY)
+
+      doc.setFont(undefined, 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor('#374151')
+      const splitAddress = doc.splitTextToSize(order.delivery_address || 'Non renseigné', 525)
+      doc.text(splitAddress, 35, shipY + 20)
+
+      // Footer
+      doc.setFillColor(249, 250, 251)
+      doc.rect(0, 780, 595, 62, 'F')
+      doc.setFontSize(8)
+      doc.setTextColor('#9ca3af')
+      doc.text('Facture officielle générée par MANG Marketplace', 297, 805, { align: 'center' })
+      doc.text(`Date d'impression : ${new Date().toLocaleString('fr-FR')}`, 297, 818, { align: 'center' })
+
+      doc.save(`${receiptNum}.pdf`)
+      toast.success('Facture PDF téléchargée ! 📄')
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors du téléchargement du PDF')
+    }
+  }
+
+  // ── Traitement Par Lot (Batch Actions) ──
+  const handleBatchAccept = async () => {
+    if (!selectedOrderIds.length) return
+    setProcessing(true)
+    let successCount = 0
+    try {
+      await Promise.all(selectedOrderIds.map(async (id) => {
+        const { data } = await supabase.rpc('accept_order', { p_order_id: id })
+        if (data?.success || !data?.error) successCount++
+      }))
+      toast.success(`✅ ${successCount} commandes acceptées !`)
+      setSelectedOrderIds([])
+      setSelectionMode(false)
+      loadOrders(false)
+    } catch {
+      toast.error('Erreur lors du traitement par lot')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleBatchRefuse = async () => {
+    if (!selectedOrderIds.length) return
+    if (!confirm(`Refuser ces ${selectedOrderIds.length} commandes ? Les acheteurs seront remboursés.`)) return
+    setProcessing(true)
+    let successCount = 0
+    try {
+      await Promise.all(selectedOrderIds.map(async (id) => {
+        const { data } = await supabase.rpc('refuse_order', {
+          p_seller_id: user.id,
+          p_order_id: id
+        })
+        if (data?.success || !data?.error) successCount++
+      }))
+      toast.success(`✅ ${successCount} commandes refusées`)
+      setSelectedOrderIds([])
+      setSelectionMode(false)
+      loadOrders(false)
+    } catch {
+      toast.error('Erreur lors du traitement par lot')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleBatchShip = async () => {
+    if (!selectedOrderIds.length) return
+    setProcessing(true)
+    let successCount = 0
+    try {
+      await Promise.all(selectedOrderIds.map(async (id) => {
+        const { data } = await supabase.rpc('update_delivery_status', {
+          p_seller_id: user.id,
+          p_order_id: id,
+          p_status: 'shipped'
+        })
+        if (data?.success || !data?.error) successCount++
+      }))
+      toast.success(`🚚 ${successCount} commandes expédiées !`)
+      setSelectedOrderIds([])
+      setSelectionMode(false)
+      loadOrders(false)
+    } catch {
+      toast.error('Erreur lors de l\'expédition par lot')
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const pendingCount = orders.filter(o => o.role === 'seller' && o.status === 'pending').length
@@ -241,7 +513,7 @@ export default function OrdersPage() {
               <h1 className="font-display text-2xl text-white font-bold">Commandes</h1>
               <p className="text-primary-300 text-sm">Achats & ventes</p>
             </div>
-            <button onClick={loadOrders}
+            <button onClick={() => loadOrders(false)}
               className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90">
               <RefreshCw size={16} className="text-white"/>
             </button>
@@ -277,7 +549,11 @@ export default function OrdersPage() {
         {/* TABS */}
         <div className="bg-white rounded-2xl shadow-card p-1.5 flex gap-1">
           {TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
+            <button key={t.key} onClick={() => {
+              setTab(t.key)
+              setSelectionMode(false)
+              setSelectedOrderIds([])
+            }}
               className={clsx('flex-1 py-2.5 rounded-xl text-xs font-bold transition-all',
                 tab === t.key ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600')}>
               {t.label}
@@ -285,12 +561,84 @@ export default function OrdersPage() {
           ))}
         </div>
 
+        {/* SEARCH & BATCH ACTIONS */}
+        <div className="bg-white rounded-3xl p-4 shadow-card space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Rechercher par produit, boutique, client..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-surface-50 border border-surface-200 rounded-2xl pl-9 pr-8 py-2.5 text-xs font-bold outline-none focus:border-primary-500"
+              />
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-dark-400">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {tab === 'seller' && ['pending', 'paid'].includes(filterStatus) && (
+              <button
+                onClick={() => {
+                  setSelectionMode(!selectionMode)
+                  setSelectedOrderIds([])
+                }}
+                className={clsx(
+                  "px-3 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center",
+                  selectionMode ? "bg-red-500 text-white shadow-md" : "bg-primary-50 text-primary-700 border border-primary-100"
+                )}
+              >
+                {selectionMode ? "Annuler" : "Sélectionner"}
+              </button>
+            )}
+          </div>
+
+          {selectionMode && selectedOrderIds.length > 0 && (
+            <div className="flex gap-2 animate-scale-in pt-1">
+              {filterStatus === 'pending' && (
+                <>
+                  <button
+                    onClick={handleBatchRefuse}
+                    disabled={processing}
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-md"
+                  >
+                    Refuser ({selectedOrderIds.length})
+                  </button>
+                  <button
+                    onClick={handleBatchAccept}
+                    disabled={processing}
+                    className="flex-1 py-3 bg-primary-600 hover:bg-primary-500 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-green shadow-md"
+                  >
+                    Accepter ({selectedOrderIds.length})
+                  </button>
+                </>
+              )}
+              {filterStatus === 'paid' && (
+                <button
+                  onClick={handleBatchShip}
+                  disabled={processing}
+                  className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-md"
+                >
+                  🚚 Expédier le lot ({selectedOrderIds.length})
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* FILTRE STATUT */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {['all','pending','accepted','refused','paid'].map(s => {
             const cfg = STATUS[s]
             return (
-              <button key={s} onClick={() => setFilter(s)}
+              <button key={s} onClick={() => {
+                setFilter(s)
+                setSelectionMode(false)
+                setSelectedOrderIds([])
+              }}
                 className={clsx('flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border-2',
                   filterStatus === s
                     ? 'border-primary-600 bg-primary-600 text-white'
@@ -324,11 +672,57 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-3">
             {filtered.map(order => (
-              <OrderCard key={order.id + order.role} order={order}
-                isBuyer={order.role === 'buyer'}
-                onOpen={() => setSelected(order)}/>
+              <div key={order.id + order.role} className="flex items-center gap-2">
+                {selectionMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedOrderIds.includes(order.id)}
+                    onChange={() => {
+                      setSelectedOrderIds(prev =>
+                        prev.includes(order.id)
+                          ? prev.filter(id => id !== order.id)
+                          : [...prev, order.id]
+                      )
+                    }}
+                    className="w-4 h-4 rounded accent-primary-600 cursor-pointer flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <OrderCard key={order.id + order.role} order={order}
+                    isBuyer={order.role === 'buyer'}
+                    onOpen={() => {
+                      if (selectionMode) {
+                        setSelectedOrderIds(prev =>
+                          prev.includes(order.id)
+                            ? prev.filter(id => id !== order.id)
+                            : [...prev, order.id]
+                        )
+                      } else {
+                        setSelected(order)
+                      }
+                    }}/>
+                </div>
+              </div>
             ))}
           </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && (
+          <button
+            onClick={() => loadOrders(true)}
+            disabled={moreLoading}
+            className="w-full py-3.5 bg-white border border-surface-200 text-dark-700 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-2 shadow-card"
+          >
+            {moreLoading ? (
+              <>
+                <Loader2 size={14} className="animate-spin text-primary-600" />
+                Chargement...
+              </>
+            ) : (
+              'Voir plus de commandes'
+            )}
+          </button>
         )}
       </div>
 
@@ -345,6 +739,8 @@ export default function OrdersPage() {
         processing={processing}
         onOpenReview={setReviewOrder}
         onOpenDispute={setDisputeOrder}
+        onContact={handleContact}
+        downloadOrderPDF={downloadOrderPDF}
       />
 
       <ReviewSheet
@@ -352,7 +748,7 @@ export default function OrdersPage() {
         onClose={() => setReviewOrder(null)}
         order={reviewOrder}
         user={user}
-        onSubmitted={loadOrders}
+        onSubmitted={() => loadOrders(false)}
       />
 
       <DisputeSheet
@@ -360,7 +756,7 @@ export default function OrdersPage() {
         onClose={() => setDisputeOrder(null)}
         order={disputeOrder}
         user={user}
-        onSubmitted={loadOrders}
+        onSubmitted={() => loadOrders(false)}
       />
 
       {/* MODAL PIN */}
@@ -457,7 +853,11 @@ function OrderCard({ order, isBuyer, onOpen }) {
 }
 
 // ── ORDER DETAIL SHEET ───────────────────────────────────────
-function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, onPay, onDeliveryStatus, processing, onOpenReview, onOpenDispute }) {
+function OrderDetailSheet({
+  open, onClose, order, isBuyer, onAccept, onRefuse, onPay,
+  onDeliveryStatus, processing, onOpenReview, onOpenDispute,
+  onContact, downloadOrderPDF
+}) {
   if (!order) return null
   const cfg = STATUS[order.status] || STATUS.pending
   const other = isBuyer ? order.seller : order.buyer
@@ -533,9 +933,25 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
           )}
         </div>
 
+        {/* Pro features CTA */}
+        <div className="grid grid-cols-2 gap-3.5">
+          <button
+            onClick={() => downloadOrderPDF(order)}
+            className="py-3 bg-white border border-surface-200 text-dark-700 hover:bg-surface-50 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            📄 Reçu PDF
+          </button>
+          <button
+            onClick={() => onContact(order.buyer_id, order.seller_id)}
+            className="py-3 bg-primary-50 text-primary-700 hover:bg-primary-100 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5"
+          >
+            💬 Discuter
+          </button>
+        </div>
+
         {/* Suivi livraison si payé */}
         {order.status === 'paid' && (
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2 border-t border-surface-150">
             <div className={clsx('flex items-center gap-2 p-3 rounded-2xl text-sm font-bold', delivCfg.color)}>
               <span className="text-lg">{delivCfg.icon}</span>
               {delivCfg.label}
@@ -554,7 +970,7 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
 
             {/* Boutons vendeur */}
             {!isBuyer && order.delivery_status !== 'delivered' && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
                   { s: 'preparing', label: '📦 Préparer',  disabled: order.delivery_status !== 'pending' },
                   { s: 'shipped',   label: '🚚 Expédier',  disabled: order.delivery_status !== 'preparing' },
@@ -574,7 +990,7 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
         )}
 
         {/* ACTIONS */}
-        <div className="space-y-2">
+        <div className="space-y-2 pt-1">
           {/* VENDEUR — en attente */}
           {!isBuyer && order.status === 'pending' && (
             <>
@@ -602,7 +1018,7 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
               </p>
               <button onClick={onPay}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-primary-600 text-white font-bold text-base shadow-green active:scale-95 transition-transform">
-                <CreditCard size={18}/> Payer {amtFCFA.toLocaleString('fr-FR')} FCFA
+                <CreditCard size={18}/> Payer {formatFCFA(order.total_amount)}
               </button>
             </>
           )}
@@ -628,7 +1044,7 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
                       ⭐ Écrire un avis
                     </button>
                   ) : (
-                    <span className="py-3 bg-surface-100 text-dark-400/40 text-center font-bold rounded-2xl text-xs">
+                    <span className="py-3 bg-surface-100 text-dark-400/40 text-center font-bold rounded-2xl text-xs flex items-center justify-center">
                       Avis après livraison
                     </span>
                   )}
