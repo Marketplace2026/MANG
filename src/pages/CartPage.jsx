@@ -5,6 +5,8 @@ import { useCartStore, useAuthStore } from '@/store';
 import { Button } from '@/components/ui';
 import { toast } from 'react-hot-toast';
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 // Empty cart view
 function PageVide() {
   const navigate = useNavigate();
@@ -38,76 +40,69 @@ export default function CartPage() {
   }
 
   // Group items by shop/seller
-  const groupedItems = items.reduce((groups, item) => {
-    const shopId = item.shop_id || 'other';
-    if (!groups[shopId]) {
-      groups[shopId] = {
-        shopName: item.shop_name || 'Boutique',
+  const shopGroups = items.reduce((acc, item) => {
+    const shopId = item.shop_id || 'unknown';
+    const shopName = item.shop_name || 'Boutique MANG';
+    if (!acc[shopId]) {
+      acc[shopId] = {
+        id: shopId,
+        name: shopName,
         items: []
       };
     }
-    groups[shopId].items.push(item);
-    return groups;
+    acc[shopId].items.push(item);
+    return acc;
   }, {});
 
   const handleCheckout = () => {
     if (!user) {
-      toast.error('Veuillez vous connecter pour commander');
-      navigate('/connexion');
+      toast.error('Connectez-vous pour continuer.');
+      navigate('/login');
       return;
     }
     navigate('/checkout');
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 pb-56 text-dark-900 font-sans">
-      {/* Sticky Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-surface-200 px-4 py-4 z-20 flex items-center gap-3 max-w-[var(--content-max-width)] mx-auto">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl hover:bg-surface-100 flex items-center justify-center transition-colors">
-          <ArrowLeft size={20} className="text-dark-800" />
+    <div className="min-h-screen bg-surface-50 pb-36 max-w-[var(--content-max-width)] mx-auto relative">
+      {/* Sticky top header bar */}
+      <div className="sticky top-0 z-20 bg-white border-b border-surface-200 px-4 py-3 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="p-1 rounded-xl active:bg-surface-100 transition-colors">
+          <ArrowLeft size={20} className="text-dark-700" />
         </button>
         <div>
-          <h1 className="font-display font-black text-dark-900 text-base leading-tight">Mon Panier</h1>
-          <p className="text-[10px] text-dark-600/60 font-semibold">{totalQty} article(s)</p>
+          <h1 className="font-display font-black text-dark-800 text-base">Votre Panier</h1>
+          <p className="text-[10px] text-dark-600/50 font-bold uppercase tracking-wider">{totalQty} articles sélectionnés</p>
         </div>
       </div>
 
-      {/* Main Container */}
-      <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
-        
-        {/* Banner Escrow Protection */}
-        <div className="p-3.5 bg-emerald-500/10 border border-emerald-300/30 rounded-2xl flex items-start gap-3">
-          <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={18} />
-          <div>
-            <p className="font-bold text-emerald-800 text-xs">Protection Séquestre Active</p>
-            <p className="text-[10px] text-emerald-700 leading-normal mt-0.5">
-              Votre argent est conservé en toute sécurité par MANG jusqu'à la livraison conforme de vos commandes.
-            </p>
-          </div>
-        </div>
-
-        {/* Grouped Shop List */}
-        {Object.entries(groupedItems).map(([shopId, group]) => {
-          const shopSubtotal = group.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      <div className="px-4 py-4 space-y-4">
+        {/* Render grouped items per shop */}
+        {Object.values(shopGroups).map((shopGroup) => {
+          const shopSubtotal = shopGroup.items.reduce((sum, item) => sum + item.price * item.qty, 0);
           return (
-            <div key={shopId} className="bg-white rounded-3xl p-4 shadow-card border border-surface-150 space-y-3.5">
+            <div key={shopGroup.id} className="bg-white rounded-3xl p-4 shadow-card border border-surface-150 space-y-3">
               {/* Shop Header */}
-              <div className="flex items-center justify-between pb-2 border-b border-surface-100">
-                <div className="flex items-center gap-2">
-                  <Store size={16} className="text-primary-600" />
-                  <span className="font-bold text-xs text-dark-800">{group.shopName}</span>
+              <div className="flex items-center gap-2 pb-2.5 border-b border-surface-100">
+                <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center">
+                  <Store size={15} className="text-primary-600" />
                 </div>
-                <button onClick={() => navigate(`/boutique/${shopId}`)} className="text-[10px] text-primary-600 font-bold flex items-center gap-0.5">
-                  Visiter <ChevronRight size={12} />
-                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-xs text-dark-800 truncate">{shopGroup.name}</span>
+                    <ShieldCheck size={12} className="text-primary-600 flex-shrink-0" />
+                  </div>
+                  <p className="text-[9px] text-dark-600/40 font-bold uppercase tracking-wider">Vendeur vérifié</p>
+                </div>
+                <ChevronRight size={14} className="text-dark-600/40" />
               </div>
 
-              {/* Items in Shop */}
-              <div className="divide-y divide-surface-100">
-                {group.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 group">
-                    {/* Item Image */}
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-surface-100 flex-shrink-0">
+              {/* Shop items */}
+              <div className="space-y-3.5">
+                {shopGroup.items.map((item) => (
+                  <div key={item.id} className="flex gap-3">
+                    {/* Image */}
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-surface-100 flex-shrink-0 border border-surface-200">
                       {item.image_url ? (
                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
@@ -115,7 +110,7 @@ export default function CartPage() {
                       )}
                     </div>
 
-                    {/* Item Details */}
+                    {/* Details */}
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-xs text-dark-800 truncate">{item.name}</p>
                       {item.variant_name && (
@@ -124,7 +119,7 @@ export default function CartPage() {
                         </p>
                       )}
                       <p className="font-black text-sm text-dark-900 mt-1">
-                        {item.price.toLocaleString('fr-FR')} F
+                        {formatFCFA(item.price)}
                         <span className="text-[10px] text-dark-400 font-normal ml-0.5">/ {item.unit || 'u'}</span>
                       </p>
                     </div>
@@ -161,7 +156,7 @@ export default function CartPage() {
               <div className="flex justify-between items-baseline pt-2 border-t border-surface-100 text-xs font-semibold text-dark-600">
                 <span>Sous-total boutique :</span>
                 <span className="text-sm font-black text-dark-800">
-                  {shopSubtotal.toLocaleString('fr-FR')} FCFA
+                  {formatFCFA(shopSubtotal)}
                 </span>
               </div>
             </div>
@@ -174,7 +169,7 @@ export default function CartPage() {
           <div className="space-y-2 text-xs">
             <div className="flex justify-between text-dark-600">
               <span>Articles ({totalQty})</span>
-              <span>{subTotal.toLocaleString('fr-FR')} FCFA</span>
+              <span>{formatFCFA(subTotal)}</span>
             </div>
             <div className="flex justify-between text-dark-600">
               <span>Livraison</span>
@@ -183,7 +178,7 @@ export default function CartPage() {
             <div className="flex justify-between items-baseline font-black text-base border-t border-surface-100 pt-3 text-dark-900">
               <span>Montant total</span>
               <span className="text-primary-700 font-display">
-                {subTotal.toLocaleString('fr-FR')} FCFA
+                {formatFCFA(subTotal)}
               </span>
             </div>
           </div>
@@ -195,7 +190,7 @@ export default function CartPage() {
             <div>
               <p className="text-[10px] text-dark-600/40 font-black uppercase tracking-wider">Solde Wallet MANG</p>
               <p className="font-display font-black text-sm text-dark-800 mt-1">
-                {(user.wallet.balance_available || 0).toLocaleString('fr-FR')} FCFA
+                {formatFCFA(user.wallet.balance_available || 0)}
               </p>
             </div>
             {(user.wallet.balance_available || 0) >= subTotal ? (
@@ -224,7 +219,7 @@ export default function CartPage() {
         <div className="flex flex-col">
           <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total à payer</p>
           <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">
-            {subTotal.toLocaleString('fr-FR')} F
+            {formatFCFA(subTotal)}
           </p>
         </div>
 

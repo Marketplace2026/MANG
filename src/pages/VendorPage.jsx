@@ -11,6 +11,8 @@ import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 import { Avatar, Button, BottomSheet, Modal, PremiumBadge, Skeleton } from '@/components/ui'
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 // ============================================================
 // CONSTANTES
 // ============================================================
@@ -680,7 +682,7 @@ function ProductItem({ product, onDelete, onToggle }) {
         </div>
         <p className="text-xs text-dark-600/50 mt-0.5 line-clamp-1">{product.description}</p>
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="font-display font-bold text-primary-700 text-sm">{product.price?.toLocaleString('fr-FR')} FCFA</span>
+          <span className="font-display font-bold text-primary-700 text-sm">{formatFCFA(product.price)}</span>
           <span className="text-[10px] text-dark-600/40">{AVAIL_LABELS[product.availability] || '✅ Dispo'}</span>
         </div>
       </div>
@@ -1241,9 +1243,9 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
     if (!user) return
     const balance = wallet ? wallet.balance_available : 0
     const balanceFCFA = balance
-    if (balanceFCFA < plan.price) { toast.error(`Solde insuffisant. Disponible : ${balanceFCFA.toLocaleString('fr-FR')} FCFA`); return }
+    if (balanceFCFA < plan.price) { toast.error(`Solde insuffisant. Disponible : ${formatFCFA(balanceFCFA)}`); return }
 
-    if (!confirm(`Confirmer le paiement de ${plan.price.toLocaleString()} FCFA pour Premium ${plan.name} (30 jours) ?`)) return
+    if (!confirm(`Confirmer le paiement de ${formatFCFA(plan.price)} pour Premium ${plan.name} (30 jours) ?`)) return
 
     setLoading(plan.level)
     try {
@@ -1276,8 +1278,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
     finally { setLoading(null) }
   }
 
-  const balance = wallet ? (wallet.balance_available).toLocaleString('fr-FR') : '0'
-  // balance_available est en centimes → diviser par 100 pour FCFA
+  const balanceStr = wallet ? formatFCFA(wallet.balance_available) : '0 FCFA'
 
   return (
     <BottomSheet open={open} onClose={onClose} title="⭐ Devenir Premium">
@@ -1290,7 +1291,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
             </div>
             <span className="text-white/60 text-sm font-medium">Solde wallet</span>
           </div>
-          <span className="font-display font-bold text-white">{balance} FCFA</span>
+          <span className="font-display font-bold text-white">{balanceStr}</span>
         </div>
 
         {currentPremium && (
@@ -1324,8 +1325,8 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-display font-bold text-dark-800 text-lg">{plan.price.toLocaleString()}</p>
-                  <p className="text-dark-600/50 text-xs">FCFA / mois</p>
+                  <p className="font-display font-bold text-dark-800 text-lg">{formatFCFA(plan.price)}</p>
+                  <p className="text-dark-600/50 text-xs">/ mois</p>
                 </div>
               </div>
 
@@ -1346,7 +1347,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
                 loading={loading === plan.level}
                 onClick={() => handleBuy(plan)}
               >
-                Activer {plan.name} — {plan.price.toLocaleString()} FCFA
+                Activer {plan.name} — {formatFCFA(plan.price)}
               </Button>
             </div>
           </div>
@@ -1364,9 +1365,9 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
 
   const handleBuy = async (pack) => {
     const balance = wallet ? wallet.balance_available : 0
-    if (balance < pack.price) { toast.error(`Solde insuffisant. Disponible : ${balance.toLocaleString()} FCFA`); return }
+    if (balance < pack.price) { toast.error(`Solde insuffisant. Disponible : ${formatFCFA(balance)}`); return }
 
-    if (!confirm(`Acheter ${pack.coins} pièces pour ${pack.price} FCFA ?`)) return
+    if (!confirm(`Acheter ${pack.coins} pièces pour ${formatFCFA(pack.price)} ?`)) return
 
     setLoading(pack.coins)
     try {
@@ -1395,7 +1396,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
     finally { setLoading(null) }
   }
 
-  const balance = wallet ? (wallet.balance_available).toLocaleString('fr-FR') : '0' // centimes → FCFA
+  const balanceStr = wallet ? formatFCFA(wallet.balance_available) : '0 FCFA'
   const currentPieces = pieces?.balance || 0
 
   return (
@@ -1405,7 +1406,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 rounded-2xl bg-dark-800 text-center">
             <p className="text-white/50 text-xs">Solde Wallet</p>
-            <p className="font-display font-bold text-white text-base">{balance} FCFA</p>
+            <p className="font-display font-bold text-white text-base">{balanceStr}</p>
           </div>
           <div className="p-3 rounded-2xl bg-gold-50 border border-gold-200 text-center">
             <p className="text-gold-600 text-xs">Pièces actuelles</p>
@@ -2084,11 +2085,11 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
       <div className="grid grid-cols-2 gap-3 bg-white rounded-3xl p-4 shadow-card">
         <div className="p-3 bg-emerald-50 rounded-2xl text-center">
           <p className="text-emerald-800 font-bold text-sm">Revenus Nets</p>
-          <p className="font-display font-black text-emerald-600 text-lg mt-0.5">{(totalRevenue/1).toLocaleString('fr-FR')} F</p>
+          <p className="font-display font-black text-emerald-600 text-lg mt-0.5">{formatFCFA(totalRevenue)}</p>
         </div>
         <div className="p-3 bg-surface-50 rounded-2xl text-center">
           <p className="text-dark-600 font-bold text-sm">Commissions (5%)</p>
-          <p className="font-display font-black text-dark-800 text-lg mt-0.5">{(totalCommission/1).toLocaleString('fr-FR')} F</p>
+          <p className="font-display font-black text-dark-800 text-lg mt-0.5">{formatFCFA(totalCommission)}</p>
         </div>
       </div>
 
@@ -2132,7 +2133,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-dark-800 text-sm truncate">{order.product?.name || 'Produit inconnu'}</p>
                   <p className="text-xs text-dark-500 mt-0.5">Acheteur : @{order.buyer?.username || 'Client MANG'}</p>
-                  <p className="text-xs text-dark-600 mt-1">Qté : <span className="font-bold">{order.quantity}</span> | Prix net : <span className="font-bold text-primary-700">{order.net_amount?.toLocaleString('fr-FR')} F</span></p>
+                  <p className="text-xs text-dark-600 mt-1">Qté : <span className="font-bold">{order.quantity}</span> | Prix net : <span className="font-bold text-primary-700">{formatFCFA(order.net_amount)}</span></p>
                   {order.variant_name && (
                     <p className="text-[10px] text-dark-400 font-semibold mt-1">Option : {order.variant_name}</p>
                   )}
@@ -2352,13 +2353,13 @@ function QuotesTab({ quotes, loading, onRefresh }) {
 
               {quote.status === 'responded' && (
                 <p className="text-xs text-primary-700 font-bold bg-primary-50 p-2 rounded-xl text-center">
-                  🏷️ Tarif proposé : {quote.proposed_price?.toLocaleString('fr-FR')} FCFA / u
+                  🏷️ Tarif proposé : {formatFCFA(quote.proposed_price)} / u
                 </p>
               )}
 
               {quote.status === 'accepted' && (
                 <p className="text-xs text-emerald-700 font-bold bg-emerald-50 p-2 rounded-xl text-center">
-                  ✅ Offre acceptée ! Tarif validé : {quote.proposed_price?.toLocaleString('fr-FR')} FCFA / u
+                  ✅ Offre acceptée ! Tarif validé : {formatFCFA(quote.proposed_price)} / u
                 </p>
               )}
 

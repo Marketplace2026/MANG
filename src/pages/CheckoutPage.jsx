@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 const OPERATORS = [
   { id: 'MTN',    label: 'MTN Mobile Money', emoji: '🟡' },
   { id: 'Moov',   label: 'Moov Money',       emoji: '🔵' },
@@ -379,7 +381,7 @@ export default function CheckoutPage() {
                   {group.items.map(item => (
                     <div key={item.id} className="flex justify-between text-xs text-dark-600">
                       <span>{item.qty}x {item.name}</span>
-                      <span className="font-bold">{(item.price * item.qty).toLocaleString('fr-FR')} F</span>
+                      <span className="font-bold">{formatFCFA(item.price * item.qty)}</span>
                     </div>
                   ))}
                 </div>
@@ -407,7 +409,7 @@ export default function CheckoutPage() {
               <div>
                 <p className="text-[10px] text-dark-600/40 font-black uppercase tracking-wider">Solde disponible</p>
                 <p className="font-display font-black text-sm text-dark-900 mt-0.5">
-                  {walletBalance.toLocaleString('fr-FR')} FCFA
+                  {formatFCFA(walletBalance)}
                 </p>
               </div>
             </div>
@@ -431,7 +433,7 @@ export default function CheckoutPage() {
 
           {!isBalanceEnough && (
             <div className="p-3 bg-red-500/10 border border-red-300/20 rounded-2xl text-[10px] text-red-700 leading-normal">
-              ⚠️ Votre solde est insuffisant. Il vous manque <strong>{(total - walletBalance).toLocaleString('fr-FR')} FCFA</strong>. Cliquez sur <strong>Recharger</strong> ci-dessus pour créditer votre compte instantanément par MTN ou Moov Money.
+              ⚠️ Votre solde est insuffisant. Il vous manque <strong>{formatFCFA(total - walletBalance)}</strong>. Cliquez sur <strong>Recharger</strong> ci-dessus pour créditer votre compte instantanément par MTN ou Moov Money.
             </div>
           )}
         </div>
@@ -441,7 +443,7 @@ export default function CheckoutPage() {
           <div className="space-y-2 text-xs">
             <div className="flex justify-between text-dark-600">
               <span>Articles</span>
-              <span>{total.toLocaleString('fr-FR')} FCFA</span>
+              <span>{formatFCFA(total)}</span>
             </div>
             <div className="flex justify-between text-dark-600">
               <span>Livraison</span>
@@ -450,7 +452,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between items-baseline font-black text-base border-t border-surface-100 pt-3 text-dark-900">
               <span>Total final</span>
               <span className="text-primary-700 font-display">
-                {total.toLocaleString('fr-FR')} FCFA
+                {formatFCFA(total)}
               </span>
             </div>
           </div>
@@ -470,7 +472,7 @@ export default function CheckoutPage() {
         <div className="flex flex-col">
           <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Montant dû</p>
           <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">
-            {total.toLocaleString('fr-FR')} F
+            {formatFCFA(total)}
           </p>
         </div>
 
@@ -571,7 +573,7 @@ export default function CheckoutPage() {
                   onClick={() => setRechargeAmount(p.toString())}
                   className="px-3 py-1.5 rounded-xl border border-surface-200 bg-surface-50 hover:bg-surface-100 text-[10px] font-bold text-dark-700 transition-colors"
                 >
-                  +{p.toLocaleString('fr-FR')} F
+                  +{formatFCFA(p)}
                 </button>
               ))}
             </div>

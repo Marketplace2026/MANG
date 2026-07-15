@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Package, CheckCircle, XCircle, Clock, CreditCard,
   ChevronRight, RefreshCw, Truck, MapPin, Phone,
-  Hash, AlertCircle, Shield, X, Loader2
+  Hash, AlertCircle, Shield, X, Loader2, User
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -11,6 +11,8 @@ import { useAuthStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
+
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
 // ── Config statuts ──────────────────────────────────────────
 const STATUS = {
@@ -380,7 +382,7 @@ export default function OrdersPage() {
                 </p>
                 <div className="text-center bg-surface-50 rounded-2xl p-4">
                   <p className="font-display text-3xl font-bold text-dark-800">
-                    {selectedOrder ? (selectedOrder.total_amount / 100).toLocaleString('fr-FR') : 0} FCFA
+                    {selectedOrder ? formatFCFA(selectedOrder.total_amount) : '0 FCFA'}
                   </p>
                   <p className="text-dark-600/50 text-xs mt-1">Montant à payer</p>
                 </div>
@@ -403,7 +405,6 @@ export default function OrdersPage() {
 function OrderCard({ order, isBuyer, onOpen }) {
   const cfg = STATUS[order.status] || STATUS.pending
   const other = isBuyer ? order.seller : order.buyer
-  const amtFCFA = (order.total_amount || 0) / 100
 
   return (
     <div onClick={onOpen}
@@ -430,7 +431,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
           </p>
           <div className="flex items-center justify-between mt-1">
             <span className="font-display font-bold text-primary-700 text-sm">
-              {amtFCFA.toLocaleString('fr-FR')} FCFA
+              {formatFCFA(order.total_amount)}
             </span>
             <span className="text-dark-600/40 text-[10px]">
               {formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: fr })}
@@ -460,9 +461,6 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
   if (!order) return null
   const cfg = STATUS[order.status] || STATUS.pending
   const other = isBuyer ? order.seller : order.buyer
-  const amtFCFA = (order.total_amount || 0) / 100
-  const commFCFA = (order.commission || 0) / 100
-  const netFCFA  = (order.net_amount  || 0) / 100
   const delivCfg = DELIVERY_STATUS[order.delivery_status] || DELIVERY_STATUS.pending
 
   return (
@@ -488,21 +486,21 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
         <div className="bg-dark-800 rounded-2xl p-4 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-white/60 text-sm">Total</span>
-            <span className="font-display font-bold text-white text-xl">{amtFCFA.toLocaleString('fr-FR')} FCFA</span>
+            <span className="font-display font-bold text-white text-xl">{formatFCFA(order.total_amount)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-white/40 text-xs">Commission MANG (5%)</span>
-            <span className="text-red-400 text-xs">-{commFCFA.toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-red-400 text-xs">-{formatFCFA(order.commission)}</span>
           </div>
           <div className="flex justify-between items-center border-t border-white/10 pt-2">
             <span className="text-emerald-400 text-sm font-semibold">Net vendeur</span>
-            <span className="font-bold text-emerald-400">{netFCFA.toLocaleString('fr-FR')} FCFA</span>
+            <span className="font-bold text-emerald-400">{formatFCFA(order.net_amount)}</span>
           </div>
           {order.escrow_amount > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-gold-400 text-xs">🔒 Escrow</span>
               <span className="text-gold-400 text-xs font-semibold">
-                {(order.escrow_amount/100).toLocaleString('fr-FR')} FCFA
+                {formatFCFA(order.escrow_amount)}
               </span>
             </div>
           )}
@@ -513,16 +511,17 @@ function OrderDetailSheet({ open, onClose, order, isBuyer, onAccept, onRefuse, o
           {[
             { icon: Hash,   label: 'ID',         value: `#${order.id.slice(0,8).toUpperCase()}` },
             { icon: Package,label: 'Boutique',    value: order.shop?.name || '—' },
+            { icon: User,   label: isBuyer ? 'Vendeur' : 'Acheteur', value: `@${other?.username || '—'}` },
             { icon: MapPin, label: 'Livraison',   value: order.delivery_address || 'Non renseigné' },
             { icon: Phone,  label: 'Téléphone',   value: order.delivery_phone || 'Non renseigné' },
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3">
-              <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <div key={i} className="flex items-start gap-3 px-4 py-3">
+              <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <item.icon size={13} className="text-primary-600"/>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-dark-600/50 font-medium">{item.label}</p>
-                <p className="text-sm text-dark-800 font-semibold truncate">{item.value}</p>
+                <p className={`text-sm text-dark-800 font-semibold ${item.label === 'Livraison' ? 'break-words whitespace-normal' : 'truncate'}`}>{item.value}</p>
               </div>
             </div>
           ))}

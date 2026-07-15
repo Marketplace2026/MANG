@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/store';
 import { X, Plus, Minus, Trash2 } from 'lucide-react';
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 export default function MiniCart() {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem } = useCartStore();
@@ -60,7 +62,7 @@ export default function MiniCart() {
                     <p className="text-[10px] text-primary-600 font-bold mt-0.5">{item.variant_name}</p>
                   )}
                   <p className="text-xs font-black text-primary-700 mt-1">
-                    {item.price.toLocaleString('fr-FR')} F
+                    {formatFCFA(item.price)}
                   </p>
                 </div>
 
@@ -97,7 +99,7 @@ export default function MiniCart() {
             <div className="flex justify-between items-baseline font-bold text-sm">
               <span className="text-dark-600">Total :</span>
               <span className="text-lg text-primary-700 font-black">
-                {new Intl.NumberFormat('fr-FR').format(subTotal)} FCFA
+                {formatFCFA(subTotal)}
               </span>
             </div>
             

@@ -13,6 +13,8 @@ import { ProductCard } from '@/components/marketplace/ShopCard'
 import LocationModal from '@/components/marketplace/LocationModal'
 import InteractiveMap from '@/components/marketplace/InteractiveMap'
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 // ============================================================
 // DISPONIBILITÉ
 // ============================================================
@@ -834,7 +836,7 @@ export default function MarketplacePage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-dark-800 truncate">{highlightMatch(s.name, search)}</p>
                               <p className="text-[10px] text-dark-600/50 truncate font-semibold">
-                                Produit de <span className="text-primary-700">{s.shopName}</span> • <span className="text-emerald-700 font-bold">{s.price.toLocaleString()} FCFA</span>
+                                Produit de <span className="text-primary-700">{s.shopName}</span> • <span className="text-emerald-700 font-bold">{formatFCFA(s.price)}</span>
                               </p>
                             </div>
                           </>

@@ -13,6 +13,8 @@ import { Avatar, BottomSheet, Button } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -343,8 +345,8 @@ export default function ProductDetailPage() {
 
           {/* Section Prix & Promo */}
           <div className="flex items-baseline gap-2.5 pt-2 border-t border-surface-100">
-            <span className="font-display font-black text-primary-700 text-3xl">{unitPrice.toLocaleString('fr-FR')} F</span>
-            <span className="text-dark-400 line-through text-sm font-semibold">{priceBarre.toLocaleString('fr-FR')} F</span>
+            <span className="font-display font-black text-primary-700 text-3xl">{formatFCFA(unitPrice)}</span>
+            <span className="text-dark-400 line-through text-sm font-semibold">{formatFCFA(priceBarre)}</span>
             <span className="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-lg">-20% PROMO</span>
           </div>
 
@@ -412,7 +414,7 @@ export default function ProductDetailPage() {
                         : 'border-surface-200 bg-white text-dark-700 hover:border-surface-300'
                     )}>
                     <p className="font-bold text-xs leading-tight">{v.name}</p>
-                    <p className="font-black text-sm mt-1 text-primary-600">{v.price?.toLocaleString('fr-FR')} F</p>
+                    <p className="font-black text-sm mt-1 text-primary-600">{formatFCFA(v.price)}</p>
                     {v.stock !== undefined && (
                       <p className="text-[9px] text-dark-400 mt-0.5">Stock : {v.stock}</p>
                     )}
@@ -432,7 +434,7 @@ export default function ProductDetailPage() {
                 {product.wholesale_tiers.map((t, idx) => (
                   <div key={idx} className="flex justify-between items-center text-gold-800">
                     <span>Achetez {t.min_qty}+ unités :</span>
-                    <span className="font-bold">{t.price?.toLocaleString('fr-FR')} FCFA / u</span>
+                    <span className="font-bold">{formatFCFA(t.price)} / u</span>
                   </div>
                 ))}
               </div>
@@ -515,7 +517,7 @@ export default function ProductDetailPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-bold text-dark-800 text-[11px] truncate">{sim.name}</p>
-                    <p className="font-display font-black text-primary-700 text-xs mt-1">{sim.price?.toLocaleString('fr-FR')} F</p>
+                    <p className="font-display font-black text-primary-700 text-xs mt-1">{formatFCFA(sim.price)}</p>
                   </div>
                 </div>
               ))}
@@ -569,7 +571,7 @@ export default function ProductDetailPage() {
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 px-4 py-3 flex items-center justify-between gap-3 shadow-2xl safe-pb max-w-[var(--content-max-width)] mx-auto">
         <div className="flex flex-col">
           <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total à payer</p>
-          <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">{totalPrice.toLocaleString('fr-FR')} F</p>
+          <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">{formatFCFA(totalPrice)}</p>
         </div>
 
         {isOutofStock ? (

@@ -4,6 +4,8 @@ import { MapPin, Truck, Users, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, PremiumBadge } from '@/components/ui'
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 // ============================================================
 // SHOP CARD — Carte boutique principale
 // ============================================================
@@ -236,9 +238,8 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
         <div className="flex items-center justify-between mt-2.5">
           <div>
             <span className="font-display font-bold text-primary-700 text-base">
-              {product.price.toLocaleString('fr-FR')}
+              {formatFCFA(product.price)}
             </span>
-            <span className="text-dark-600/40 text-xs ml-1">FCFA</span>
           </div>
           {product.distance !== undefined && product.distance !== null && (
             <span className="text-emerald-700 bg-emerald-50 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none flex items-center gap-0.5">
