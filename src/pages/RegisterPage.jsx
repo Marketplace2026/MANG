@@ -44,6 +44,10 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [referrerName, setReferrerName]   = useState('')
   const [usernameStatus, setUsernameStatus] = useState(null)
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
   const usernameDebounce = useRef(null)
   const strength = getPasswordStrength(form.password)
 
@@ -54,6 +58,13 @@ export default function RegisterPage() {
       checkReferralCode(refCode)
     }
   }, [refCode])
+
+  // Cooldown du bouton de renvoi d'email
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendCooldown])
 
   const checkReferralCode = async (code) => {
     if (!code || code.length < 6) { setReferrerName(''); return }
@@ -115,16 +126,23 @@ export default function RegisterPage() {
 
     if (error) {
       setLoading(false)
-      toast.error(error.message === 'User already registered' ? 'Email deja utilise' : "Erreur lors de l'inscription")
+      toast.error(error.message === 'User already registered' ? 'Email deja utilise' : error.message || "Erreur lors de l'inscription")
       return
     }
 
     const userId = data?.user?.id
+    const session = data?.session
 
-    // 2. Appliquer le parrainage si code fourni
-    // On attend 2.5s que le trigger Supabase crée le profil + la ligne pieces (20 pieces auto)
-    // IMPORTANT : process_referral fait +10 filleul et +20 parrain
-    // Les 20 pieces de bienvenue viennent d'un autre trigger, on ne les touche pas
+    // Si pas de session, cela signifie que la validation d'email est activée (email non vérifié)
+    if (!session) {
+      setLoading(false)
+      setRegisteredEmail(form.email)
+      setEmailVerificationSent(true)
+      toast.success('Inscription initiée ! Veuillez valider votre e-mail.')
+      return
+    }
+
+    // 2. Appliquer le parrainage si code fourni et session active immédiate
     if (form.referralCode.trim() && referrerName && userId) {
       await new Promise(r => setTimeout(r, 2500))
 
@@ -148,6 +166,22 @@ export default function RegisterPage() {
     navigate('/marketplace')
   }
 
+  const handleResendEmail = async () => {
+    if (resendCooldown > 0) return
+    setLoading(true)
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: registeredEmail
+    })
+    setLoading(false)
+    if (error) {
+      toast.error(error.message || 'Erreur lors du renvoi')
+    } else {
+      toast.success('E-mail de confirmation renvoyé !')
+      setResendCooldown(60) // Cooldown de 60 secondes
+    }
+  }
+
   const UsernameIcon = () => {
     if (usernameStatus === 'checking')  return <Loader2 size={15} className="animate-spin text-white/40"/>
     if (usernameStatus === 'available') return <CheckCircle2 size={15} className="text-emerald-400"/>
@@ -169,6 +203,49 @@ export default function RegisterPage() {
     && usernameStatus !== 'checking'
 
   const codeFromUrl = !!refCode && !!referrerName
+
+  if (emailVerificationSent) {
+    return (
+      <div className="animate-fade-in text-center py-4">
+        <div className="w-16 h-16 rounded-full bg-gold-500/20 flex items-center justify-center mx-auto mb-5 text-3xl">
+          ✉️
+        </div>
+        <h2 className="font-display text-2xl text-white font-bold mb-2">Vérifiez votre e-mail</h2>
+        <p className="text-primary-200 text-sm mb-6 leading-relaxed">
+          Nous avons envoyé un lien de confirmation à <br/>
+          <strong className="text-gold-300 font-semibold">{registeredEmail}</strong>.<br/>
+          Veuillez cliquer sur ce lien pour activer votre compte MANG.
+        </p>
+
+        <div className="space-y-3">
+          <button
+            onClick={handleResendEmail}
+            disabled={resendCooldown > 0 || loading}
+            className="w-full py-3.5 bg-gold-500 hover:bg-gold-400 disabled:bg-white/10 disabled:text-white/40 disabled:border-white/10 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-sm shadow-gold"
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {resendCooldown > 0 ? `Renvoyer dans (${resendCooldown}s)` : "Renvoyer l'e-mail"}
+          </button>
+
+          <a
+            href="https://mail.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-sm"
+          >
+            Accéder à ma messagerie
+          </a>
+
+          <Link
+            to="/connexion"
+            className="block text-gold-300 font-bold hover:text-gold-200 text-sm pt-4"
+          >
+            Retour à la connexion
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="animate-fade-in">
@@ -216,6 +293,7 @@ export default function RegisterPage() {
               value={form.username}
               onChange={e => { setForm({ ...form, username: e.target.value }); checkUsername(e.target.value) }}
               required
+              autoComplete="username"
               className={clsx(
                 'w-full pl-10 pr-10 py-3.5 bg-white/10 border rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium transition-colors',
                 usernameStatus === 'available' ? 'border-emerald-400/50' :
@@ -237,6 +315,7 @@ export default function RegisterPage() {
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
             required
+            autoComplete="email"
             className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
           />
         </div>
@@ -251,6 +330,7 @@ export default function RegisterPage() {
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               required minLength={6}
+              autoComplete="new-password"
               className="w-full pl-10 pr-12 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
             />
             <button type="button" onClick={() => setShowPass(!showPass)}
@@ -293,6 +373,7 @@ export default function RegisterPage() {
                   setForm(f => ({ ...f, referralCode: v }))
                   checkReferralCode(v)
                 }}
+                autoComplete="off"
                 className="w-full pl-10 pr-10 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium uppercase tracking-widest"
                 maxLength={8}
               />

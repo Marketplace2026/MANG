@@ -18,6 +18,8 @@ export default function ReferralPage() {
   const [codeCopied, setCodeCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [stats, setStats] = useState({ total: 0, shops: 0, pieces: 0 })
+  const [tier, setTier] = useState('Bronze')
+  const [activeCount, setActiveCount] = useState(0)
 
   const referralCode = profile?.referral_code || '...'
   const referralLink = `${window.location.origin}/inscription?ref=${referralCode}`
@@ -37,13 +39,24 @@ export default function ReferralPage() {
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false })
 
-    setReferrals(data || [])
+    const refs = data || []
+    setReferrals(refs)
+
+    // Filleuls actifs (non frauduleux)
+    const actRefs = refs.filter(r => !r.suspicious)
+    const actCount = actRefs.length
+    setActiveCount(actCount)
+
+    // Calcul du Tier
+    let currentTier = 'Bronze'
+    if (actCount >= 15) currentTier = 'Gold'
+    else if (actCount >= 5) currentTier = 'Silver'
+    setTier(currentTier)
+
     setStats({
-      total:  (data || []).length,
-      // CORRECTIF : inclure 'rewarded' dans le compte boutiques
-      shops:  (data || []).filter(r => r.status === 'shop_created' || r.status === 'rewarded').length,
-      // CORRECTIF : pieces_given = pièces reçues par le parrain uniquement (20 inscription + 50 boutique)
-      pieces: (data || []).reduce((s, r) => s + (r.pieces_given || 0), 0),
+      total:  refs.length,
+      shops:  refs.filter(r => (r.status === 'shop_created' || r.status === 'rewarded') && !r.suspicious).length,
+      pieces: refs.reduce((s, r) => s + (r.pieces_given || 0), 0),
     })
     setLoading(false)
   }
@@ -72,15 +85,16 @@ export default function ReferralPage() {
     }
   }
 
-  // CORRECTIF : statut 'rewarded' ajouté et correctement configuré
   const STATUS_CONFIG = {
-    registered:   { label: 'Inscrit',         color: 'bg-blue-100 text-blue-700',       icon: '✅' },
+    registered:   { label: 'Inscrit',         color: 'bg-blue-100 text-blue-700',       icon: '👤' },
     shop_created: { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '🏪' },
-    rewarded:     { label: 'Récompensé',      color: 'bg-amber-100 text-amber-700',     icon: '⭐' },
+    rewarded:     { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '🏪' },
+    suspicious:   { label: 'Suspect / Gelé',  color: 'bg-red-100 text-red-700 dark:bg-red-950/40', icon: '🛑' },
+    cash_paid:    { label: 'Acheteur Actif',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40', icon: '💰' },
   }
 
   return (
-    <div className="min-h-screen bg-surface-50 pb-28">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-28 transition-colors duration-300">
       {/* HEADER */}
       <div className="relative overflow-hidden pt-12 pb-24 px-4"
         style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e 60%, #2d8a3e)' }}>
@@ -150,6 +164,55 @@ export default function ReferralPage() {
           </button>
         </div>
 
+        {/* NIVEAU PARRAIN (TIER) & PROGRESSION (TÂCHE 3) */}
+        <div className="bg-white dark:bg-dark-900 rounded-3xl shadow-card p-5 border border-surface-100 dark:border-dark-800">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-bold text-dark-700 dark:text-dark-200 flex items-center gap-2">
+              <Trophy size={16} className="text-gold-500 animate-bounce"/> Niveau de Parrainage
+            </p>
+            <span className={clsx(
+              'px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide',
+              tier === 'Gold' ? 'bg-gradient-to-r from-gold-400 to-gold-600 text-white shadow-gold' :
+              tier === 'Silver' ? 'bg-slate-200 dark:bg-dark-700 text-slate-700 dark:text-slate-300' :
+              'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
+            )}>
+              👑 Palier {tier === 'Gold' ? 'Or' : tier === 'Silver' ? 'Argent' : 'Bronze'}
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center text-xs font-bold text-dark-600/60 dark:text-white/40">
+              <span>{activeCount} filleul{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}</span>
+              <span>{tier === 'Gold' ? 'Palier Max 🚀' : `Prochain palier : ${activeCount < 5 ? '5' : '15'} filleuls`}</span>
+            </div>
+            
+            {/* Barre de progression */}
+            <div className="w-full h-3 bg-surface-100 dark:bg-dark-800 rounded-full overflow-hidden border border-surface-200 dark:border-dark-700">
+              <div 
+                className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min((activeCount / (activeCount < 5 ? 5 : 15)) * 100, 100)}%` }}
+              />
+            </div>
+
+            {/* Infos bonus du Palier */}
+            <div className="p-3 bg-surface-50 dark:bg-dark-950 rounded-2xl text-xs font-semibold text-dark-700 dark:text-dark-350 leading-relaxed border border-surface-100 dark:border-dark-850">
+              {tier === 'Gold' ? (
+                <p className="text-gold-600 dark:text-gold-400">
+                  ✨ <strong>Privilège Or</strong> actif : Vous gagnez +50 🪙 par inscription, +100 🪙 par boutique et <strong>10% du 1er achat filleul</strong> en argent réel ! 💰
+                </p>
+              ) : tier === 'Silver' ? (
+                <p>
+                  ⚡ Avantages <strong>Argent</strong> : Vous gagnez +30 🪙 par inscription et +75 🪙 par boutique de filleul. Invitez encore {15 - activeCount} filleuls pour devenir <strong>Or</strong> !
+                </p>
+              ) : (
+                <p>
+                  🌱 Avantages <strong>Bronze</strong> : Vous gagnez +20 🪙 par inscription et +50 🪙 par boutique de filleul. Invitez encore {5 - activeCount} filleuls pour devenir <strong>Argent</strong> !
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* STATS */}
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -158,12 +221,12 @@ export default function ReferralPage() {
             // CORRECTIF : label clarifié — ce sont les pièces reçues PAR LE PARRAIN
             { icon: Coins,  label: 'Pièces reçues',  value: stats.pieces, color: 'bg-gold-50 text-gold-600' },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-card p-3.5 text-center">
+            <div key={i} className="bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-2xl shadow-card p-3.5 text-center">
               <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2', s.color)}>
                 <s.icon size={18}/>
               </div>
-              <p className="font-display font-bold text-dark-800 text-xl">{s.value}</p>
-              <p className="text-dark-600/50 text-[10px] font-medium">{s.label}</p>
+              <p className="font-display font-bold text-dark-800 dark:text-white text-xl">{s.value}</p>
+              <p className="text-dark-600/50 dark:text-white/40 text-[10px] font-medium">{s.label}</p>
             </div>
           ))}
         </div>
@@ -179,22 +242,23 @@ export default function ReferralPage() {
         </div>
 
         {/* COMMENT ÇA MARCHE */}
-        <div className="bg-white rounded-3xl shadow-card p-5">
-          <h3 className="font-display font-bold text-dark-800 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-3xl shadow-card p-5">
+          <h3 className="font-display font-bold text-dark-800 dark:text-white mb-4 flex items-center gap-2">
             <Star size={16} className="text-gold-500"/> Comment ça marche
           </h3>
           <div className="space-y-3">
             {[
               { step: '1', text: 'Copiez votre code et partagez-le à vos amis', color: 'bg-blue-600' },
-              { step: '2', text: 'Votre ami s\'inscrit avec votre code → il reçoit 10 🪙', color: 'bg-emerald-600' },
-              { step: '3', text: 'Vous recevez automatiquement 20 🪙 pièces', color: 'bg-primary-600' },
-              { step: '4', text: 'Si votre ami crée une boutique → +50 🪙 bonus !', color: 'bg-gold-500' },
+              { step: '2', text: 'Votre ami s\'inscrit avec votre code → il reçoit 10 🪙 (20 🪙 si vous êtes Or)', color: 'bg-emerald-600' },
+              { step: '3', text: 'Vous recevez automatiquement 20 🪙 pièces (jusqu\'à 50 🪙 en palier Or)', color: 'bg-primary-600' },
+              { step: '4', text: 'Si votre ami crée une boutique → vous recevez jusqu\'à +100 🪙 de bonus !', color: 'bg-gold-500' },
+              { step: '5', text: 'Premier achat filleul (min 5 000 FCFA) → bonus cash versé aux deux ! 💰', color: 'bg-violet-600' },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className={clsx('w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0 mt-0.5', item.color)}>
                   {item.step}
                 </div>
-                <p className="text-dark-700 text-sm leading-relaxed">{item.text}</p>
+                <p className="text-dark-700 dark:text-dark-200 text-sm leading-relaxed">{item.text}</p>
               </div>
             ))}
           </div>
@@ -202,7 +266,7 @@ export default function ReferralPage() {
 
         {/* LISTE FILLEULS */}
         <div>
-          <h3 className="font-display font-bold text-dark-800 mb-3 flex items-center gap-2">
+          <h3 className="font-display font-bold text-dark-800 dark:text-white mb-3 flex items-center gap-2">
             <Users size={16} className="text-primary-600"/>
             Mes filleuls ({referrals.length})
           </h3>
@@ -212,10 +276,10 @@ export default function ReferralPage() {
               {[1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-2xl"/>)}
             </div>
           ) : referrals.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-2xl shadow-card">
+            <div className="text-center py-10 bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-2xl shadow-card">
               <p className="text-4xl mb-2">👥</p>
-              <p className="font-bold text-dark-800">Aucun filleul pour l'instant</p>
-              <p className="text-dark-600/50 text-sm mt-1">Partagez votre code pour commencer !</p>
+              <p className="font-bold text-dark-800 dark:text-white">Aucun filleul pour l'instant</p>
+              <p className="text-dark-600/50 dark:text-white/40 text-sm mt-1">Partagez votre code pour commencer !</p>
               <button onClick={handleShare}
                 className="mt-4 px-5 py-2.5 rounded-2xl bg-primary-600 text-white font-bold text-sm shadow-green active:scale-95 transition-transform">
                 Partager maintenant
@@ -224,13 +288,20 @@ export default function ReferralPage() {
           ) : (
             <div className="space-y-2">
               {referrals.map(ref => {
-                const cfg = STATUS_CONFIG[ref.status] || STATUS_CONFIG.registered
+                // Déterminer la config du badge de statut
+                let statusKey = ref.status
+                if (ref.suspicious) {
+                  statusKey = 'suspicious'
+                } else if (ref.commission_paid) {
+                  statusKey = 'cash_paid'
+                }
+                const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.registered
                 return (
-                  <div key={ref.id} className="bg-white rounded-2xl shadow-card px-4 py-3 flex items-center gap-3">
+                  <div key={ref.id} className="bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-2xl shadow-card px-4 py-3 flex items-center gap-3">
                     <Avatar src={ref.referred?.avatar_url} name={ref.referred?.username} size="md"/>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-dark-800 text-sm">@{ref.referred?.username}</p>
-                      <p className="text-dark-600/40 text-xs">
+                      <p className="font-bold text-dark-800 dark:text-white text-sm">@{ref.referred?.username}</p>
+                      <p className="text-dark-600/40 dark:text-white/40 text-xs">
                         Inscrit le {new Date(ref.created_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
@@ -238,9 +309,8 @@ export default function ReferralPage() {
                       <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold', cfg.color)}>
                         {cfg.icon} {cfg.label}
                       </span>
-                      {/* CORRECTIF : afficher seulement si des pièces ont été données */}
-                      {ref.pieces_given > 0 && (
-                        <p className="text-gold-600 text-xs font-bold">+{ref.pieces_given} 🪙 reçus</p>
+                      {ref.pieces_given > 0 && !ref.suspicious && (
+                        <p className="text-gold-600 dark:text-gold-450 text-xs font-bold">+{ref.pieces_given} 🪙 reçus</p>
                       )}
                     </div>
                   </div>
@@ -251,16 +321,16 @@ export default function ReferralPage() {
         </div>
 
         {/* MESSAGE WHATSAPP PRÊT */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <p className="font-bold text-emerald-800 text-sm mb-2">💬 Message prêt à envoyer</p>
-          <p className="text-emerald-700 text-xs leading-relaxed bg-white rounded-xl p-3 font-mono">
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4">
+          <p className="font-bold text-emerald-800 dark:text-emerald-400 text-sm mb-2">💬 Message prêt à envoyer</p>
+          <p className="text-emerald-700 dark:text-emerald-300 text-xs leading-relaxed bg-white dark:bg-dark-900 rounded-xl p-3 font-mono border border-emerald-100 dark:border-emerald-950">
             🌿 Rejoins-moi sur MANG — le marché agricole du Bénin !{'\n\n'}
             Utilise mon code : <strong>{referralCode}</strong>{'\n\n'}
             Tu reçois 10 pièces 🪙 à l'inscription !{'\n'}
             👉 {referralLink}
           </p>
           <button onClick={handleShare}
-            className="w-full mt-3 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+            className="w-full mt-3 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-emerald">
             <Share2 size={14}/> Envoyer sur WhatsApp
           </button>
         </div>
