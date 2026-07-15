@@ -5,8 +5,12 @@ import { X, Plus, Minus, Trash2 } from 'lucide-react';
 
 export default function MiniCart() {
   const navigate = useNavigate();
-  const { items, totalQty, subTotal, updateQuantity, removeItem } = useCartStore();
+  const { items, updateQuantity, removeItem } = useCartStore();
   const [open, setOpen] = useState(false);
+
+  // Dynamic selector-like local calculations
+  const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+  const subTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   // Listen for custom event to open/close mini cart
   useEffect(() => {

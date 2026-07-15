@@ -3,7 +3,8 @@ import { useCartStore } from '@/store';
 import { ShoppingCart } from 'lucide-react';
 
 export default function CartIcon() {
-  const totalQty = useCartStore(state => state.totalQty);
+  // Selector calculating totalQty dynamically from items list
+  const totalQty = useCartStore(state => state.items.reduce((sum, item) => sum + item.qty, 0));
 
   const handleClick = () => {
     const event = new CustomEvent('open-mini-cart');

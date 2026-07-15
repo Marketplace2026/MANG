@@ -267,7 +267,9 @@ export const useCartStore = create(
       checkoutWithWallet: async (userId, walletBalance, deliveryAddress, deliveryPhone) => {
         set({ status: 'loading' })
         try {
-          const { subTotal } = get()
+          const currentItems = get().items
+          const subTotal = currentItems.reduce((sum, i) => sum + i.price * i.qty, 0)
+          
           if (walletBalance < subTotal) {
             toast.error('Solde insuffisant')
             set({ status: 'idle' })
@@ -275,7 +277,7 @@ export const useCartStore = create(
           }
 
           // Préparer les articles pour le RPC
-          const formattedItems = get().items.map(i => ({
+          const formattedItems = currentItems.map(i => ({
             product_id: i.product_id,
             qty: i.qty,
             variant_name: i.variant_name
@@ -306,14 +308,6 @@ export const useCartStore = create(
           toast.error('Erreur technique lors du paiement')
           return false
         }
-      },
-
-      // GETTERS DYNAMIQUES
-      get totalQty() {
-        return get().items.reduce((sum, i) => sum + i.qty, 0)
-      },
-      get subTotal() {
-        return get().items.reduce((sum, i) => sum + i.price * i.qty, 0)
       }
     }),
     {
