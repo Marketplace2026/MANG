@@ -169,41 +169,156 @@ export const useUIStore = create((set) => ({
 }))
 
 // ============================================================
-// CART STORE - AVEC PERSISTENCE
+// CART STORE - AVEC PERSISTENCE UNIFIÉE (cart-storage)
 // ============================================================
 export const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
+      status: 'idle',
+      error: null,
 
-      addItem: (item, qty = 1) => {
-        const existing = get().items.find(i => i.id === item.id)
-        const newItems = existing 
-          ? get().items.map(i => i.id === item.id ? { ...i, qty: i.qty + qty } : i) 
-          : [...get().items, { ...item, qty }]
-        set({ items: newItems })
-        toast.success('Produit ajouté au panier')
+      addItem: (product, qty = 1, variant = null) => {
+        set({ status: 'loading' })
+        try {
+          const id = product.id + (variant ? '_' + variant.name : '')
+          const existing = get().items.find(i => i.id === id)
+
+          // Déterminer le prix unitaire
+          let price = variant ? variant.price : product.price
+
+          // Total qty après ajout
+          const totalQtyAfterAdd = existing ? existing.qty + qty : qty
+
+          // Appliquer le prix dégressif si présent
+          if (product.wholesale_tiers?.length > 0) {
+            const applicableTier = product.wholesale_tiers
+              .filter(t => totalQtyAfterAdd >= parseInt(t.min_qty))
+              .reduce((max, t) => (parseInt(t.min_qty) > parseInt(max.min_qty) ? t : max), { min_qty: 0, price })
+            if (applicableTier.min_qty > 0) {
+              price = applicableTier.price
+            }
+          }
+
+          const image_url = product.image_url || product.image || ''
+          const seller_id = product.shop?.owner_id || product.seller_id || ''
+          const shop_id = product.shop_id || product.shop?.id || ''
+          const shop_name = product.shop?.name || 'Boutique'
+
+          const newItem = {
+            id,
+            product_id: product.id,
+            name: product.name,
+            price,
+            image_url,
+            qty: totalQtyAfterAdd,
+            variant_name: variant ? variant.name : null,
+            seller_id,
+            shop_id,
+            shop_name,
+            unit: product.unit || 'unité',
+            stock_quantity: product.stock_quantity ?? 99999,
+            wholesale_tiers: product.wholesale_tiers || [],
+            base_price: variant ? variant.price : product.price
+          }
+
+          let newItems
+          if (existing) {
+            newItems = get().items.map(i => i.id === id ? newItem : i)
+          } else {
+            newItems = [...get().items, newItem]
+          }
+
+          set({ items: newItems, status: 'idle' })
+        } catch (e) {
+          console.error(e)
+          set({ error: e.message, status: 'error' })
+          toast.error('Erreur lors de l\'ajout au panier')
+        }
       },
 
-      removeItem: (itemId) => set({ items: get().items.filter(i => i.id !== itemId) }),
-      
-      updateQuantity: (itemId, qty) => set({ 
-        items: get().items.map(i => i.id === itemId ? { ...i, qty: Math.max(1, qty) } : i) 
-      }),
-      
+      removeItem: (itemId) => {
+        const newItems = get().items.filter(i => i.id !== itemId)
+        set({ items: newItems })
+      },
+
+      updateQuantity: (itemId, qty) => {
+        const newItems = get().items.map(i => {
+          if (i.id !== itemId) return i
+          const targetQty = Math.max(1, qty)
+
+          // Re-évaluer le prix dégressif
+          let price = i.base_price
+          if (i.wholesale_tiers?.length > 0) {
+            const applicableTier = i.wholesale_tiers
+              .filter(t => targetQty >= parseInt(t.min_qty))
+              .reduce((max, t) => (parseInt(t.min_qty) > parseInt(max.min_qty) ? t : max), { min_qty: 0, price })
+            if (applicableTier.min_qty > 0) {
+              price = applicableTier.price
+            }
+          }
+          return { ...i, qty: targetQty, price }
+        })
+        set({ items: newItems })
+      },
+
       clearCart: () => set({ items: [] }),
 
-      // GETTERS POUR L'APPLAYOUT
-      get totalQty() { 
-        return get().items.reduce((sum, i) => sum + i.qty, 0) 
+      checkoutWithWallet: async (userId, walletBalance, deliveryAddress, deliveryPhone) => {
+        set({ status: 'loading' })
+        try {
+          const { subTotal } = get()
+          if (walletBalance < subTotal) {
+            toast.error('Solde insuffisant')
+            set({ status: 'idle' })
+            return false
+          }
+
+          // Préparer les articles pour le RPC
+          const formattedItems = get().items.map(i => ({
+            product_id: i.product_id,
+            qty: i.qty,
+            variant_name: i.variant_name
+          }))
+
+          const { data, error } = await supabase.rpc('place_cart_orders', {
+            p_buyer_id: userId,
+            p_items: formattedItems,
+            p_delivery_address: deliveryAddress,
+            p_delivery_phone: deliveryPhone
+          })
+
+          if (error) throw error
+
+          if (!data?.success) {
+            toast.error(data?.error || 'Erreur lors du paiement')
+            set({ status: 'idle' })
+            return false
+          }
+
+          get().clearCart()
+          toast.success('Commande(s) créée(s) avec succès !')
+          set({ status: 'idle' })
+          return true
+        } catch (e) {
+          console.error(e)
+          set({ error: e.message, status: 'error' })
+          toast.error('Erreur technique lors du paiement')
+          return false
+        }
       },
-      get subTotal() { 
-        return get().items.reduce((sum, i) => sum + i.price * i.qty, 0) 
+
+      // GETTERS DYNAMIQUES
+      get totalQty() {
+        return get().items.reduce((sum, i) => sum + i.qty, 0)
       },
+      get subTotal() {
+        return get().items.reduce((sum, i) => sum + i.price * i.qty, 0)
+      }
     }),
-    { 
-      name: 'mangafrica-cart-v2', // nom dans localStorage
-      partialize: (state) => ({ items: state.items }) // on sauvegarde que items
+    {
+      name: 'cart-storage',
+      partialize: (state) => ({ items: state.items })
     }
   )
 )

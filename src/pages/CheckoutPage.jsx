@@ -26,15 +26,19 @@ export default function CheckoutPage() {
       toast.error('Votre panier est vide');
       return;
     }
+    if (!name.trim() || !phone.trim() || !address.trim()) {
+      toast.error('Le nom, le téléphone et l\'adresse sont requis.');
+      return;
+    }
     
     setLoading(true);
     try {
-      // Assume we have wallet balance in user.wallet?.balance_available
       const walletBalance = user.wallet?.balance_available || 0;
-      await checkoutWithWallet(user.id, walletBalance, total); // <- on envoie le total
-      clearCart();
-      toast.success('Commande passée avec succès !');
-      navigate('/commandes');
+      const deliveryAddress = `${name.trim()} - ${address.trim()}`;
+      const success = await checkoutWithWallet(user.id, walletBalance, deliveryAddress, phone.trim());
+      if (success) {
+        navigate('/commandes');
+      }
     } catch (e) {
       console.error(e);
       toast.error('Échec du paiement');
@@ -61,7 +65,7 @@ export default function CheckoutPage() {
       
       {/* Section Adresse */}
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Adresse (optionnel)</h2>
+        <h2 className="text-lg font-semibold">Adresse (obligatoire)</h2>
         <input
           type="text"
           placeholder="Nom"

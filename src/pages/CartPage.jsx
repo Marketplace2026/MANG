@@ -32,7 +32,7 @@ export default function CartPage() {
       <h1 className="font-black text-2xl mb-4">Mon Panier ({totalQty})</h1>
       {items.map(item => (
         <div key={item.id} className="flex items-center gap-3 py-3 border-b bg-white p-3 rounded-xl mb-2">
-          {item.image && <img src={item.image} className="w-16 h-16 object-cover rounded"/>}
+          {(item.image_url || item.image) && <img src={item.image_url || item.image} className="w-16 h-16 object-cover rounded"/>}
           <div className="flex-1">
             <span className="font-bold">{item.name}</span>
             <span className="block text-sm">{item.price.toLocaleString('fr-FR')} FCFA</span>
