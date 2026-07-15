@@ -4,7 +4,8 @@ import { useCartStore, useAuthStore } from '@/store';
 import { toast } from 'react-hot-toast';
 import { 
   ArrowLeft, ShieldCheck, Wallet, CheckCircle, 
-  AlertTriangle, Phone, MapPin, User, ChevronRight, Store, Loader2
+  AlertTriangle, Phone, MapPin, User, ChevronRight, Store, Loader2,
+  ChevronDown, CheckCircle2, Navigation, Plus, Check, Trash2, X
 } from 'lucide-react';
 import { BottomSheet, Button } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -17,10 +18,30 @@ const OPERATORS = [
   { id: 'Celtis', label: 'Celtis Cash',      emoji: '🟢' },
 ];
 
+async function reverseGeocode(lat, lon) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+    const data = await res.json();
+    const address = data.address || {};
+    const city = address.city || address.town || address.village || address.county || '';
+    const neighbourhood = address.suburb || address.neighbourhood || address.quarter || '';
+    const road = address.road || '';
+    const house = address.house_number || '';
+    return {
+      city,
+      neighbourhood,
+      address_line: [house, road].filter(Boolean).join(' '),
+      label: [house, road, neighbourhood, city].filter(Boolean).slice(0, 2).join(', ')
+    };
+  } catch {
+    return { city: '', neighbourhood: '', address_line: '', label: 'Ma position GPS' };
+  }
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { items, clearCart, checkoutWithWallet } = useCartStore();
+  const { items, checkoutWithWallet } = useCartStore();
   const { user, wallet, refreshWallet } = useAuthStore();
 
   const [name, setName] = useState('');
@@ -35,10 +56,12 @@ export default function CheckoutPage() {
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
 
+  // Address Book state
+  const [addressBookOpen, setAddressBookOpen] = useState(false);
+
   // Form Validation states for visual indicators
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
-  const [addressTouched, setAddressTouched] = useState(false);
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const walletBalance = wallet?.balance_available || 0;
@@ -48,6 +71,37 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) {
       refreshWallet();
+    }
+  }, [user]);
+
+  // Load default address automatically if it exists
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      if (!user) return;
+      try {
+        const { data } = await supabase
+          .from('user_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .limit(1);
+        if (data && data.length > 0) {
+          const addr = data[0];
+          setAddress(`[${addr.label}] ${[addr.address_line, addr.neighbourhood, addr.city].filter(Boolean).join(', ')}`);
+        }
+      } catch (err) {
+        console.error('Error loading default address:', err);
+      }
+    };
+    loadDefaultAddress();
+  }, [user]);
+
+  // Load profile default phone / name if available
+  useEffect(() => {
+    if (user) {
+      const meta = user.user_metadata || {};
+      if (meta.full_name) setName(meta.full_name);
+      if (user.phone) setPhone(user.phone);
     }
   }, [user]);
 
@@ -76,7 +130,6 @@ export default function CheckoutPage() {
       toast.error('Veuillez remplir tous les champs de livraison obligatoires.');
       setNameTouched(true);
       setPhoneTouched(true);
-      setAddressTouched(true);
       return;
     }
 
@@ -90,7 +143,6 @@ export default function CheckoutPage() {
       const deliveryAddress = `${name.trim()} - ${address.trim()}`;
       const success = await checkoutWithWallet(user.id, walletBalance, deliveryAddress, phone.trim());
       if (success) {
-        // Refresh profile / wallet state after successful deduction
         await refreshWallet();
         navigate('/commandes');
       }
@@ -149,7 +201,6 @@ export default function CheckoutPage() {
              
       if (!url) throw new Error('Lien de paiement introuvable — vérifiez la config FedaPay');
       
-      // Redirect to FedaPay checkout page
       window.location.href = url;
     } catch (err) {
       console.error('Recharge error:', err);
@@ -219,67 +270,94 @@ export default function CheckoutPage() {
           
           <div className="space-y-3.5">
             {/* Input Nom */}
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400">
-                <User size={16} />
+            <div className="space-y-1">
+              <label className="text-[10px] text-dark-600/50 font-bold uppercase tracking-wider pl-1">
+                Nom complet *
+              </label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400">
+                  <User size={16} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Nom complet du destinataire *"
+                  value={name}
+                  onBlur={() => setNameTouched(true)}
+                  onChange={e => setName(e.target.value)}
+                  className={`w-full bg-surface-50 border rounded-2xl pl-10 pr-4 py-3.5 text-xs font-semibold outline-none transition-all ${
+                    nameTouched 
+                      ? name.trim() 
+                        ? 'border-emerald-500 focus:border-emerald-600' 
+                        : 'border-red-500 focus:border-red-600'
+                      : 'border-surface-200 focus:border-primary-500'
+                  }`}
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Nom complet du destinataire *"
-                value={name}
-                onBlur={() => setNameTouched(true)}
-                onChange={e => setName(e.target.value)}
-                className={`w-full bg-surface-50 border rounded-2xl pl-10 pr-4 py-3.5 text-xs font-semibold outline-none transition-all ${
-                  nameTouched 
-                    ? name.trim() 
-                      ? 'border-emerald-500 focus:border-emerald-600' 
-                      : 'border-red-500 focus:border-red-600'
-                    : 'border-surface-200 focus:border-primary-500'
-                }`}
-              />
             </div>
 
             {/* Input Téléphone */}
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400">
-                <Phone size={16} />
+            <div className="space-y-1">
+              <label className="text-[10px] text-dark-600/50 font-bold uppercase tracking-wider pl-1">
+                Téléphone *
+              </label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400">
+                  <Phone size={16} />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="Numéro de téléphone de livraison *"
+                  value={phone}
+                  onBlur={() => setPhoneTouched(true)}
+                  onChange={e => setPhone(e.target.value)}
+                  className={`w-full bg-surface-50 border rounded-2xl pl-10 pr-4 py-3.5 text-xs font-semibold outline-none transition-all ${
+                    phoneTouched 
+                      ? phone.trim() 
+                        ? 'border-emerald-500 focus:border-emerald-600' 
+                        : 'border-red-500 focus:border-red-600'
+                      : 'border-surface-200 focus:border-primary-500'
+                  }`}
+                />
               </div>
-              <input
-                type="tel"
-                placeholder="Numéro de téléphone de livraison *"
-                value={phone}
-                onBlur={() => setPhoneTouched(true)}
-                onChange={e => setPhone(e.target.value)}
-                className={`w-full bg-surface-50 border rounded-2xl pl-10 pr-4 py-3.5 text-xs font-semibold outline-none transition-all ${
-                  phoneTouched 
-                    ? phone.trim() 
-                      ? 'border-emerald-500 focus:border-emerald-600' 
-                      : 'border-red-500 focus:border-red-600'
-                    : 'border-surface-200 focus:border-primary-500'
-                }`}
-              />
             </div>
 
-            {/* Input Adresse */}
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400">
-                <MapPin size={16} />
-              </div>
-              <input
-                type="text"
-                placeholder="Adresse de livraison exacte (Ville, Quartier...) *"
-                value={address}
-                onBlur={() => setAddressTouched(true)}
-                onChange={e => setAddress(e.target.value)}
-                className={`w-full bg-surface-50 border rounded-2xl pl-10 pr-4 py-3.5 text-xs font-semibold outline-none transition-all ${
-                  addressTouched 
-                    ? address.trim() 
-                      ? 'border-emerald-500 focus:border-emerald-600' 
-                      : 'border-red-500 focus:border-red-600'
-                    : 'border-surface-200 focus:border-primary-500'
-                }`}
-              />
+            {/* Input Adresse - Carnet d'adresses */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-dark-600/50 font-bold uppercase tracking-wider pl-1">
+                Adresse de livraison *
+              </label>
+              
+              {!address ? (
+                <button
+                  type="button"
+                  onClick={() => setAddressBookOpen(true)}
+                  className="w-full flex items-center justify-between bg-surface-50 border border-surface-200 border-dashed rounded-2xl px-4 py-3.5 text-xs font-bold text-primary-600 hover:bg-primary-50/20 active:scale-98 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} />
+                    <span>Sélectionner mon adresse</span>
+                  </div>
+                  <ChevronDown size={14} className="text-dark-500/60" />
+                </button>
+              ) : (
+                <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-emerald-50/30 border border-emerald-200 text-xs">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <MapPin size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <span className="font-semibold text-dark-800 break-words leading-relaxed">
+                      {address}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddressBookOpen(true)}
+                    className="text-[10px] font-black text-primary-600 hover:text-primary-700 hover:underline flex-shrink-0"
+                  >
+                    Modifier
+                  </button>
+                </div>
+              )}
             </div>
+
           </div>
         </div>
 
@@ -413,98 +491,377 @@ export default function CheckoutPage() {
           ) : (
             <>
               <ShieldCheck size={14} />
-              Payer avec mon Wallet MANG
+              CONFIRMER ET PAYER (🔒)
             </>
           )}
         </button>
       </div>
 
-      {/* BOTTOM SHEET RECHARGE EN 1-CLIC */}
-      <BottomSheet open={rechargeOpen} onClose={() => setRechargeOpen(false)} title="💰 Recharge Express via Mobile Money">
-        <div className="px-4 pt-2 pb-8 space-y-4">
-          <div className="p-3 bg-primary-600/10 border border-primary-500/10 rounded-2xl text-[10px] text-primary-700 leading-normal">
-            Sécurisé par <strong>FedaPay</strong>. Entrez vos informations pour être redirigé vers le paiement par code USSD / Mobile Money de votre opérateur.
-          </div>
+      {/* CARNET D'ADRESSES MODAL */}
+      {user && (
+        <AddressBookSheet
+          open={addressBookOpen}
+          onClose={() => setAddressBookOpen(false)}
+          userId={user.id}
+          onSelectAddress={(addrString) => setAddress(addrString)}
+        />
+      )}
 
-          {/* Opérateurs */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-dark-700 pl-1">Choisir l'opérateur</label>
-            <div className="grid grid-cols-3 gap-2">
-              {OPERATORS.map(op => (
+      {/* BOTTOM SHEET RECHARGE EN 1-CLIC */}
+      {user && (
+        <BottomSheet open={rechargeOpen} onClose={() => setRechargeOpen(false)} title="💰 Recharge Express via Mobile Money">
+          <div className="px-4 pt-2 pb-8 space-y-4">
+            <div className="p-3 bg-primary-600/10 border border-primary-500/10 rounded-2xl text-[10px] text-primary-700 leading-normal">
+              Sécurisé par <strong>FedaPay</strong>. Entrez vos informations pour être redirigé vers le paiement par code USSD / Mobile Money de votre opérateur.
+            </div>
+
+            {/* Opérateurs */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-1">Choisir l'opérateur</label>
+              <div className="grid grid-cols-3 gap-2">
+                {OPERATORS.map(op => (
+                  <button
+                    key={op.id}
+                    onClick={() => setOperator(op.id)}
+                    className={`flex flex-col items-center py-3 rounded-2xl border-2 transition-all active:scale-95 ${
+                      operator === op.id 
+                        ? 'border-primary-600 bg-primary-50/50 text-primary-800' 
+                        : 'border-surface-200 bg-white text-dark-700'
+                    }`}
+                  >
+                    <span className="text-2xl mb-0.5">{op.emoji}</span>
+                    <span className="text-[10px] font-black leading-tight text-center">{op.id}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Numéro Mobile Money */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-1">Numéro Mobile Money (Bénin)</label>
+              <div className="relative">
+                <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" />
+                <input
+                  type="tel"
+                  placeholder="Ex: 97000000"
+                  value={rechargePhone}
+                  onChange={e => setRechargePhone(e.target.value)}
+                  className="w-full bg-surface-50 border border-surface-200 rounded-xl pl-9 pr-4 py-3 text-xs font-bold outline-none focus:border-primary-500"
+                />
+              </div>
+            </div>
+
+            {/* Montant */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-1">Montant à recharger (FCFA)</label>
+              <input
+                type="number"
+                placeholder="Montant"
+                value={rechargeAmount}
+                onChange={e => setRechargeAmount(e.target.value)}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-primary-500"
+              />
+            </div>
+
+            {/* Presets */}
+            <div className="flex flex-wrap gap-1.5">
+              {[1000, 2000, 5000, 10000, 25000].map(p => (
                 <button
-                  key={op.id}
-                  onClick={() => setOperator(op.id)}
-                  className={`flex flex-col items-center py-3 rounded-2xl border-2 transition-all active:scale-95 ${
-                    operator === op.id 
-                      ? 'border-primary-600 bg-primary-50/50 text-primary-800' 
-                      : 'border-surface-200 bg-white text-dark-700'
-                  }`}
+                  key={p}
+                  onClick={() => setRechargeAmount(p.toString())}
+                  className="px-3 py-1.5 rounded-xl border border-surface-200 bg-surface-50 hover:bg-surface-100 text-[10px] font-bold text-dark-700 transition-colors"
                 >
-                  <span className="text-2xl mb-0.5">{op.emoji}</span>
-                  <span className="text-[10px] font-black leading-tight text-center">{op.id}</span>
+                  +{p.toLocaleString('fr-FR')} F
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Numéro Mobile Money */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-dark-700 pl-1">Numéro Mobile Money (Bénin)</label>
-            <div className="relative">
-              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" />
-              <input
-                type="tel"
-                placeholder="Ex: 97000000"
-                value={rechargePhone}
-                onChange={e => setRechargePhone(e.target.value)}
-                className="w-full bg-surface-50 border border-surface-200 rounded-xl pl-9 pr-4 py-3 text-xs font-bold outline-none focus:border-primary-500"
-              />
-            </div>
+            {/* Bouton de Recharge */}
+            <Button 
+              onClick={handleRecharge} 
+              disabled={rechargeLoading} 
+              className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-black rounded-2xl flex items-center justify-center gap-1.5 mt-2"
+            >
+              {rechargeLoading ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Redirection FedaPay...
+                </>
+              ) : (
+                'Recharger et Payer'
+              )}
+            </Button>
           </div>
-
-          {/* Montant */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-dark-700 pl-1">Montant à recharger (FCFA)</label>
-            <input
-              type="number"
-              placeholder="Montant"
-              value={rechargeAmount}
-              onChange={e => setRechargeAmount(e.target.value)}
-              className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-primary-500"
-            />
-          </div>
-
-          {/* Presets */}
-          <div className="flex flex-wrap gap-1.5">
-            {[1000, 2000, 5000, 10000, 25000].map(p => (
-              <button
-                key={p}
-                onClick={() => setRechargeAmount(p.toString())}
-                className="px-3 py-1.5 rounded-xl border border-surface-200 bg-surface-50 hover:bg-surface-100 text-[10px] font-bold text-dark-700 transition-colors"
-              >
-                +{p.toLocaleString('fr-FR')} F
-              </button>
-            ))}
-          </div>
-
-          {/* Bouton de Recharge */}
-          <Button 
-            onClick={handleRecharge} 
-            disabled={rechargeLoading} 
-            className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-black rounded-2xl flex items-center justify-center gap-1.5 mt-2"
-          >
-            {rechargeLoading ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                Redirection FedaPay...
-              </>
-            ) : (
-              'Recharger et Payer'
-            )}
-          </Button>
-        </div>
-      </BottomSheet>
+        </BottomSheet>
+      )}
 
     </div>
+  );
+}
+
+// CARNET D'ADRESSES COMPOSANT INTERNE
+function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
+  const [addresses, setAddresses] = useState([]);
+  const [addMode, setAddMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  
+  const [form, setForm] = useState({ 
+    label: '', 
+    address_line: '', 
+    city: '', 
+    neighbourhood: '', 
+    latitude: null, 
+    longitude: null, 
+    is_default: false 
+  });
+
+  const resetForm = () => setForm({ 
+    label: '', 
+    address_line: '', 
+    city: '', 
+    neighbourhood: '', 
+    latitude: null, 
+    longitude: null, 
+    is_default: false 
+  });
+
+  const loadAddresses = async () => {
+    if (!userId) return;
+    const { data } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false });
+    if (data) setAddresses(data);
+  };
+
+  useEffect(() => {
+    if (open && userId) {
+      loadAddresses();
+      setAddMode(false);
+      resetForm();
+    }
+  }, [open, userId]);
+
+  const handleLocate = () => {
+    if (!navigator.geolocation) {
+      toast.error('GPS non disponible');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const geo = await reverseGeocode(coords.latitude, coords.longitude);
+        setForm(p => ({ 
+          ...p, 
+          city: geo.city, 
+          neighbourhood: geo.neighbourhood, 
+          address_line: geo.address_line, 
+          latitude: coords.latitude, 
+          longitude: coords.longitude 
+        }));
+        toast.success(`📍 ${geo.label || 'Position détectée'}`);
+      } catch (err) {
+        toast.error('Erreur de géocodage');
+      }
+      setLocating(false);
+    }, () => {
+      toast.error('GPS refusé');
+      setLocating(false);
+    }, { enableHighAccuracy: true, timeout: 15000 });
+  };
+
+  const handleSave = async () => {
+    if (!form.label.trim() || !form.city.trim()) {
+      toast.error('Veuillez renseigner un libellé et la ville');
+      return;
+    }
+    setLoading(true);
+    
+    if (form.is_default) {
+      await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
+    }
+
+    const { error } = await supabase.from('user_addresses').insert({
+      user_id: userId,
+      label: form.label.trim(),
+      address_line: form.address_line.trim() || null,
+      city: form.city.trim(),
+      neighbourhood: form.neighbourhood.trim() || null,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      is_default: form.is_default,
+    });
+    
+    setLoading(false);
+    if (error) {
+      toast.error("Erreur d'enregistrement");
+      return;
+    }
+    toast.success('Adresse enregistrée ✅');
+    resetForm();
+    setAddMode(false);
+    loadAddresses();
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    const { error } = await supabase.from('user_addresses').delete().eq('id', id);
+    if (error) {
+      toast.error('Erreur de suppression');
+      return;
+    }
+    toast.success('Adresse supprimée');
+    loadAddresses();
+  };
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="📍 Carnet d'adresses">
+      <div className="px-4 pt-2 pb-8 space-y-4">
+        {!addMode ? (
+          <>
+            <button
+              onClick={() => setAddMode(true)}
+              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl border-2 border-dashed border-primary-200 text-primary-600 font-bold text-xs active:scale-95 transition-transform"
+            >
+              <Plus size={16} /> Ajouter une adresse
+            </button>
+
+            {addresses.length === 0 && (
+              <div className="text-center py-6">
+                <span className="text-3xl">📍</span>
+                <p className="text-xs font-semibold text-dark-600/60 mt-2">Aucune adresse enregistrée</p>
+                <p className="text-[10px] text-dark-600/40 mt-1">Ajoutez vos adresses de livraison habituelles</p>
+              </div>
+            )}
+
+            <div className="space-y-2.5 max-h-60 overflow-y-auto no-scrollbar">
+              {addresses.map(addr => {
+                const formatted = `[${addr.label}] ${[addr.address_line, addr.neighbourhood, addr.city].filter(Boolean).join(', ')}`;
+                return (
+                  <div
+                    key={addr.id}
+                    onClick={() => {
+                      onSelectAddress(formatted);
+                      onClose();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all active:scale-[0.99] flex items-start justify-between gap-3 bg-white hover:bg-surface-50 border-surface-200`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-black text-dark-800 truncate">{addr.label}</p>
+                        {addr.is_default && (
+                          <span className="text-[9px] font-black text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            Par défaut
+                          </span>
+                        )}
+                      </div>
+                      {addr.address_line && <p className="text-[10px] text-dark-600/60 mt-0.5">{addr.address_line}</p>}
+                      <p className="text-[10px] text-dark-600/40 mt-0.5">
+                        {[addr.neighbourhood, addr.city].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={(e) => handleDelete(addr.id, e)}
+                      className="w-7 h-7 rounded-xl bg-red-50 hover:bg-red-100 flex items-center justify-center active:scale-95 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={12} className="text-red-500" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button onClick={onClose} variant="secondary" className="w-full py-3.5 rounded-2xl font-bold text-xs mt-2">
+              Fermer
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={() => { setAddMode(false); resetForm(); }}
+                className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center active:scale-95"
+              >
+                <ChevronDown size={16} className="text-dark-600" />
+              </button>
+              <p className="font-bold text-dark-800 text-xs">Nouvelle adresse</p>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                placeholder="Libellé (ex: Domicile, Bureau...)"
+                value={form.label}
+                onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-primary-500"
+              />
+
+              <input
+                placeholder="Adresse exacte (rue, numéro...)"
+                value={form.address_line}
+                onChange={e => setForm(p => ({ ...p, address_line: e.target.value }))}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-primary-500"
+              />
+
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  placeholder="Ville"
+                  value={form.city}
+                  onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                  className="w-full bg-surface-50 border border-surface-200 rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-primary-500"
+                />
+                <input
+                  placeholder="Quartier"
+                  value={form.neighbourhood}
+                  onChange={e => setForm(p => ({ ...p, neighbourhood: e.target.value }))}
+                  className="w-full bg-surface-50 border border-surface-200 rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-primary-500"
+                />
+              </div>
+
+              <button
+                onClick={handleLocate}
+                disabled={locating}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-xs transition-all active:scale-95 disabled:opacity-50 ${
+                  form.latitude 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                    : 'bg-primary-50 text-primary-700 border border-primary-200'
+                }`}
+              >
+                {locating ? (
+                  <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+                ) : form.latitude ? (
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                ) : (
+                  <Navigation size={14} />
+                )}
+                <span>
+                  {locating ? 'Localisation...' : form.latitude ? '📍 Position enregistrée' : 'Détecter ma position GPS'}
+                </span>
+              </button>
+
+              <label className="flex items-center gap-2 p-3 rounded-xl bg-surface-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_default}
+                  onChange={e => setForm(p => ({ ...p, is_default: e.target.checked }))}
+                  className="w-4 h-4 accent-primary-600"
+                />
+                <span className="text-xs font-bold text-dark-700">Définir comme adresse par défaut</span>
+              </label>
+
+              <Button
+                disabled={loading}
+                onClick={handleSave}
+                className="w-full py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-black rounded-2xl flex items-center justify-center"
+              >
+                Enregistrer l'adresse
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </BottomSheet>
   );
 }
