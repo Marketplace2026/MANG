@@ -284,6 +284,7 @@ function PostsTab({ user, profile, mode }) {
   const [reportedPostIds, setReportedPostIds] = useState(new Set())
   const [reportingPostId, setReportingPostId] = useState(null)
   const [repostQuotePost, setRepostQuotePost] = useState(null)
+  const [bookmarkedPosts, setBookmarkedPosts] = useState(new Set())
 
   const PAGE_SIZE = 20
   const location = useLocation()
@@ -332,14 +333,13 @@ function PostsTab({ user, profile, mode }) {
     const { data } = await q
     if (!data) { setLoading(false); return }
 
-    if (user) {
-      if (user?.id) {
-        const { data: myLikes } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', user.id)
-        setLikedPosts(new Set((myLikes || []).map(l => l.post_id)))
-      }
+    if (user && user.id) {
+      const [{ data: myLikes }, { data: myBookmarks }] = await Promise.all([
+        supabase.from('post_likes').select('post_id').eq('user_id', user.id),
+        supabase.from('post_bookmarks').select('post_id').eq('user_id', user.id)
+      ])
+      setLikedPosts(new Set((myLikes || []).map(l => l.post_id)))
+      setBookmarkedPosts(new Set((myBookmarks || []).map(b => b.post_id)))
     }
 
     setPosts(data)
@@ -496,6 +496,47 @@ function PostsTab({ user, profile, mode }) {
     }
   }
 
+  const toggleBookmark = async (postId) => {
+    if (!user) { toast.error('Connectez-vous d\'abord'); return }
+    const isBookmarked = bookmarkedPosts.has(postId)
+
+    // Optimistic update
+    setBookmarkedPosts(prev => {
+      const copy = new Set(prev)
+      if (isBookmarked) copy.delete(postId)
+      else copy.add(postId)
+      return copy
+    })
+
+    try {
+      if (isBookmarked) {
+        const { error } = await supabase
+          .from('post_bookmarks')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+        if (error) throw error
+        toast.success('Retiré des favoris')
+      } else {
+        const { error } = await supabase
+          .from('post_bookmarks')
+          .insert({ post_id: postId, user_id: user.id })
+        if (error) throw error
+        toast.success('Ajouté aux favoris ! 💾')
+      }
+    } catch (err) {
+      console.error(err)
+      // Rollback
+      setBookmarkedPosts(prev => {
+        const copy = new Set(prev)
+        if (isBookmarked) copy.add(postId)
+        else copy.delete(postId)
+        return copy
+      })
+      toast.error('Erreur réseau')
+    }
+  }
+
   const onPostCreated = (newPost) => {
     setPosts(prev => [newPost, ...prev])
     setComposerOpen(false)
@@ -589,6 +630,8 @@ function PostsTab({ user, profile, mode }) {
               onImageClick={(url) => setLightboxImg(url)}
               onHashtagClick={(tag) => setSearchQuery(tag)}
               onRepost={() => setRepostQuotePost(post)}
+              isBookmarked={bookmarkedPosts.has(post.id)}
+              onToggleBookmark={() => toggleBookmark(post.id)}
             />
           ))}
           {/* Scroll observer element for infinite scroll */}
@@ -1015,7 +1058,7 @@ function ShopPicker({ open, onClose, onSelect }) {
 // ============================================================
 function PostCard({
   post, userId, isLiked, onLike, onComment, onLikers, onDelete,
-  onReport, onImageClick, onHashtagClick, onRepost
+  onReport, onImageClick, onHashtagClick, onRepost, isBookmarked, onToggleBookmark
 }) {
   const navigate = useNavigate()
   const isOwner = post.user_id === userId
@@ -1153,7 +1196,14 @@ function PostCard({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)}/>
-              <div className="absolute right-0 top-10 z-20 bg-white rounded-2xl shadow-modal border border-surface-100 overflow-hidden min-w-[140px] animate-scale-in">
+              <div className="absolute right-0 top-10 z-20 bg-white rounded-2xl shadow-modal border border-surface-100 overflow-hidden min-w-[150px] animate-scale-in">
+                {/* Option enregistrer / Bookmark (TÂCHE B) */}
+                <button onClick={() => { onToggleBookmark(); setMenuOpen(false) }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-primary-700 hover:bg-primary-50 border-b border-surface-100">
+                  <Bookmark size={14} className={isBookmarked ? 'fill-current' : ''}/>
+                  {isBookmarked ? 'Enregistré' : 'Enregistrer'}
+                </button>
+
                 {isOwner ? (
                   <button onClick={() => { onDelete(); setMenuOpen(false) }}
                     className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">

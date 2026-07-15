@@ -5,15 +5,18 @@ import { useAuthStore } from '@/store'
 import {
   Heart, Store, Package, Trash2, MapPin, Truck,
   ChevronRight, AlertCircle, RefreshCw, ShoppingBag,
-  ArrowUpDown, CheckCircle2
+  ArrowUpDown, CheckCircle2, Bookmark
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
+import { formatDistanceToNow } from 'date-fns'
+import { fr } from 'date-fns/locale'
 
 // ── Onglets ────────────────────────────────────────────────
 const TABS = [
-  { key: 'shops',    label: 'Boutiques',  icon: Store   },
-  { key: 'products', label: 'Produits',   icon: Package },
+  { key: 'shops',      label: 'Boutiques',  icon: Store   },
+  { key: 'products',   label: 'Produits',   icon: Package },
+  { key: 'bookmarks',  label: 'Publications', icon: Bookmark },
 ]
 
 // ── Options de tri ─────────────────────────────────────────
@@ -214,6 +217,7 @@ function ProductFavoriteCard({ item, onUnfavorite, index }) {
 function EmptyState({ tab }) {
   const navigate = useNavigate()
   const isShops = tab === 'shops'
+  const isProducts = tab === 'products'
 
   return (
     <div
@@ -221,23 +225,25 @@ function EmptyState({ tab }) {
       style={{ animation: 'fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both' }}
     >
       <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mb-5 shadow-inner">
-        <span className="text-5xl">{isShops ? '🏪' : '📦'}</span>
+        <span className="text-5xl">{isShops ? '🏪' : isProducts ? '📦' : '💾'}</span>
       </div>
       <p className="font-bold text-dark-700 text-lg mb-2">
-        {isShops ? 'Aucune boutique suivie' : 'Aucun produit favori'}
+        {isShops ? 'Aucune boutique suivie' : isProducts ? 'Aucun produit favori' : 'Aucune publication enregistrée'}
       </p>
       <p className="text-sm text-dark-400 mb-6 leading-relaxed">
         {isShops
           ? 'Suivez des boutiques depuis la Marketplace pour les retrouver ici'
-          : 'Ajoutez des produits en favoris depuis les boutiques'
+          : isProducts
+          ? 'Ajoutez des produits en favoris depuis les boutiques'
+          : 'Enregistrez des astuces et opportunités depuis la Communauté'
         }
       </p>
       <button
-        onClick={() => navigate('/marketplace')}
+        onClick={() => navigate(isShops || isProducts ? '/marketplace' : '/communaute')}
         className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-2xl active:scale-95 transition-transform shadow-md shadow-primary-200"
       >
         <ShoppingBag size={15} />
-        Explorer la Marketplace
+        {isShops || isProducts ? 'Explorer la Marketplace' : 'Découvrir la Communauté'}
       </button>
     </div>
   )
@@ -361,15 +367,18 @@ export default function FavoritesPage() {
   const [tab, setTab] = useState('shops')
   const [shops, setShops] = useState([])
   const [products, setProducts] = useState([])
+  const [bookmarks, setBookmarks] = useState([])
   const [loadingShops, setLoadingShops] = useState(true)
   const [loadingProducts, setLoadingProducts] = useState(true)
+  const [loadingBookmarks, setLoadingBookmarks] = useState(true)
   const [errorShops, setErrorShops] = useState(false)
   const [errorProducts, setErrorProducts] = useState(false)
+  const [errorBookmarks, setErrorBookmarks] = useState(false)
   const [sortShops, setSortShops] = useState('recent')
   const [sortProducts, setSortProducts] = useState('recent')
 
   useEffect(() => {
-    if (user) { fetchShops(); fetchProducts() }
+    if (user) { fetchShops(); fetchProducts(); fetchBookmarks() }
   }, [user])
 
   const fetchShops = async () => {
@@ -408,8 +417,35 @@ export default function FavoritesPage() {
     setLoadingProducts(false)
   }
 
+  const fetchBookmarks = async () => {
+    setLoadingBookmarks(true)
+    setErrorBookmarks(false)
+    try {
+      const { data, error } = await supabase
+        .from('post_bookmarks')
+        .select(`
+          id,
+          post:posts (
+            *,
+            user:profiles(id, username, avatar_url, last_seen_at),
+            shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)),
+            parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setBookmarks((data || []).filter(item => item.post))
+    } catch (err) {
+      console.error(err)
+      setErrorBookmarks(true)
+    } finally {
+      setLoadingBookmarks(false)
+    }
+  }
+
   const handleRefresh = useCallback(async () => {
-    await Promise.all([fetchShops(), fetchProducts()])
+    await Promise.all([fetchShops(), fetchProducts(), fetchBookmarks()])
     toast.success('Favoris mis à jour', { icon: '✨' })
   }, [])
 
@@ -474,14 +510,42 @@ export default function FavoritesPage() {
     }, 4000)
   }
 
-  const loading = tab === 'shops' ? loadingShops : loadingProducts
-  const hasError = tab === 'shops' ? errorShops : errorProducts
-  const onRetry = tab === 'shops' ? fetchShops : fetchProducts
+  const handleUnbookmark = async (item) => {
+    setBookmarks(prev => prev.filter(b => b.id !== item.id))
+    
+    const undoId = toast((t) => (
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-dark-700">Enregistrement retiré</span>
+        <button
+          className="text-primary-600 text-sm font-bold shrink-0"
+          onClick={() => {
+            setBookmarks(prev => [item, ...prev])
+            toast.dismiss(t.id)
+          }}
+        >
+          Annuler
+        </button>
+      </div>
+    ), { duration: 4000, icon: '💾' })
+
+    setTimeout(async () => {
+      toast.dismiss(undoId)
+      const { error } = await supabase.from('post_bookmarks').delete().eq('id', item.id)
+      if (error) {
+        setBookmarks(prev => [item, ...prev])
+        toast.error('Erreur lors de la suppression')
+      }
+    }, 4000)
+  }
+
+  const loading = tab === 'shops' ? loadingShops : tab === 'products' ? loadingProducts : loadingBookmarks
+  const hasError = tab === 'shops' ? errorShops : tab === 'products' ? errorProducts : errorBookmarks
+  const onRetry = tab === 'shops' ? fetchShops : tab === 'products' ? fetchProducts : fetchBookmarks
 
   const sortedShops = applySortShops(shops, sortShops)
   const sortedProducts = applySortProducts(products, sortProducts)
 
-  const count = tab === 'shops' ? shops.length : products.length
+  const count = tab === 'shops' ? shops.length : tab === 'products' ? products.length : bookmarks.length
   const currentSort = tab === 'shops' ? sortShops : sortProducts
   const setCurrentSort = tab === 'shops' ? setSortShops : setSortProducts
 
@@ -544,7 +608,7 @@ export default function FavoritesPage() {
               <h1 className="font-display font-bold text-white text-xl">Mes Favoris</h1>
               <p className="text-xs text-primary-200">
                 <AnimatedCount value={count} />{' '}
-                {tab === 'shops' ? 'boutique' : 'produit'}{count > 1 ? 's' : ''}
+                {tab === 'shops' ? 'boutique' : tab === 'products' ? 'produit' : 'publication'}{count > 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -554,7 +618,7 @@ export default function FavoritesPage() {
             {TABS.map(t => {
               const Icon = t.icon
               const isActive = tab === t.key
-              const c = t.key === 'shops' ? shops.length : products.length
+              const c = t.key === 'shops' ? shops.length : t.key === 'products' ? products.length : bookmarks.length
               return (
                 <button
                   key={t.key}
@@ -586,7 +650,9 @@ export default function FavoritesPage() {
             <div className="grid grid-cols-2 gap-3">
               {tab === 'shops'
                 ? [1, 2, 3, 4].map(i => <SkeletonShopCard key={i} />)
-                : [1, 2, 3, 4].map(i => <SkeletonProductCard key={i} />)
+                : tab === 'products'
+                ? [1, 2, 3, 4].map(i => <SkeletonProductCard key={i} />)
+                : [1, 2, 3].map(i => <div key={i} className="col-span-2 h-24 bg-white border border-surface-100 rounded-2xl animate-pulse" />)
               }
             </div>
           ) : hasError ? (
@@ -598,25 +664,109 @@ export default function FavoritesPage() {
               {/* Barre de tri */}
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs text-dark-400 font-medium">
-                  {count} {tab === 'shops' ? 'boutique' : 'produit'}{count > 1 ? 's' : ''}
+                  {count} {tab === 'shops' ? 'boutique' : tab === 'products' ? 'produit' : 'publication'}{count > 1 ? 's' : ''}
                 </p>
-                <SortDropdown tab={tab} sort={currentSort} setSort={setCurrentSort} />
+                {tab !== 'bookmarks' && <SortDropdown tab={tab} sort={currentSort} setSort={setCurrentSort} />}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {tab === 'shops'
-                  ? sortedShops.map((item, i) => (
-                    <ShopFavoriteCard key={item.id} item={item} onUnfollow={handleUnfollow} index={i} />
-                  ))
-                  : sortedProducts.map((item, i) => (
-                    <ProductFavoriteCard key={item.id} item={item} onUnfavorite={handleUnfavorite} index={i} />
-                  ))
-                }
+                {tab === 'shops' && sortedShops.map((item, i) => (
+                  <ShopFavoriteCard key={item.id} item={item} onUnfollow={handleUnfollow} index={i} />
+                ))}
+                {tab === 'products' && sortedProducts.map((item, i) => (
+                  <ProductFavoriteCard key={item.id} item={item} onUnfavorite={handleUnfavorite} index={i} />
+                ))}
+                {tab === 'bookmarks' && bookmarks.map((item, i) => (
+                  <BookmarkedPostCard key={item.id} item={item} onUnbookmark={handleUnbookmark} index={i} />
+                ))}
               </div>
             </>
           )}
         </div>
       </div>
     </>
+  )
+}
+
+// ── Carte Publication Enregistrée (TÂCHE B) ────────────────
+function BookmarkedPostCard({ item, onUnbookmark, index }) {
+  const navigate = useNavigate()
+  const post = item.post
+  const [removing, setRemoving] = useState(false)
+
+  const handleUnbookmark = (e) => {
+    e.stopPropagation()
+    setRemoving(true)
+    setTimeout(() => onUnbookmark(item), 280)
+  }
+
+  // Parse hashtags or custom content preview
+  const parseContentPreview = (text) => {
+    if (!text) return ''
+    if (text.startsWith('{"is_poll":')) {
+      try {
+        const obj = JSON.parse(text)
+        return `📊 Sondage : ${obj.question}`
+      } catch (e) {
+        return '📊 Sondage de la communauté'
+      }
+    }
+    return text
+  }
+
+  return (
+    <div
+      className={clsx(
+        'bg-white rounded-3xl border border-surface-100 p-4.5 transition-all duration-300 flex flex-col gap-3 active:scale-[0.98] cursor-pointer col-span-2 shadow-sm',
+        removing
+          ? 'opacity-0 scale-95 pointer-events-none'
+          : 'opacity-100 scale-100'
+      )}
+      style={{ animation: `slideIn 0.35s cubic-bezier(0.22,1,0.36,1) ${index * 60}ms both` }}
+      onClick={() => navigate('/communaute', { state: { openPostId: post.id } })}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-surface-200 flex-shrink-0">
+            {post.user?.avatar_url ? (
+              <img src={post.user.avatar_url} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs">
+                {post.user?.username?.[0].toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-dark-800 text-xs truncate">@{post.user?.username}</p>
+            <p className="text-[9px] text-dark-600/40 font-semibold">
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleUnbookmark}
+          className="w-7 h-7 bg-primary-50 hover:bg-red-50 rounded-full flex items-center justify-center text-primary-600 hover:text-red-500 transition-colors"
+        >
+          <Bookmark size={12} className="fill-current" />
+        </button>
+      </div>
+
+      <div className="flex gap-3 items-start">
+        <div className="flex-1 min-w-0">
+          <p className="text-dark-700 text-xs line-clamp-3 leading-relaxed font-medium">
+            {parseContentPreview(post.content)}
+          </p>
+        </div>
+        {post.image_url && (
+          <img src={post.image_url} className="w-16 h-16 object-cover rounded-2xl flex-shrink-0 border border-surface-100" />
+        )}
+      </div>
+
+      <div className="flex justify-between items-center pt-2.5 border-t border-surface-100 text-[10px] text-dark-600/50 font-bold">
+        <span>💬 {post.comments_count || 0} commentaire{post.comments_count > 1 ? 's' : ''}</span>
+        <span className="text-primary-600 font-bold flex items-center gap-0.5">Voir la discussion →</span>
+      </div>
+    </div>
   )
 }
