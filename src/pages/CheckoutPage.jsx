@@ -185,7 +185,7 @@ export default function CheckoutPage() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-surface-50 pb-36 text-dark-900 font-sans">
+    <div className="min-h-screen bg-surface-50 pb-56 text-dark-900 font-sans">
       
       {/* Sticky Header */}
       <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-surface-200 px-4 py-4 z-20 flex items-center gap-3 max-w-[var(--content-max-width)] mx-auto">
@@ -381,7 +381,14 @@ export default function CheckoutPage() {
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 px-4 py-4 flex items-center justify-between gap-3 shadow-2xl safe-pb max-w-[var(--content-max-width)] mx-auto">
+      <style>{`
+        @media (min-width: 768px) {
+          .checkout-sticky-bar {
+            bottom: 0 !important;
+          }
+        }
+      `}</style>
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 bg-white border-t border-surface-200 px-4 py-4 flex items-center justify-between gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] max-w-[var(--content-max-width)] mx-auto checkout-sticky-bar">
         <div className="flex flex-col">
           <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Montant dû</p>
           <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">
