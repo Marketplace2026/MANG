@@ -175,16 +175,16 @@ export function BottomSheet({ open, onClose, title, children, className = '' }) 
   return (
     <>
       <div className="overlay" onClick={onClose} />
-      <div className={clsx('bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0', className)}>
+      <div className={clsx('bottom-sheet dark:bg-dark-900 z-50 max-w-[480px] mx-auto left-0 right-0', className)}>
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-surface-300" />
+          <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-dark-700" />
         </div>
         {title && (
-          <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100">
-            <h3 className="font-display text-lg font-bold text-dark-800">{title}</h3>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center active:scale-95">
-              <X size={16} className="text-dark-600" />
+          <div className="flex items-center justify-between px-5 py-3 border-b border-surface-100 dark:border-dark-800">
+            <h3 className="font-display text-lg font-bold text-dark-800 dark:text-white">{title}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-dark-800 flex items-center justify-center active:scale-95">
+              <X size={16} className="text-dark-600 dark:text-dark-300" />
             </button>
           </div>
         )}

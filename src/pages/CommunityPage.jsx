@@ -70,7 +70,7 @@ export default function CommunityPage() {
   const tabsRef = useRef()
 
   return (
-    <div className="min-h-screen bg-surface-50 flex flex-col">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col transition-colors duration-300">
       {/* HEADER */}
       <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-0 px-4">
         <div className="flex items-center justify-between mb-3">
@@ -89,7 +89,7 @@ export default function CommunityPage() {
               className={clsx(
                 'flex-shrink-0 px-4 py-2 rounded-t-xl text-sm font-bold transition-all whitespace-nowrap',
                 tab === t.key
-                  ? 'bg-surface-50 text-primary-700'
+                  ? 'bg-surface-50 dark:bg-dark-950 text-primary-700 dark:text-primary-400'
                   : 'text-white/70 hover:text-white'
               )}>
               {t.label}
@@ -114,27 +114,27 @@ export default function CommunityPage() {
 // ============================================================
 function StoriesCarousel({ profile, onOpenStory }) {
   return (
-    <div className="bg-white border-b border-surface-100 px-4 py-4 flex gap-3.5 overflow-x-auto no-scrollbar">
+    <div className="bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-4 flex gap-3.5 overflow-x-auto no-scrollbar">
       {/* Ajouter ma story */}
       <div className="flex flex-col items-center flex-shrink-0 cursor-pointer">
-        <div className="relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-surface-300 flex items-center justify-center bg-surface-50">
+        <div className="relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-surface-300 dark:border-dark-700 flex items-center justify-center bg-surface-50 dark:bg-dark-955">
           <Avatar src={profile?.avatar_url} name={profile?.username} size="md" />
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-white font-bold text-xs">
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-white dark:border-dark-900 font-bold text-xs">
             +
           </div>
         </div>
-        <span className="text-[10px] font-bold text-dark-600 mt-1">Ma story</span>
+        <span className="text-[10px] font-bold text-dark-600 dark:text-dark-400 mt-1">Ma story</span>
       </div>
 
       {/* Liste des stories mockées */}
       {MOCK_STORIES.map((s, idx) => (
         <div key={s.id} onClick={() => onOpenStory(idx)} className="flex flex-col items-center flex-shrink-0 cursor-pointer">
           <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-primary-500 to-gold-400 flex items-center justify-center shadow-md active:scale-95 transition-transform">
-            <div className="w-full h-full rounded-full border-2 border-white overflow-hidden">
+            <div className="w-full h-full rounded-full border-2 border-white dark:border-dark-900 overflow-hidden">
               <img src={s.avatar} className="w-full h-full object-cover" alt={s.username} />
             </div>
           </div>
-          <span className="text-[10px] font-semibold text-dark-800 mt-1">@{s.username}</span>
+          <span className="text-[10px] font-semibold text-dark-800 dark:text-white mt-1">@{s.username}</span>
         </div>
       ))}
     </div>
@@ -557,45 +557,65 @@ function PostsTab({ user, profile, mode }) {
     })
 
   return (
-    <div>
-      {/* Carrousel de Stories Premium */}
-      <StoriesCarousel profile={profile} onOpenStory={setActiveStoryIdx} />
+    <>
+      {/* Dynamic Keyframes for smooth entries/exits (Task E) */}
+      <style>{`
+        @keyframes postSlideIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes postFadeOut {
+          from { opacity: 1; transform: scale(1); max-height: 500px; margin-bottom: 12px; padding: 16px; opacity: 1; }
+          to   { opacity: 0; transform: scale(0.95); max-height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
+        }
+        .animate-post-in {
+          animation: postSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .animate-post-out {
+          animation: postFadeOut 0.28s cubic-bezier(0.25, 1, 0.5, 1) both;
+        }
+      `}</style>
 
-      {/* Filtrage par recherche active */}
-      {searchQuery && (
-        <div className="bg-primary-50 px-4 py-3 flex items-center justify-between border-b border-primary-100">
-          <p className="text-xs font-bold text-primary-800">
-            Filtre actif : <span className="underline">{searchQuery}</span>
-          </p>
-          <button onClick={() => setSearchQuery('')} className="text-primary-700 hover:text-primary-900">
-            <X size={14} />
-          </button>
-        </div>
-      )}
+      <div>
+        {/* Carrousel de Stories Premium */}
+        <StoriesCarousel profile={profile} onOpenStory={setActiveStoryIdx} />
 
-      {/* Composer déclencheur */}
-      <div className="bg-white border-b border-surface-100 px-4 py-3">
-        <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
-          className="w-full flex items-center gap-3">
-          <Avatar src={profile?.avatar_url} name={profile?.username} size="md" className="flex-shrink-0"/>
-          <div className="flex-1 text-left bg-surface-100 rounded-2xl px-4 py-2.5">
-            <span className="text-dark-600/40 text-sm font-medium">Exprimer quelque chose ou lancer un sondage... 🌿</span>
+        {/* Filtrage par recherche active */}
+        {searchQuery && (
+          <div className="bg-primary-50 dark:bg-primary-950/20 px-4 py-3 flex items-center justify-between border-b border-primary-100 dark:border-primary-900/50">
+            <p className="text-xs font-bold text-primary-800 dark:text-primary-300">
+              Filtre actif : <span className="underline">{searchQuery}</span>
+            </p>
+            <button onClick={() => setSearchQuery('')} className="text-primary-700 dark:text-primary-400 hover:text-primary-900">
+              <X size={14} />
+            </button>
           </div>
-        </button>
-        {/* Boutons raccourcis */}
-        <div className="flex gap-2 mt-2.5 ml-1">
+        )}
+
+        {/* Composer déclencheur */}
+        <div className="bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-3">
           <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 text-xs font-semibold text-dark-600">
-            <Image size={13} className="text-primary-500"/> Photo
+            className="w-full flex items-center gap-3">
+            <Avatar src={profile?.avatar_url} name={profile?.username} size="md" className="flex-shrink-0"/>
+            <div className="flex-1 text-left bg-surface-100 dark:bg-dark-800 rounded-2xl px-4 py-2.5">
+              <span className="text-dark-600/40 dark:text-white/40 text-sm font-medium">Exprimer quelque chose ou lancer un sondage... 🌿</span>
+            </div>
           </button>
-          <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 text-xs font-semibold text-dark-600">
-            <BarChart2 size={13} className="text-violet-500"/> Sondage
-          </button>
-          <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 text-xs font-semibold text-dark-600">
-            <Store size={13} className="text-emerald-500"/> Boutique
-          </button>
+          {/* Boutons raccourcis */}
+          <div className="flex gap-2 mt-2.5 ml-1">
+            <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-dark-800 text-xs font-semibold text-dark-600 dark:text-dark-300">
+              <Image size={13} className="text-primary-500"/> Photo
+            </button>
+            <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-dark-800 text-xs font-semibold text-dark-600 dark:text-dark-300">
+              <BarChart2 size={13} className="text-violet-500"/> Sondage
+            </button>
+            <button onClick={() => user ? setComposerOpen(true) : toast.error('Connectez-vous d\'abord')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-dark-800 text-xs font-semibold text-dark-600 dark:text-dark-300">
+              <Store size={13} className="text-emerald-500"/> Boutique
+            </button>
+          </div>
         </div>
       </div>
 
@@ -607,37 +627,39 @@ function PostsTab({ user, profile, mode }) {
       ) : displayedPosts.length === 0 ? (
         <div className="text-center py-16 px-6">
           <p className="text-5xl mb-3">{mode === 'following' ? '👥' : '🌿'}</p>
-          <p className="font-display text-xl font-bold text-dark-800">
+          <p className="font-display text-xl font-bold text-dark-800 dark:text-white">
             {mode === 'following' ? 'Aucune publication' : 'Soyez le premier !'}
           </p>
-          <p className="text-dark-600/50 text-sm mt-2">
+          <p className="text-dark-600/50 dark:text-white/40 text-sm mt-2">
             {mode === 'following' ? 'Abonnez-vous à des membres pour voir leurs posts' : 'Partagez quelque chose avec la communauté'}
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-surface-100">
+        <div className="divide-y divide-surface-100 dark:divide-dark-800">
           {displayedPosts.map(post => (
-            <PostCard
-              key={post.id}
-              post={post}
-              userId={user?.id}
-              isLiked={likedPosts.has(post.id)}
-              onLike={() => toggleLike(post.id)}
-              onComment={() => setCommentsPost(post)}
-              onLikers={() => setLikersPost(post)}
-              onDelete={() => deletePost(post.id)}
-              onReport={() => handleReport(post.id)}
-              onImageClick={(url) => setLightboxImg(url)}
-              onHashtagClick={(tag) => setSearchQuery(tag)}
-              onRepost={() => setRepostQuotePost(post)}
-              isBookmarked={bookmarkedPosts.has(post.id)}
-              onToggleBookmark={() => toggleBookmark(post.id)}
-            />
+            <div key={post.id} className={post.isDeleting ? 'animate-post-out' : 'animate-post-in'}>
+              <PostCard
+                key={post.id}
+                post={post}
+                userId={user?.id}
+                isLiked={likedPosts.has(post.id)}
+                onLike={() => toggleLike(post.id)}
+                onComment={() => setCommentsPost(post)}
+                onLikers={() => setLikersPost(post)}
+                onDelete={() => deletePost(post.id)}
+                onReport={() => handleReport(post.id)}
+                onImageClick={(url) => setLightboxImg(url)}
+                onHashtagClick={(tag) => setSearchQuery(tag)}
+                onRepost={() => setRepostQuotePost(post)}
+                isBookmarked={bookmarkedPosts.has(post.id)}
+                onToggleBookmark={() => toggleBookmark(post.id)}
+              />
+            </div>
           ))}
           {/* Scroll observer element for infinite scroll */}
           {hasMore && (
             <div ref={loadMoreRef} className="py-6 flex justify-center">
-              <div className="w-5 h-5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"/>
+              <div className="w-5 h-5 border-2 border-primary-300 border-t-primary-600 dark:border-t-primary-400 rounded-full animate-spin"/>
             </div>
           )}
         </div>
@@ -705,7 +727,7 @@ function PostsTab({ user, profile, mode }) {
           }}
         />
       )}
-    </div>
+    </>
   )
 }
 
@@ -829,8 +851,8 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
         <div className="flex items-center gap-3">
           <Avatar src={profile?.avatar_url} name={profile?.username} size="md"/>
           <div>
-            <p className="font-bold text-dark-800 text-sm">@{profile?.username}</p>
-            <p className="text-dark-600/40 text-xs">Visible par tous</p>
+            <p className="font-bold text-dark-800 dark:text-white text-sm">@{profile?.username}</p>
+            <p className="text-dark-600/40 dark:text-white/40 text-xs">Visible par tous</p>
           </div>
         </div>
 
@@ -840,13 +862,13 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
           value={content}
           onChange={e => setContent(e.target.value)}
           rows={3}
-          className="w-full bg-surface-50 rounded-2xl px-4 py-3 text-sm text-dark-800 placeholder-dark-600/40 outline-none resize-none font-medium border border-surface-200 focus:border-primary-400 transition-colors"
+          className="w-full bg-surface-50 dark:bg-dark-950 rounded-2xl px-4 py-3 text-sm text-dark-800 dark:text-white placeholder-dark-600/40 dark:placeholder-white/40 outline-none resize-none font-medium border border-surface-200 dark:border-dark-800 focus:border-primary-400 transition-colors"
         />
 
         {/* SECTION SONDAGE CRÉATION */}
         {isPollMode && (
-          <div className="bg-surface-50 border border-surface-200 rounded-2xl p-4 space-y-2 animate-scale-in">
-            <p className="text-xs font-bold text-dark-700">Options du sondage</p>
+          <div className="bg-surface-50 dark:bg-dark-950 border border-surface-200 dark:border-dark-800 rounded-2xl p-4 space-y-2 animate-scale-in">
+            <p className="text-xs font-bold text-dark-700 dark:text-dark-300 font-sans">Options du sondage</p>
             {pollOptions.map((opt, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <input
@@ -854,10 +876,10 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
                   placeholder={`Option ${idx + 1}`}
                   value={opt}
                   onChange={e => handlePollOptionChange(idx, e.target.value)}
-                  className="flex-1 bg-white border border-surface-200 rounded-xl px-3.5 py-2 text-xs font-semibold outline-none focus:border-violet-500"
+                  className="flex-1 bg-white dark:bg-dark-900 border border-surface-200 dark:border-dark-750 text-dark-800 dark:text-white rounded-xl px-3.5 py-2 text-xs font-semibold outline-none focus:border-violet-500"
                 />
                 {pollOptions.length > 2 && (
-                  <button onClick={() => removePollOption(idx)} className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+                  <button onClick={() => removePollOption(idx)} className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-500 flex items-center justify-center">
                     <X size={14} />
                   </button>
                 )}
@@ -866,7 +888,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
             {pollOptions.length < 4 && (
               <button
                 onClick={addPollOption}
-                className="w-full py-2 bg-violet-50 border border-dashed border-violet-200 text-violet-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1"
+                className="w-full py-2 bg-violet-50 dark:bg-violet-950/20 border border-dashed border-violet-200 dark:border-violet-800/50 text-violet-700 dark:text-violet-400 font-bold rounded-xl text-xs flex items-center justify-center gap-1"
               >
                 + Ajouter une option
               </button>
@@ -887,20 +909,20 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
 
         {/* Boutique sélectionnée */}
         {selectedShop && (
-          <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-2xl border border-primary-100">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100">
+          <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-950/20 rounded-2xl border border-primary-100 dark:border-primary-900/50">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100 dark:bg-primary-900/40">
               {selectedShop.cover_url
                 ? <img src={selectedShop.cover_url} className="w-full h-full object-cover"/>
                 : <div className="w-full h-full flex items-center justify-center text-xl">🏪</div>
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-dark-800 text-sm truncate">{selectedShop.name}</p>
-              <p className="text-dark-600/50 text-xs">@{selectedShop.owner?.username}</p>
+              <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{selectedShop.name}</p>
+              <p className="text-dark-600/50 dark:text-white/55 text-xs">@{selectedShop.owner?.username}</p>
             </div>
             <button onClick={() => setSelectedShop(null)}
-              className="w-7 h-7 rounded-full bg-primary-200 flex items-center justify-center">
-              <X size={13} className="text-primary-700"/>
+              className="w-7 h-7 rounded-full bg-primary-200 dark:bg-primary-850 flex items-center justify-center">
+              <X size={13} className="text-primary-700 dark:text-primary-400"/>
             </button>
           </div>
         )}
@@ -915,7 +937,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
             }}
             disabled={isPollMode}
             className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-30',
-              imageFile ? 'bg-primary-500 text-white' : 'bg-surface-100 text-dark-600')}
+              imageFile ? 'bg-primary-500 text-white' : 'bg-surface-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300')}
           >
             <Image size={14}/> Photo
           </button>
@@ -927,14 +949,14 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
               setImagePreview(null)
             }}
             className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95',
-              isPollMode ? 'bg-violet-600 text-white' : 'bg-surface-100 text-dark-600')}
+              isPollMode ? 'bg-violet-600 text-white' : 'bg-surface-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300')}
           >
             <BarChart2 size={14}/> Sondage
           </button>
 
           <button onClick={() => setShopPickerOpen(true)}
             className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95',
-              selectedShop ? 'bg-primary-500 text-white' : 'bg-surface-100 text-dark-600')}>
+              selectedShop ? 'bg-primary-500 text-white' : 'bg-surface-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300')}>
             <Store size={14}/> Boutique
           </button>
         </div>
@@ -1200,49 +1222,49 @@ function PostCard({
   }
 
   return (
-    <div className="bg-white px-4 py-4 rounded-3xl mb-3 shadow-sm border border-surface-100 relative">
+    <div className="bg-white dark:bg-dark-900 px-4 py-4 rounded-3xl mb-3 shadow-sm border border-surface-100 dark:border-dark-800 relative">
       {/* Header */}
       <div className="flex items-start gap-3 mb-3">
         <button onClick={() => navigate(`/profil/${post.user?.username}`)} className="relative flex-shrink-0">
           <Avatar src={post.user?.avatar_url} name={post.user?.username} size="md"/>
-          {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"/>}
+          {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <button onClick={() => navigate(`/profil/${post.user?.username}`)}>
-              <p className="font-bold text-dark-800 text-sm">@{post.user?.username}</p>
+              <p className="font-bold text-dark-800 dark:text-white text-sm">@{post.user?.username}</p>
             </button>
             {renderUserBadges(post.user)}
           </div>
-          <p className="text-dark-600/40 text-xs mt-0.5">
+          <p className="text-dark-600/40 dark:text-dark-300/40 text-xs mt-0.5">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
           </p>
         </div>
         
         <div className="relative">
           <button onClick={() => setMenuOpen(v => !v)}
-            className="w-8 h-8 rounded-xl bg-surface-50 hover:bg-surface-100 flex items-center justify-center active:scale-90">
-            <MoreHorizontal size={16} className="text-dark-600/50"/>
+            className="w-8 h-8 rounded-xl bg-surface-50 dark:bg-dark-800 hover:bg-surface-100 flex items-center justify-center active:scale-90">
+            <MoreHorizontal size={16} className="text-dark-600/50 dark:text-dark-300"/>
           </button>
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)}/>
-              <div className="absolute right-0 top-10 z-20 bg-white rounded-2xl shadow-modal border border-surface-100 overflow-hidden min-w-[150px] animate-scale-in">
+              <div className="absolute right-0 top-10 z-20 bg-white dark:bg-dark-800 rounded-2xl shadow-modal border border-surface-100 dark:border-dark-700 overflow-hidden min-w-[150px] animate-scale-in">
                 {/* Option enregistrer / Bookmark (TÂCHE B) */}
                 <button onClick={() => { onToggleBookmark(); setMenuOpen(false) }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-primary-700 hover:bg-primary-50 border-b border-surface-100">
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-surface-100 dark:border-dark-700">
                   <Bookmark size={14} className={isBookmarked ? 'fill-current' : ''}/>
                   {isBookmarked ? 'Enregistré' : 'Enregistrer'}
                 </button>
 
                 {isOwner ? (
                   <button onClick={() => { onDelete(); setMenuOpen(false) }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
                     <Trash2 size={14}/> Supprimer
                   </button>
                 ) : (
                   <button onClick={() => { onReport(); setMenuOpen(false) }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50">
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                     <AlertTriangle size={14}/> Signaler
                   </button>
                 )}
@@ -1254,13 +1276,13 @@ function PostCard({
 
       {/* TEXT / POLL SECTION */}
       {pollData ? (
-        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-4.5 mb-3.5 space-y-3.5">
+        <div className="bg-surface-50 dark:bg-dark-800 border border-surface-150 dark:border-dark-700 rounded-2xl p-4.5 mb-3.5 space-y-3.5">
           <div className="flex items-center gap-2 text-violet-600 font-bold text-xs uppercase tracking-wide">
             <BarChart2 size={15} />
             <span>Sondage communauté</span>
           </div>
           
-          <p className="text-dark-800 text-sm font-bold leading-relaxed">{pollData.question}</p>
+          <p className="text-dark-800 dark:text-white text-sm font-bold leading-relaxed">{pollData.question}</p>
           
           <div className="space-y-2">
             {pollData.options.map((opt, i) => {
@@ -1269,14 +1291,14 @@ function PostCard({
               const percent = totalVotes > 0 ? Math.round((voters.length / totalVotes) * 100) : 0
 
               return (
-                <div key={i} className="relative overflow-hidden rounded-xl border border-surface-200">
+                <div key={i} className="relative overflow-hidden rounded-xl border border-surface-200 dark:border-dark-700">
                   {hasVotedAny ? (
                     // Display results with percentages
-                    <div className="flex justify-between items-center px-4 py-3 text-xs font-semibold text-dark-800 relative min-h-[40px]">
+                    <div className="flex justify-between items-center px-4 py-3 text-xs font-semibold text-dark-800 dark:text-white relative min-h-[40px]">
                       {/* Percent Bar background */}
                       <div
                         className={clsx('absolute left-0 top-0 bottom-0 transition-all duration-500',
-                          hasVotedThis ? 'bg-violet-100/70' : 'bg-surface-150'
+                          hasVotedThis ? 'bg-violet-100/70 dark:bg-violet-900/40' : 'bg-surface-150 dark:bg-dark-700'
                         )}
                         style={{ width: `${percent}%` }}
                       />
@@ -1289,7 +1311,7 @@ function PostCard({
                     // Clickable voting buttons
                     <button
                       onClick={() => handleVote(opt)}
-                      className="w-full text-left px-4 py-3 text-xs font-bold text-dark-700 hover:bg-violet-50/50 active:scale-99 transition-all flex justify-between items-center"
+                      className="w-full text-left px-4 py-3 text-xs font-bold text-dark-700 dark:text-dark-300 hover:bg-violet-50/50 dark:hover:bg-violet-900/10 active:scale-99 transition-all flex justify-between items-center"
                     >
                       <span>{opt}</span>
                       <ChevronRight size={14} className="text-dark-400" />
@@ -1300,14 +1322,14 @@ function PostCard({
             })}
           </div>
 
-          <div className="text-[10px] text-dark-600/50 font-semibold flex items-center justify-between pt-1">
+          <div className="text-[10px] text-dark-600/50 dark:text-dark-400 font-semibold flex items-center justify-between pt-1">
             <span>🗳️ {totalVotes} vote{totalVotes > 1 ? 's' : ''} au total</span>
-            {hasVotedAny && <span className="text-violet-600">Vous avez voté</span>}
+            {hasVotedAny && <span className="text-violet-600 dark:text-violet-400">Vous avez voté</span>}
           </div>
         </div>
       ) : (
         post.content && (
-          <p className="text-dark-800 text-sm leading-relaxed whitespace-pre-wrap mb-3">
+          <p className="text-dark-800 dark:text-white text-sm leading-relaxed whitespace-pre-wrap mb-3">
             {renderContentWithHashtags(post.content)}
           </p>
         )
@@ -1315,17 +1337,17 @@ function PostCard({
 
       {/* QUOTED POST / REPOST SECTION (TÂCHE A) */}
       {post.parent_post && (
-        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-3.5 mb-3.5 flex flex-col gap-2 relative">
+        <div className="bg-surface-50 dark:bg-dark-800 border border-surface-150 dark:border-dark-700 rounded-2xl p-3.5 mb-3.5 flex flex-col gap-2 relative">
           <div className="flex items-center gap-2">
             <Avatar src={post.parent_post.user?.avatar_url} name={post.parent_post.user?.username} size="xs"/>
             <div>
-              <p className="font-bold text-dark-800 text-xs">@{post.parent_post.user?.username}</p>
-              <p className="text-[9px] text-dark-600/40 font-semibold">
+              <p className="font-bold text-dark-800 dark:text-white text-xs">@{post.parent_post.user?.username}</p>
+              <p className="text-[9px] text-dark-600/40 dark:text-dark-300 font-semibold">
                 {formatDistanceToNow(new Date(post.parent_post.created_at), { addSuffix: true, locale: fr })}
               </p>
             </div>
           </div>
-          <p className="text-dark-700 text-xs leading-relaxed">
+          <p className="text-dark-700 dark:text-dark-200 text-xs leading-relaxed">
             {post.parent_post.content?.startsWith('{"is_poll"') 
               ? '📊 Sondage de la communauté' 
               : renderContentWithHashtags(post.parent_post.content)}
@@ -1357,8 +1379,8 @@ function PostCard({
       {/* Carte boutique mentionnée */}
       {post.shop && (
         <button onClick={() => navigate(`/boutique/${post.shop.slug}`)}
-          className="w-full mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-primary-100/50 rounded-2xl border border-primary-100 active:scale-[0.98] transition-transform text-left">
-          <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-200">
+          className="w-full mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950 dark:to-primary-900/50 rounded-2xl border border-primary-100 dark:border-primary-900 active:scale-[0.98] transition-transform text-left">
+          <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-200 dark:bg-primary-800">
             {post.shop.cover_url
               ? <img src={post.shop.cover_url} className="w-full h-full object-cover" alt={post.shop.name}/>
               : <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
@@ -1366,30 +1388,30 @@ function PostCard({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <Store size={11} className="text-primary-600 flex-shrink-0"/>
-              <span className="text-primary-600 text-[10px] font-bold uppercase tracking-wide">Boutique recommandée</span>
+              <Store size={11} className="text-primary-600 dark:text-primary-400 flex-shrink-0"/>
+              <span className="text-primary-600 dark:text-primary-400 text-[10px] font-bold uppercase tracking-wide">Boutique recommandée</span>
             </div>
-            <p className="font-bold text-dark-800 text-sm truncate">{post.shop.name}</p>
-            <p className="text-dark-600/50 text-xs">@{post.shop.owner?.username}
+            <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{post.shop.name}</p>
+            <p className="text-dark-600/50 dark:text-dark-300 text-xs">@{post.shop.owner?.username}
               {post.shop.city && <span> · 📍 {post.shop.city}</span>}
-              {post.shop.has_delivery && <span className="text-primary-600"> · 🚚 Livraison</span>}
+              {post.shop.has_delivery && <span className="text-primary-600 dark:text-primary-400"> · 🚚 Livraison</span>}
             </p>
           </div>
-          <ChevronRight size={16} className="text-primary-400 flex-shrink-0"/>
+          <ChevronRight size={16} className="text-primary-400 dark:text-primary-600 flex-shrink-0"/>
         </button>
       )}
 
       {/* Stats */}
       {(post.likes_count > 0 || post.comments_count > 0) && (
-        <div className="flex items-center justify-between py-2 border-b border-surface-100 mb-1">
+        <div className="flex items-center justify-between py-2 border-b border-surface-100 dark:border-dark-800 mb-1">
           <button onClick={onLikers} className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
               <Heart size={11} className="text-white fill-white"/>
             </div>
-            <span className="text-dark-600/60 text-xs font-semibold">{post.likes_count || 0}</span>
+            <span className="text-dark-600/60 dark:text-dark-300 text-xs font-semibold">{post.likes_count || 0}</span>
           </button>
           {post.comments_count > 0 && (
-            <button onClick={onComment} className="text-dark-600/60 text-xs font-semibold">
+            <button onClick={onComment} className="text-dark-600/60 dark:text-dark-300 text-xs font-semibold">
               {post.comments_count} commentaire{post.comments_count > 1 ? 's' : ''}
             </button>
           )}
@@ -1402,7 +1424,7 @@ function PostCard({
         {reactionPanelOpen && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setReactionPanelOpen(false)} />
-            <div className="absolute bottom-11 left-2 z-40 bg-white shadow-modal border border-surface-100 rounded-full px-3 py-2 flex items-center gap-3.5 animate-scale-in">
+            <div className="absolute bottom-11 left-2 z-40 bg-white dark:bg-dark-800 shadow-modal border border-surface-100 dark:border-dark-700 rounded-full px-3 py-2 flex items-center gap-3.5 animate-scale-in">
               {['👍', '❤️', '😮', '👏', '🌿'].map(emoji => (
                 <button
                   key={emoji}
@@ -1424,7 +1446,7 @@ function PostCard({
           }}
           className={clsx(
             'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold transition-all active:scale-95',
-            isLiked ? 'text-red-500 bg-red-50' : 'text-dark-600/60 hover:bg-surface-100'
+            isLiked ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-dark-600/60 dark:text-dark-300 hover:bg-surface-100 dark:hover:bg-dark-800'
           )}
         >
           {isLiked ? (
@@ -1435,14 +1457,14 @@ function PostCard({
           <span className="text-xs">{isLiked ? (localReaction ? 'Réagi' : "J'aime") : "J'aime"}</span>
         </button>
 
-        <button onClick={onComment} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 hover:bg-surface-100 active:scale-95">
+        <button onClick={onComment} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 dark:text-dark-300 hover:bg-surface-100 dark:hover:bg-dark-800 active:scale-95">
           <MessageCircle size={17} strokeWidth={1.8}/>
           <span className="text-xs">Commenter</span>
         </button>
 
         <button 
           onClick={() => setShareMenuOpen(v => !v)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 hover:bg-surface-100 active:scale-95 relative"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 dark:text-dark-300 hover:bg-surface-100 dark:hover:bg-dark-800 active:scale-95 relative"
         >
           <Share2 size={17} strokeWidth={1.8}/>
           <span className="text-xs">Partager</span>
@@ -1451,13 +1473,13 @@ function PostCard({
         {shareMenuOpen && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setShareMenuOpen(false)} />
-            <div className="absolute bottom-11 right-2 z-40 bg-white shadow-modal border border-surface-100 rounded-2xl py-1 flex flex-col min-w-[170px] animate-scale-in">
+            <div className="absolute bottom-11 right-2 z-40 bg-white dark:bg-dark-800 shadow-modal border border-surface-100 dark:border-dark-700 rounded-2xl py-1 flex flex-col min-w-[170px] animate-scale-in">
               <button
                 onClick={() => {
                   handleShare()
                   setShareMenuOpen(false)
                 }}
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 hover:bg-surface-50 flex items-center gap-2"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-surface-50 dark:hover:bg-dark-700 flex items-center gap-2"
               >
                 <span>🔗 Copier le lien</span>
               </button>
@@ -1466,7 +1488,7 @@ function PostCard({
                   onRepost()
                   setShareMenuOpen(false)
                 }}
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 hover:bg-surface-50 flex items-center gap-2 border-t border-surface-100"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-surface-50 dark:hover:bg-dark-700 flex items-center gap-2 border-t border-surface-100 dark:border-dark-700"
               >
                 <span>🔄 Republier (Quote Post)</span>
               </button>
@@ -1586,10 +1608,10 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
     <BottomSheet open={open} onClose={onClose} title="💬 Commentaires">
       <div className="flex flex-col" style={{ height: '72vh' }}>
         {/* Post résumé */}
-        <div className="px-4 py-2 bg-surface-50 border-b border-surface-100">
+        <div className="px-4 py-2 bg-surface-50 dark:bg-dark-800 border-b border-surface-100 dark:border-dark-700">
           <div className="flex gap-2 items-center">
             <Avatar src={post.user?.avatar_url} name={post.user?.username} size="sm"/>
-            <p className="text-dark-800 text-xs line-clamp-2 flex-1 font-medium">{post.content?.startsWith('{"is_poll"') ? '📊 Sondage' : post.content || '📷 Photo'}</p>
+            <p className="text-dark-800 dark:text-white text-xs line-clamp-2 flex-1 font-medium">{post.content?.startsWith('{"is_poll"') ? '📊 Sondage' : post.content || '📷 Photo'}</p>
           </div>
         </div>
 
@@ -1602,7 +1624,7 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
           ) : comments.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-4xl mb-2">💬</p>
-              <p className="text-dark-600/50 text-sm">Soyez le premier à commenter</p>
+              <p className="text-dark-600/50 dark:text-dark-400 text-sm">Soyez le premier à commenter</p>
             </div>
           ) : (
             comments.map(comment => (
@@ -1625,7 +1647,7 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
                         : `Voir ${comment.replies.length} réponse${comment.replies.length > 1 ? 's' : ''}`}
                     </button>
                     {expandedReplies.has(comment.id) && (
-                      <div className="space-y-2 border-l-2 border-surface-200 pl-3">
+                      <div className="space-y-2 border-l-2 border-surface-200 dark:border-dark-700 pl-3">
                         {comment.replies.map(reply => (
                           <CommentItem
                             key={reply.id}
@@ -1649,12 +1671,12 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
         </div>
 
         {/* Saisie */}
-        <div className="border-t border-surface-100 px-4 py-3"
+        <div className="border-t border-surface-100 dark:border-dark-700 px-4 py-3"
           style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
           {replyTo && (
-            <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-primary-50 rounded-xl">
-              <CornerDownRight size={13} className="text-primary-600"/>
-              <span className="text-primary-700 text-xs font-semibold flex-1">Répondre à @{replyTo.username}</span>
+            <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+              <CornerDownRight size={13} className="text-primary-600 dark:text-primary-400"/>
+              <span className="text-primary-700 dark:text-primary-300 text-xs font-semibold flex-1">Répondre à @{replyTo.username}</span>
               <button onClick={() => setReplyTo(null)}><X size={13} className="text-primary-500"/></button>
             </div>
           )}
@@ -1668,7 +1690,7 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
                 onChange={e => setText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendComment()}
                 placeholder={replyTo ? `Répondre à @${replyTo.username}...` : 'Écrire un commentaire...'}
-                className="w-full bg-surface-100 rounded-2xl px-4 py-2.5 pr-12 text-sm text-dark-800 placeholder-dark-600/40 outline-none font-medium"
+                className="w-full bg-surface-100 dark:bg-dark-800 rounded-2xl px-4 py-2.5 pr-12 text-sm text-dark-800 dark:text-white placeholder-dark-600/40 dark:placeholder-white/40 outline-none font-medium"
               />
               <button onClick={sendComment} disabled={!text.trim() || sending}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-primary-600 flex items-center justify-center disabled:opacity-30 active:scale-90">
@@ -1694,21 +1716,21 @@ function CommentItem({ comment, userId, isReply, onReply, onDelete, isLiked, onL
       <Avatar src={comment.user?.avatar_url} name={comment.user?.username}
         size={isReply ? 'xs' : 'sm'} className="flex-shrink-0 mt-0.5"/>
       <div className="flex-1 min-w-0">
-        <div className="bg-surface-100 rounded-2xl rounded-tl-sm px-3 py-2">
-          <p className="font-bold text-dark-800 text-xs">@{comment.user?.username}</p>
-          <p className="text-dark-700 text-sm mt-0.5 leading-relaxed">{comment.content}</p>
+        <div className="bg-surface-100 dark:bg-dark-800 rounded-2xl rounded-tl-sm px-3 py-2">
+          <p className="font-bold text-dark-800 dark:text-white text-xs">@{comment.user?.username}</p>
+          <p className="text-dark-700 dark:text-dark-200 text-sm mt-0.5 leading-relaxed">{comment.content}</p>
         </div>
         <div className="flex items-center gap-3 mt-1 px-1">
-          <span className="text-dark-600/40 text-[10px]">
+          <span className="text-dark-600/40 dark:text-dark-400 text-[10px]">
             {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: fr })}
           </span>
           <button onClick={onLike}
             className={clsx('flex items-center gap-1 text-[10px] font-bold transition-colors',
-              isLiked ? 'text-red-500' : 'text-dark-600/50')}>
+              isLiked ? 'text-red-500' : 'text-dark-600/50 dark:text-dark-400')}>
             <Heart size={11} className={clsx(isLiked && 'fill-current')}/>
             {comment.likes_count > 0 && <span>{comment.likes_count}</span>}
           </button>
-          <button onClick={onReply} className="text-primary-600 text-[10px] font-bold">Répondre</button>
+          <button onClick={onReply} className="text-primary-600 dark:text-primary-400 text-[10px] font-bold">Répondre</button>
           {isOwner && (
             <button onClick={onDelete} className="text-red-500 text-[10px] font-bold">Supprimer</button>
           )}
@@ -1747,13 +1769,13 @@ function LikersSheet({ open, onClose, post }) {
             ))}
           </div>
         ) : likers.length === 0 ? (
-          <p className="text-center text-dark-600/50 py-8">Aucun like pour l'instant</p>
+          <p className="text-center text-dark-600/50 dark:text-dark-400 py-8">Aucun like pour l'instant</p>
         ) : (
           <div className="space-y-3">
             {likers.map((l, i) => (
               <div key={i} className="flex items-center gap-3">
                 <Avatar src={l.user?.avatar_url} name={l.user?.username} size="md"/>
-                <p className="font-semibold text-dark-800 text-sm">@{l.user?.username}</p>
+                <p className="font-semibold text-dark-800 dark:text-white text-sm">@{l.user?.username}</p>
               </div>
             ))}
           </div>
@@ -1828,12 +1850,12 @@ function MembersTab({ user, profile }) {
 
   return (
     <div>
-      <div className="sticky top-0 bg-white border-b border-surface-100 px-4 py-3 z-10">
+      <div className="sticky top-0 bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-3 z-10">
         <div className="relative">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>
           <input type="text" placeholder="Rechercher un membre..."
             value={search} onChange={e => handleSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 rounded-2xl text-sm text-dark-800 placeholder-dark-600/40 outline-none font-medium"/>
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-100 dark:bg-dark-800 rounded-2xl text-sm text-dark-800 dark:text-white placeholder-dark-600/40 outline-none font-medium"/>
         </div>
       </div>
 
@@ -1853,10 +1875,10 @@ function MembersTab({ user, profile }) {
       ) : members.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl mb-2">👥</p>
-          <p className="font-bold text-dark-800">{search ? 'Aucun résultat' : 'Aucun membre'}</p>
+          <p className="font-bold text-dark-800 dark:text-white">{search ? 'Aucun résultat' : 'Aucun membre'}</p>
         </div>
       ) : (
-        <div className="divide-y divide-surface-100">
+        <div className="divide-y divide-surface-100 dark:divide-dark-800">
           {members.map(member => {
             const isOnline = member.last_seen_at ? (new Date() - new Date(member.last_seen_at)) < 120000 : false
             const isFollowed = following.has(member.id)
@@ -1864,19 +1886,19 @@ function MembersTab({ user, profile }) {
               <div key={member.id} className="flex items-center gap-3 px-4 py-3">
                 <button onClick={() => navigate(`/profil/${member.username}`)} className="relative flex-shrink-0">
                   <Avatar src={member.avatar_url} name={member.username} size="md"/>
-                  {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"/>}
+                  {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
                 </button>
                 <div className="flex-1 min-w-0">
                   <button onClick={() => navigate(`/profil/${member.username}`)} className="text-left">
-                    <p className="font-bold text-dark-800 text-sm truncate">{member.full_name || member.username}</p>
-                    <p className="text-dark-600/50 text-xs">@{member.username}</p>
+                    <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{member.full_name || member.username}</p>
+                    <p className="text-dark-600/50 dark:text-dark-400 text-xs">@{member.username}</p>
                   </button>
-                  {member.city && <p className="text-dark-600/40 text-[10px] mt-0.5">📍 {member.city}</p>}
+                  {member.city && <p className="text-dark-600/40 dark:text-dark-500 text-[10px] mt-0.5">📍 {member.city}</p>}
                 </div>
                 <button onClick={() => toggleFollow(member.id)}
                   className={clsx(
                     'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex-shrink-0',
-                    isFollowed ? 'bg-surface-100 text-dark-600' : 'bg-primary-600 text-white shadow-green'
+                    isFollowed ? 'bg-surface-100 dark:bg-dark-800 text-dark-600 dark:text-white' : 'bg-primary-600 text-white shadow-green'
                   )}>
                   {isFollowed ? <><UserCheck size={13}/> Suivi</> : <><UserPlus size={13}/> Suivre</>}
                 </button>
@@ -1894,7 +1916,7 @@ function MembersTab({ user, profile }) {
 // ============================================================
 function PostSkeleton() {
   return (
-    <div className="bg-white px-4 py-3">
+    <div className="bg-white dark:bg-dark-900 px-4 py-4 rounded-3xl mb-3 border border-surface-100 dark:border-dark-800">
       <div className="flex gap-3 mb-3">
         <div className="w-11 h-11 rounded-2xl skeleton flex-shrink-0"/>
         <div className="flex-1 space-y-1.5">
@@ -1907,7 +1929,7 @@ function PostSkeleton() {
         <div className="h-3.5 skeleton rounded-lg"/>
         <div className="h-3.5 skeleton rounded-lg w-2/3"/>
       </div>
-      <div className="h-36 skeleton rounded-2xl mt-3"/>
+      <div className="h-36 skeleton rounded-2xl mt-4"/>
     </div>
   )
 }
@@ -1928,7 +1950,7 @@ function ReportSheet({ open, onClose, onReportConfirmed }) {
   return (
     <BottomSheet open={open} onClose={onClose} title="🛡️ Signaler cette publication">
       <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-        <p className="text-xs font-semibold text-dark-600/70">
+        <p className="text-xs font-semibold text-dark-600/70 dark:text-dark-300">
           Pourquoi souhaitez-vous signaler cette publication ? Votre signalement sera examiné par l'équipe de modération.
         </p>
 
@@ -1940,12 +1962,12 @@ function ReportSheet({ open, onClose, onReportConfirmed }) {
               className={clsx(
                 "w-full text-left p-3.5 rounded-2xl border text-sm font-semibold transition-all flex flex-col gap-0.5",
                 selected === r.key
-                  ? "border-primary-600 bg-primary-50/50 text-primary-900"
-                  : "border-surface-200 hover:border-surface-300 text-dark-800"
+                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100"
+                  : "border-surface-200 dark:border-dark-700 hover:border-surface-300 dark:hover:border-dark-600 text-dark-800 dark:text-dark-100"
               )}
             >
               <span>{r.label}</span>
-              <span className="text-[10px] font-medium text-dark-600/50">{r.desc}</span>
+              <span className="text-[10px] font-medium text-dark-600/50 dark:text-dark-400">{r.desc}</span>
             </button>
           ))}
         </div>
@@ -1953,7 +1975,7 @@ function ReportSheet({ open, onClose, onReportConfirmed }) {
         <div className="flex gap-2 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 bg-surface-100 hover:bg-surface-200 text-dark-800 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+            className="flex-1 py-3.5 bg-surface-100 dark:bg-dark-800 hover:bg-surface-200 dark:hover:bg-dark-700 text-dark-800 dark:text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
           >
             Annuler
           </button>
