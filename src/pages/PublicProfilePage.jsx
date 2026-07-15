@@ -187,6 +187,31 @@ export default function PublicProfilePage() {
             {profile.full_name || profile.username}
           </h1>
           <p className="text-primary-200 text-sm">@{profile.username}</p>
+          {/* Badges du profil (TÂCHE C) */}
+          {profile.badges && profile.badges.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5 justify-center">
+              {profile.badges.map((badge, idx) => {
+                let colorClass = 'bg-white/20 text-white border-white/20'
+                let emoji = '🎖️'
+                if (badge === 'Producteur Vérifié') {
+                  colorClass = 'bg-emerald-500/30 text-emerald-100 border-emerald-400/20'
+                  emoji = '🏪'
+                } else if (badge === 'Top Contributeur') {
+                  colorClass = 'bg-violet-500/30 text-violet-100 border-violet-400/20'
+                  emoji = '🔥'
+                } else if (badge === 'Expert Bio') {
+                  colorClass = 'bg-amber-500/30 text-amber-100 border-amber-400/20'
+                  emoji = '🌿'
+                }
+                return (
+                  <span key={idx} className={clsx("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8.5px] font-black border leading-none", colorClass)}>
+                    <span>{emoji}</span>
+                    <span>{badge}</span>
+                  </span>
+                )
+              })}
+            </div>
+          )}
           {profile.city && (
             <div className="flex items-center gap-1 mt-1">
               <MapPin size={11} className="text-primary-300"/>

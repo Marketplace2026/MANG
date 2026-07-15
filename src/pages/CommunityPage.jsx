@@ -304,7 +304,7 @@ function PostsTab({ user, profile, mode }) {
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
       .from('posts')
-      .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))`)
+      .select(`*, user:profiles(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url, badges))`)
       .range(from, from + PAGE_SIZE - 1)
 
     if (mode === 'trending') {
@@ -386,7 +386,7 @@ function PostsTab({ user, profile, mode }) {
         if (mode === 'trending') return
         const { data: p } = await supabase
           .from('posts')
-          .select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))`)
+          .select(`*, user:profiles(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url, badges))`)
           .eq('id', payload.new.id).single()
         if (p) setPosts(prev => [p, ...prev])
       })
@@ -1072,6 +1072,34 @@ function PostCard({
     return localStorage.getItem(`post_reaction_${post.id}`) || null
   })
 
+  const renderUserBadges = (userObj) => {
+    if (!userObj || !userObj.badges || userObj.badges.length === 0) return null
+    return (
+      <div className="flex flex-wrap gap-1 items-center">
+        {userObj.badges.map((badge, idx) => {
+          let colorClass = 'bg-primary-50 text-primary-700 border-primary-100'
+          let emoji = '🎖️'
+          if (badge === 'Producteur Vérifié') {
+            colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100'
+            emoji = '🏪'
+          } else if (badge === 'Top Contributeur') {
+            colorClass = 'bg-violet-50 text-violet-700 border-violet-100'
+            emoji = '🔥'
+          } else if (badge === 'Expert Bio') {
+            colorClass = 'bg-amber-50 text-amber-700 border-amber-100'
+            emoji = '🌿'
+          }
+          return (
+            <span key={idx} className={clsx("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black border leading-none", colorClass)}>
+              <span>{emoji}</span>
+              <span>{badge}</span>
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
   const handleShare = () => {
     const text = post.content || 'Regarde cette publication sur MANG !'
     if (navigator.share) {
@@ -1180,10 +1208,13 @@ function PostCard({
           {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"/>}
         </button>
         <div className="flex-1 min-w-0">
-          <button onClick={() => navigate(`/profil/${post.user?.username}`)}>
-            <p className="font-bold text-dark-800 text-sm">@{post.user?.username}</p>
-          </button>
-          <p className="text-dark-600/40 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => navigate(`/profil/${post.user?.username}`)}>
+              <p className="font-bold text-dark-800 text-sm">@{post.user?.username}</p>
+            </button>
+            {renderUserBadges(post.user)}
+          </div>
+          <p className="text-dark-600/40 text-xs mt-0.5">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
           </p>
         </div>
