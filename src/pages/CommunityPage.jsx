@@ -15,6 +15,7 @@ import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { getOptimizedImageUrl } from '@/utils/image'
 
 // ============================================================
 // MOCK STORIES (Visuels Agricoles Riches)
@@ -912,7 +913,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
           <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-950/20 rounded-2xl border border-primary-100 dark:border-primary-900/50">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100 dark:bg-primary-900/40">
               {selectedShop.cover_url
-                ? <img src={selectedShop.cover_url} className="w-full h-full object-cover"/>
+                ? <img src={getOptimizedImageUrl(selectedShop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover"/>
                 : <div className="w-full h-full flex items-center justify-center text-xl">🏪</div>
               }
             </div>
@@ -1360,7 +1361,7 @@ function PostCard({
               }}
               className="mt-1 max-w-full rounded-xl overflow-hidden cursor-zoom-in active:opacity-95 transition-opacity"
             >
-              <img src={post.parent_post.image_url} alt="quoted post media" className="max-h-48 object-cover rounded-xl" />
+              <img src={getOptimizedImageUrl(post.parent_post.image_url, { width: 350, quality: 80 })} alt="quoted post media" className="max-h-48 object-cover rounded-xl" />
             </div>
           )}
         </div>
@@ -1372,7 +1373,7 @@ function PostCard({
           onClick={() => onImageClick(post.image_url)}
           className="mb-3 rounded-2xl overflow-hidden cursor-zoom-in active:opacity-95 transition-opacity"
         >
-          <img src={post.image_url} alt="post" className="w-full max-h-80 object-cover"/>
+          <img src={getOptimizedImageUrl(post.image_url, { width: 600, quality: 80 })} alt="post" className="w-full max-h-80 object-cover"/>
         </div>
       )}
 
@@ -1382,7 +1383,7 @@ function PostCard({
           className="w-full mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950 dark:to-primary-900/50 rounded-2xl border border-primary-100 dark:border-primary-900 active:scale-[0.98] transition-transform text-left">
           <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-200 dark:bg-primary-800">
             {post.shop.cover_url
-              ? <img src={post.shop.cover_url} className="w-full h-full object-cover" alt={post.shop.name}/>
+              ? <img src={getOptimizedImageUrl(post.shop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover" alt={post.shop.name}/>
               : <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
             }
           </div>

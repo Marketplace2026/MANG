@@ -2,6 +2,8 @@ import { clsx } from 'clsx'
 import { X, Loader2 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
+import { getOptimizedImageUrl } from '@/utils/image'
+
 // ============================================================
 // AVATAR
 // ============================================================
@@ -23,11 +25,19 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
     '2xl': 'w-6 h-6 border-2',
   }
 
+  const widthMap = {
+    xs: 60,
+    sm: 80,
+    md: 100,
+    lg: 150,
+    xl: 200,
+    '2xl': 250,
+  }
+
   const initials = name
     ? name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
-  // Couleur déterministe basée sur le nom
   const colors = [
     'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500',
     'bg-blue-500', 'bg-violet-500', 'bg-fuchsia-500',
@@ -35,11 +45,13 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
   ]
   const colorIndex = name ? name.charCodeAt(0) % colors.length : 0
 
+  const optimizedSrc = getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
+
   return (
     <div className={clsx('relative flex-shrink-0', className)}>
       {src ? (
         <img
-          src={src}
+          src={optimizedSrc}
           alt={name}
           className={clsx(sizes[size], 'rounded-2xl object-cover')}
         />
