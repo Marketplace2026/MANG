@@ -214,9 +214,9 @@ CREATE POLICY "Conversation visible par ses participants"
   ON conversations FOR SELECT TO authenticated
   USING (auth.uid() = buyer_id OR auth.uid() = seller_id);
 
-CREATE POLICY "Acheteur peut créer une conversation"
+CREATE POLICY "Acheteur ou vendeur peut créer une conversation"
   ON conversations FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = buyer_id);
+  WITH CHECK (auth.uid() = buyer_id OR auth.uid() = seller_id);
 
 CREATE POLICY "Participants peuvent modifier la conversation"
   ON conversations FOR UPDATE TO authenticated
