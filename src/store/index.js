@@ -37,12 +37,96 @@ export const useAuthStore = create((set, get) => ({
 
   fetchUserData: async (user) => {
     set({ user })
+    console.log('[AuthStore] fetchUserData pour user.id:', user.id)
+
+    // 1. Récupération des données existantes (utilisation de maybeSingle() pour éviter les erreurs de cache)
     const [profileRes, walletRes, piecesRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('wallets').select('*').eq('user_id', user.id).single(),
-      supabase.from('pieces').select('*').eq('user_id', user.id).single(),
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('pieces').select('*').eq('user_id', user.id).maybeSingle(),
     ])
-    set({ profile: profileRes.data, wallet: walletRes.data, pieces: piecesRes.data })
+
+    let profile = profileRes.data
+    let wallet = walletRes.data
+    let pieces = piecesRes.data
+
+    console.log('[AuthStore] Données actuelles chargées :', { profile, wallet, pieces })
+
+    // 2. Si le profil n'existe pas, on le crée côté client (Tâche 3)
+    if (!profile) {
+      console.log('[AuthStore] Profil absent, initialisation...')
+      const rawMetaUsername = user.user_metadata?.username
+      const fallbackUsername = `user_${user.id.substring(0, 8)}`
+      const finalUsername = (rawMetaUsername || fallbackUsername).toLowerCase()
+      
+      const finalReferralCode = `${finalUsername.substring(0, 4).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`
+
+      const { data: newProfile, error: profileErr } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          username: finalUsername,
+          email: user.email,
+          referral_code: finalReferralCode
+        })
+        .select()
+        .maybeSingle()
+
+      if (profileErr) {
+        console.error('[AuthStore] Échec création profil (vérifiez RLS) :', profileErr)
+      } else {
+        profile = newProfile
+        console.log('[AuthStore] Profil créé avec succès :', profile)
+      }
+    }
+
+    // 3. Si le wallet n'existe pas, on le crée côté client (Tâche 3)
+    if (!wallet && profile) {
+      console.log('[AuthStore] Wallet absent, initialisation...')
+      const randomWalletNumber = Math.floor(1000000000 + Math.random() * 9000000000).toString()
+
+      const { data: newWallet, error: walletErr } = await supabase
+        .from('wallets')
+        .insert({
+          user_id: user.id,
+          wallet_number: randomWalletNumber,
+          balance_total: 0,
+          balance_available: 0,
+          balance_reserved: 0,
+          pin_set: false
+        })
+        .select()
+        .maybeSingle()
+
+      if (walletErr) {
+        console.error('[AuthStore] Échec création wallet (vérifiez RLS) :', walletErr)
+      } else {
+        wallet = newWallet
+        console.log('[AuthStore] Wallet créé avec succès :', wallet)
+      }
+    }
+
+    // 4. Si les pièces n'existent pas, on les crée côté client (Tâche 3)
+    if (!pieces && profile) {
+      console.log('[AuthStore] Pièces absentes, initialisation...')
+      const { data: newPieces, error: piecesErr } = await supabase
+        .from('pieces')
+        .insert({
+          user_id: user.id,
+          balance: 0
+        })
+        .select()
+        .maybeSingle()
+
+      if (piecesErr) {
+        console.error('[AuthStore] Échec création pièces (vérifiez RLS) :', piecesErr)
+      } else {
+        pieces = newPieces
+        console.log('[AuthStore] Pièces créées avec succès :', pieces)
+      }
+    }
+
+    set({ profile, wallet, pieces })
     get().startOnlineHeartbeat(user.id)
   },
 
