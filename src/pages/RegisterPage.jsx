@@ -78,7 +78,7 @@ export default function RegisterPage() {
     }
   }
 
-  // Inscription email/password
+  // Inscription email/password - VERSION SANS TRIGGER
   const handleRegister = async (e) => {
     e.preventDefault()
     if (form.password.length < 6) { toast.error('Mot de passe trop court (6 car. min)'); return }
@@ -100,9 +100,44 @@ export default function RegisterPage() {
       return
     }
 
+    const userId = data?.user?.id
     const session = data?.session
 
-    // Si pas de session, email non vérifié
+    // 2. SI INSCRIPTION OK, ON CRÉE PROFIL + WALLET + PIECES MANUELLEMENT
+    if (userId) {
+      const w_number = Math.floor(1000000 + Math.random() * 9000000).toString().padStart(10, '0')
+      const r_code = 'MNG' + userId.replace(/-/g, '').substring(0, 5).toUpperCase()
+
+      try {
+        // Créer profil
+        await supabase.from('profiles').insert({
+          id: userId,
+          username: form.username.toLowerCase(),
+          email: form.email,
+          referral_code: r_code,
+          referral_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+        // Créer wallet
+        await supabase.from('wallets').insert({
+          user_id: userId,
+          wallet_number: w_number,
+          balance_total: 0,
+          balance_avail: 0,
+          balance_reser: 0
+        })
+
+        // Créer pieces
+        await supabase.from('pieces').insert({ user_id: userId, balance: 0 })
+
+      } catch (err) {
+        console.error('Erreur creation profil:', err)
+      }
+    }
+
+    // 3. Gérer email verification
     if (!session) {
       setLoading(false)
       setRegisteredEmail(form.email)
@@ -179,7 +214,7 @@ export default function RegisterPage() {
             href="https://mail.google.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3.5 bg-white/10 hover:bg-white/15 border-white/20 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-sm"
+            className="w-full py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-sm"
           >
             Accéder à ma messagerie
           </a>
