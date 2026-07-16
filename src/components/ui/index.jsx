@@ -7,13 +7,14 @@ import { getOptimizedImageUrl } from '@/utils/image'
 // ============================================================
 // AVATAR
 // ============================================================
+
 export function Avatar({ src, name, size = 'md', online = false, className = '' }) {
   const sizes = {
-    xs:  'w-7 h-7 text-xs',
-    sm:  'w-9 h-9 text-sm',
-    md:  'w-11 h-11 text-base',
-    lg:  'w-16 h-16 text-xl',
-    xl:  'w-24 h-24 text-3xl',
+    xs: 'w-7 h-7 text-xs',
+    sm: 'w-9 h-9 text-sm',
+    md: 'w-11 h-11 text-base',
+    lg: 'w-16 h-16 text-xl',
+    xl: 'w-24 h-24 text-3xl',
     '2xl': 'w-32 h-32 text-4xl',
   }
   const dotSizes = {
@@ -25,28 +26,28 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
     '2xl': 'w-6 h-6 border-2',
   }
 
-  const widthMap = {
-    xs: 60,
-    sm: 80,
-    md: 100,
-    lg: 150,
-    xl: 200,
-    '2xl': 250,
-  }
+  const widthMap = { xs: 60, sm: 80, md: 100, lg: 150, xl: 200, '2xl': 250 }
 
-  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=16a34a&color=fff`
-  const optimizedSrc = src 
-    ? getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
-    : fallbackUrl
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=16a34a&color=fff&size=${widthMap[size] || 100}`
+
+  // FIX: Si pas de src, on utilise direct le fallback. Sinon on optimise
+  let finalSrc = fallbackUrl
+  if (src) {
+    try {
+      finalSrc = getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
+    } catch {
+      finalSrc = src // si getOptimizedImageUrl crash, on prend l'url brute
+    }
+  }
 
   return (
     <div className={clsx('relative flex-shrink-0', className)}>
       <img
-        src={optimizedSrc}
+        src={finalSrc}
         alt={name || 'Avatar'}
-        className={clsx(sizes[size], 'rounded-2xl object-cover')}
+        className={clsx(sizes[size], 'rounded-2xl object-cover bg-surface-100')}
         onError={(e) => {
-          if (e.target.src !== fallbackUrl) {
+          if (e.target.src!== fallbackUrl) {
             e.target.src = fallbackUrl
           }
         }}
@@ -60,7 +61,6 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
     </div>
   )
 }
-
 // ============================================================
 // BUTTON
 // ============================================================
