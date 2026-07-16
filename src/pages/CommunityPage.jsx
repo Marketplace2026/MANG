@@ -5,7 +5,7 @@ import {
   CornerDownRight, X, Send, ChevronDown,
   Flame, TrendingUp, Globe, Store, Image,
   Smile, MapPin, ChevronRight, Sparkles,
-  BarChart2, AlertTriangle, Bookmark, Eye
+  BarChart2, AlertTriangle, Bookmark, Eye, Loader2, Plus
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -16,6 +16,28 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getOptimizedImageUrl } from '@/utils/image'
+
+// ============================================================
+// STORIES — suivi "vu / non vu" (localStorage, pas de table SQL requise)
+// ============================================================
+const SEEN_STORIES_KEY = 'mang_seen_stories'
+
+function getSeenStoryIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_STORIES_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+function markStorySeen(storyId) {
+  const seen = getSeenStoryIds()
+  if (seen.has(storyId)) return
+  seen.add(storyId)
+  try {
+    localStorage.setItem(SEEN_STORIES_KEY, JSON.stringify([...seen]))
+  } catch { /* quota dépassé, on ignore */ }
+}
 
 const TABS = [
   { key: 'feed',    label: '🌍 Pour toi'     },
@@ -75,31 +97,88 @@ export default function CommunityPage() {
 // ============================================================
 // STORIES CAROUSEL
 // ============================================================
-function StoriesCarousel({ profile, stories = [], onOpenStory, onAddStory }) {
+function StoryCard({ label, thumbnail, avatar, avatarName, unseen, onClick, showAddBadge, onAddClick, isPlaceholder }) {
   return (
-    <div className="bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-4 flex gap-3.5 overflow-x-auto no-scrollbar">
-      {/* Ajouter ma story */}
-      <div onClick={onAddStory} className="flex flex-col items-center flex-shrink-0 cursor-pointer">
-        <div className="relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-surface-300 dark:border-dark-700 flex items-center justify-center bg-surface-50 dark:bg-dark-955">
-          <Avatar src={profile?.avatar_url} name={profile?.username} size="md" />
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-white dark:border-dark-900 font-bold text-xs">
-            +
+    <div onClick={onClick} className="flex flex-col items-center flex-shrink-0 w-[84px] cursor-pointer active:scale-[0.97] transition-transform">
+      <div className={clsx(
+        'relative w-[84px] h-[118px] rounded-2xl overflow-hidden',
+        unseen
+          ? 'ring-[3px] ring-primary-500'
+          : 'ring-2 ring-surface-200 dark:ring-dark-700'
+      )}>
+        {thumbnail ? (
+          <img src={thumbnail} className="w-full h-full object-cover" alt={label} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-surface-100 dark:bg-dark-800">
+            <Avatar src={avatar} name={avatarName} size="lg" />
           </div>
-        </div>
-        <span className="text-[10px] font-bold text-dark-600 dark:text-dark-400 mt-1">Ma story</span>
-      </div>
+        )}
+        {thumbnail && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+        )}
 
-      {/* Liste des stories réelles */}
-      {stories.map((s, idx) => (
-        <div key={s.id} onClick={() => onOpenStory(idx)} className="flex flex-col items-center flex-shrink-0 cursor-pointer">
-          <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-primary-500 to-gold-400 flex items-center justify-center shadow-md active:scale-95 transition-transform">
-            <div className="w-full h-full rounded-full border-2 border-white dark:border-dark-900 overflow-hidden">
-              <Avatar src={s.avatar} name={s.username} size="md" />
-            </div>
-          </div>
-          <span className="text-[10px] font-semibold text-dark-800 dark:text-white mt-1">@{s.username}</span>
+        {/* Médaillon avatar en haut à gauche */}
+        <div className="absolute top-1.5 left-1.5 w-7 h-7 rounded-full ring-2 ring-white overflow-hidden shadow-md">
+          <Avatar src={avatar} name={avatarName} size="xs" />
         </div>
-      ))}
+
+        {/* Badge "+" pour ajouter une story */}
+        {showAddBadge && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddClick() }}
+            className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-primary-600 border-2 border-white dark:border-dark-900 flex items-center justify-center text-white shadow-md active:scale-90"
+          >
+            <Plus size={13} strokeWidth={3} />
+          </button>
+        )}
+
+        {/* Nom en bas */}
+        <span className={clsx(
+          'absolute left-2 right-2 text-white text-[11px] font-bold leading-tight drop-shadow',
+          showAddBadge ? 'top-1.5 left-10' : 'bottom-1.5'
+        )}>
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function StoriesCarousel({ profile, storyGroups = [], onOpenOwnStory, onOpenStory, onAddStory }) {
+  const myGroup = storyGroups.find(g => g.userId === profile?.id)
+  const otherGroups = storyGroups.filter(g => g.userId !== profile?.id)
+
+  const myLatest = myGroup?.items?.[myGroup.items.length - 1]
+
+  return (
+    <div className="bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-4">
+      <p className="font-display font-bold text-dark-800 dark:text-white text-base mb-3">Statut</p>
+      <div className="flex gap-3 overflow-x-auto no-scrollbar">
+        {/* Mon statut */}
+        <StoryCard
+          label="Mon statut"
+          thumbnail={myLatest?.media}
+          avatar={profile?.avatar_url}
+          avatarName={profile?.username}
+          unseen={false}
+          showAddBadge
+          onAddClick={onAddStory}
+          onClick={() => myGroup ? onOpenOwnStory() : onAddStory()}
+        />
+
+        {/* Stories des autres utilisateurs */}
+        {otherGroups.map((g, idx) => (
+          <StoryCard
+            key={g.userId}
+            label={`@${g.username}`}
+            thumbnail={g.items[g.items.length - 1]?.media}
+            avatar={g.avatar}
+            avatarName={g.username}
+            unseen={!g.allSeen}
+            onClick={() => onOpenStory(idx)}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -107,14 +186,27 @@ function StoriesCarousel({ profile, stories = [], onOpenStory, onAddStory }) {
 // ============================================================
 // STORY VIEWER MODAL
 // ============================================================
-function StoryViewer({ stories = [], storyIndex, onClose }) {
-  const [currentIdx, setCurrentIdx] = useState(storyIndex)
+function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen }) {
+  const [groupIdx, setGroupIdx] = useState(startGroupIndex)
+  const [itemIdx, setItemIdx] = useState(0)
   const [progress, setProgress] = useState(0)
+  const [paused, setPaused] = useState(false)
   const navigate = useNavigate()
-  const story = stories[currentIdx]
+
+  const group = groups[groupIdx]
+  const story = group?.items?.[itemIdx]
+
+  // Marque la story courante comme vue dès qu'elle s'affiche
+  useEffect(() => {
+    if (story) onStorySeen?.(story.id)
+  }, [story?.id])
 
   useEffect(() => {
     setProgress(0)
+  }, [groupIdx, itemIdx])
+
+  useEffect(() => {
+    if (paused || !story) return
     const interval = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -122,23 +214,31 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
           handleNext()
           return 100
         }
-        return p + 2
+        return p + 2 // ~5s par story (2% * 50 ticks de 100ms)
       })
     }, 100)
     return () => clearInterval(interval)
-  }, [currentIdx])
+  }, [groupIdx, itemIdx, paused])
 
   const handleNext = () => {
-    if (currentIdx < stories.length - 1) {
-      setCurrentIdx(currentIdx + 1)
+    if (!group) return
+    if (itemIdx < group.items.length - 1) {
+      setItemIdx(itemIdx + 1)
+    } else if (groupIdx < groups.length - 1) {
+      setGroupIdx(groupIdx + 1)
+      setItemIdx(0)
     } else {
       onClose()
     }
   }
 
   const handlePrev = () => {
-    if (currentIdx > 0) {
-      setCurrentIdx(currentIdx - 1)
+    if (itemIdx > 0) {
+      setItemIdx(itemIdx - 1)
+    } else if (groupIdx > 0) {
+      const prevGroup = groups[groupIdx - 1]
+      setGroupIdx(groupIdx - 1)
+      setItemIdx(prevGroup.items.length - 1)
     }
   }
 
@@ -146,15 +246,15 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col justify-between p-4 animate-fade-in">
-      {/* Top indicator & Progress bars */}
+      {/* Top indicator & Progress bars (un segment par story de l'utilisateur courant) */}
       <div className="w-full space-y-3.5 pt-4">
         <div className="flex gap-1.5 w-full">
-          {stories.map((_, i) => (
+          {group.items.map((_, i) => (
             <div key={i} className="h-1 bg-white/20 rounded-full flex-1 overflow-hidden">
               <div
-                className="h-full bg-primary-400 transition-all duration-100"
+                className="h-full bg-white transition-all duration-100"
                 style={{
-                  width: i === currentIdx ? `${progress}%` : i < currentIdx ? '100%' : '0%'
+                  width: i === itemIdx ? `${progress}%` : i < itemIdx ? '100%' : '0%'
                 }}
               />
             </div>
@@ -163,8 +263,11 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
 
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
-            <Avatar src={story.avatar} name={story.username} size="sm" className="border border-white/20" />
-            <span className="font-bold text-sm">@{story.username}</span>
+            <Avatar src={group.avatar} name={group.username} size="sm" className="border border-white/20" />
+            <span className="font-bold text-sm">@{group.username}</span>
+            <span className="text-white/50 text-xs">
+              {formatDistanceToNow(new Date(story.createdAt || Date.now()), { addSuffix: true, locale: fr })}
+            </span>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
             <X size={18} />
@@ -172,15 +275,21 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
         </div>
       </div>
 
-      {/* Main Image container with tap zones */}
-      <div className="relative flex-1 flex items-center justify-center my-4">
+      {/* Main Image container with tap zones (50/50 comme WhatsApp) */}
+      <div
+        className="relative flex-1 flex items-center justify-center my-4"
+        onMouseDown={() => setPaused(true)}
+        onMouseUp={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
+      >
         {/* Left Tap Zone */}
-        <div onClick={handlePrev} className="absolute left-0 top-0 bottom-0 w-1/4 z-10 cursor-pointer" />
+        <div onClick={handlePrev} className="absolute left-0 top-0 bottom-0 w-1/2 z-10 cursor-pointer" />
         {/* Right Tap Zone */}
-        <div onClick={handleNext} className="absolute right-0 top-0 bottom-0 w-3/4 z-10 cursor-pointer" />
-        
+        <div onClick={handleNext} className="absolute right-0 top-0 bottom-0 w-1/2 z-10 cursor-pointer" />
+
         <img src={story.media} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl" />
-        
+
         {story.caption && (
           <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm p-4 rounded-2xl border border-white/10 text-white">
             <p className="text-sm font-semibold leading-relaxed">{story.caption}</p>
@@ -198,11 +307,50 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
             }}
             className="w-full py-4 bg-primary-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:bg-primary-500 active:scale-95 transition-transform"
           >
-            <Store size={16} /> Visiter la boutique de @{story.username}
+            <Store size={16} /> Visiter la boutique de @{group.username}
           </button>
         ) : (
           <div className="h-10" />
         )}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// STORY COMPOSER — aperçu + légende avant publication
+// ============================================================
+function StoryComposer({ previewUrl, caption, onCaptionChange, onCancel, onPublish, publishing }) {
+  if (!previewUrl) return null
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col animate-fade-in">
+      <div className="flex items-center justify-between p-4">
+        <button onClick={onCancel} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90">
+          <X size={18} />
+        </button>
+        <span className="text-white font-bold text-sm">Nouvelle story</span>
+        <div className="w-9" />
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+        <img src={previewUrl} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+      </div>
+
+      <div className="p-4 flex items-center gap-2 pb-6">
+        <input
+          value={caption}
+          onChange={e => onCaptionChange(e.target.value)}
+          placeholder="Ajouter une légende..."
+          maxLength={150}
+          className="flex-1 bg-white/10 text-white placeholder-white/40 rounded-full px-4 py-3 text-sm outline-none focus:bg-white/20 transition-colors"
+        />
+        <button
+          onClick={onPublish}
+          disabled={publishing}
+          className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white disabled:opacity-50 active:scale-90 transition-transform flex-shrink-0"
+        >
+          {publishing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        </button>
       </div>
     </div>
   )
@@ -245,10 +393,16 @@ function PostsTab({ user, profile, mode }) {
   const [loadingMore, setLoadingMore]   = useState(false)
   const [searchQuery, setSearchQuery]   = useState('')
 
-  // Stories
-  const [stories, setStories]               = useState([])
-  const [activeStoryIdx, setActiveStoryIdx] = useState(null)
+  // Stories — regroupées par utilisateur, comme le statut WhatsApp
+  const [storyGroups, setStoryGroups]     = useState([])
+  const [storyViewer, setStoryViewer]     = useState(null) // { groups, startIndex } | null
   const fileInputRef = useRef(null)
+
+  // Aperçu / légende avant publication
+  const [pendingStoryFile, setPendingStoryFile]       = useState(null)
+  const [pendingStoryPreview, setPendingStoryPreview] = useState(null)
+  const [storyCaption, setStoryCaption]               = useState('')
+  const [publishingStory, setPublishingStory]         = useState(false)
 
   const loadStories = useCallback(async () => {
     try {
@@ -256,19 +410,41 @@ function PostsTab({ user, profile, mode }) {
         .from('stories')
         .select('*, user:profiles(id, username, avatar_url)')
         .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-      
+        .order('created_at', { ascending: true })
+
       if (error) throw error
-      
-      const mapped = (data || []).map(s => ({
-        id: s.id,
-        username: s.user?.username || 'user',
-        avatar: s.user?.avatar_url,
-        media: s.media_url,
-        caption: s.caption || '',
-        shopSlug: s.shop_slug || ''
+
+      const seen = getSeenStoryIds()
+      const byUser = new Map()
+
+      ;(data || []).forEach(s => {
+        const uid = s.user_id
+        if (!byUser.has(uid)) {
+          byUser.set(uid, {
+            userId: uid,
+            username: s.user?.username || 'user',
+            avatar: s.user?.avatar_url,
+            items: []
+          })
+        }
+        byUser.get(uid).items.push({
+          id: s.id,
+          media: s.media_url,
+          caption: s.caption || '',
+          shopSlug: s.shop_slug || '',
+          createdAt: s.created_at
+        })
+      })
+
+      let groups = Array.from(byUser.values()).map(g => ({
+        ...g,
+        allSeen: g.items.every(it => seen.has(it.id))
       }))
-      setStories(mapped)
+
+      // Comme WhatsApp : les statuts non vus passent en premier
+      groups.sort((a, b) => (a.allSeen === b.allSeen ? 0 : a.allSeen ? 1 : -1))
+
+      setStoryGroups(groups)
     } catch (err) {
       console.error('[Stories] Erreur:', err)
     }
@@ -286,24 +462,68 @@ function PostsTab({ user, profile, mode }) {
     fileInputRef.current?.click()
   }
 
-  const handleFileChange = async (e) => {
+  const handleOpenOwnStory = () => {
+    const myGroup = storyGroups.find(g => g.userId === profile?.id)
+    if (!myGroup) return
+    setStoryViewer({ groups: [myGroup], startIndex: 0 })
+  }
+
+  const handleOpenStory = (idxInOtherGroups) => {
+    const otherGroups = storyGroups.filter(g => g.userId !== profile?.id)
+    setStoryViewer({ groups: otherGroups, startIndex: idxInOtherGroups })
+  }
+
+  const handleStorySeen = useCallback((storyId) => {
+    markStorySeen(storyId)
+    setStoryGroups(prev => prev.map(g => (
+      g.items.some(it => it.id === storyId)
+        ? { ...g, allSeen: g.items.every(it => getSeenStoryIds().has(it.id)) }
+        : g
+    )))
+  }, [])
+
+  // 1) Sélection du fichier → ouvre l'aperçu (pas d'upload immédiat)
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seules les images sont acceptées pour le moment')
+      e.target.value = ''
+      return
+    }
     if (file.size > 5 * 1024 * 1024) {
       toast.error('L\'image ne doit pas dépasser 5 Mo')
+      e.target.value = ''
       return
     }
 
-    const toastId = toast.loading('Création de votre story...')
+    setPendingStoryFile(file)
+    setPendingStoryPreview(URL.createObjectURL(file))
+    setStoryCaption('')
+    e.target.value = '' // permet de re-sélectionner le même fichier plus tard
+  }
+
+  const handleCancelStoryComposer = () => {
+    if (pendingStoryPreview) URL.revokeObjectURL(pendingStoryPreview)
+    setPendingStoryFile(null)
+    setPendingStoryPreview(null)
+    setStoryCaption('')
+  }
+
+  // 2) Publication réelle, déclenchée depuis l'aperçu
+  const handlePublishStory = async () => {
+    if (!pendingStoryFile || publishingStory) return
+    setPublishingStory(true)
+    const toastId = toast.loading('Publication de votre story...')
     try {
       const timestamp = Date.now()
-      const ext = file.name.split('.').pop()
+      const ext = pendingStoryFile.name.split('.').pop()
       const path = `${user.id}/${timestamp}.${ext}`
 
       const { error: uploadErr } = await supabase.storage
         .from('stories')
-        .upload(path, file)
+        .upload(path, pendingStoryFile)
 
       if (uploadErr) throw uploadErr
 
@@ -324,17 +544,20 @@ function PostsTab({ user, profile, mode }) {
         .insert({
           user_id: user.id,
           media_url: urlData.publicUrl,
-          caption: `Story de @${profile?.username || 'user'}`,
+          caption: storyCaption.trim(),
           shop_slug: userShopSlug
         })
 
       if (insertErr) throw insertErr
 
       toast.success('Story ajoutée ! 🌟', { id: toastId })
+      handleCancelStoryComposer()
       loadStories()
     } catch (err) {
       console.error(err)
       toast.error('Erreur lors de l\'ajout de la story', { id: toastId })
+    } finally {
+      setPublishingStory(false)
     }
   }
 
@@ -637,7 +860,13 @@ function PostsTab({ user, profile, mode }) {
 
       <div>
         {/* Carrousel de Stories Premium */}
-        <StoriesCarousel profile={profile} stories={stories} onOpenStory={setActiveStoryIdx} onAddStory={handleAddStoryClick} />
+        <StoriesCarousel
+          profile={profile}
+          storyGroups={storyGroups}
+          onOpenOwnStory={handleOpenOwnStory}
+          onOpenStory={handleOpenStory}
+          onAddStory={handleAddStoryClick}
+        />
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
 
         {/* Filtrage par recherche active */}
@@ -755,9 +984,24 @@ function PostsTab({ user, profile, mode }) {
       )}
 
       {/* Story viewer full screen */}
-      {activeStoryIdx !== null && (
-        <StoryViewer stories={stories} storyIndex={activeStoryIdx} onClose={() => setActiveStoryIdx(null)} />
+      {storyViewer && (
+        <StoryViewer
+          groups={storyViewer.groups}
+          startGroupIndex={storyViewer.startIndex}
+          onClose={() => setStoryViewer(null)}
+          onStorySeen={handleStorySeen}
+        />
       )}
+
+      {/* Aperçu + légende avant publication d'une story */}
+      <StoryComposer
+        previewUrl={pendingStoryPreview}
+        caption={storyCaption}
+        onCaptionChange={setStoryCaption}
+        onCancel={handleCancelStoryComposer}
+        onPublish={handlePublishStory}
+        publishing={publishingStory}
+      />
 
       {/* Lightbox full screen */}
       {lightboxImg && (
