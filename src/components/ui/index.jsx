@@ -34,7 +34,7 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
   let finalSrc = fallbackUrl
   if (src) {
     try {
-      finalSrc = getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
+      finalSrc = src
     } catch {
       finalSrc = src // si getOptimizedImageUrl crash, on prend l'url brute
     }
