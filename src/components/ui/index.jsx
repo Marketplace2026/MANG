@@ -34,36 +34,23 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
     '2xl': 250,
   }
 
-  const initials = name
-    ? name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : '?'
-
-  const colors = [
-    'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500',
-    'bg-blue-500', 'bg-violet-500', 'bg-fuchsia-500',
-    'bg-rose-500', 'bg-orange-500', 'bg-amber-500',
-  ]
-  const colorIndex = name ? name.charCodeAt(0) % colors.length : 0
-
-  const optimizedSrc = getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=16a34a&color=fff`
+  const optimizedSrc = src 
+    ? getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 })
+    : fallbackUrl
 
   return (
     <div className={clsx('relative flex-shrink-0', className)}>
-      {src ? (
-        <img
-          src={optimizedSrc}
-          alt={name}
-          className={clsx(sizes[size], 'rounded-2xl object-cover')}
-        />
-      ) : (
-        <div className={clsx(
-          sizes[size],
-          colors[colorIndex],
-          'rounded-2xl flex items-center justify-center text-white font-bold select-none'
-        )}>
-          {initials}
-        </div>
-      )}
+      <img
+        src={optimizedSrc}
+        alt={name || 'Avatar'}
+        className={clsx(sizes[size], 'rounded-2xl object-cover')}
+        onError={(e) => {
+          if (e.target.src !== fallbackUrl) {
+            e.target.src = fallbackUrl
+          }
+        }}
+      />
       {online && (
         <span className={clsx(
           dotSizes[size],
