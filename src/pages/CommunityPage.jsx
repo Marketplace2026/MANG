@@ -363,7 +363,7 @@ function PostsTab({ user, profile, mode }) {
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
       .from('posts')
-      .select(`*, user:profiles(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url, badges))`)
+      .select(`*, user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url, badges))`)
       .range(from, from + PAGE_SIZE - 1)
 
     if (mode === 'trending') {
@@ -445,7 +445,7 @@ function PostsTab({ user, profile, mode }) {
         if (mode === 'trending') return
         const { data: p } = await supabase
           .from('posts')
-          .select(`*, user:profiles(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url, badges))`)
+          .select(`*, user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url, badges))`)
           .eq('id', payload.new.id).single()
         if (p) setPosts(prev => [p, ...prev])
       })
@@ -892,7 +892,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
       content: finalContent,
       image_url: imageUrl,
       shop_id: selectedShop?.id || null,
-    }).select(`*, user:profiles(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url))`).single()
+    }).select(`*, user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url))`).single()
 
     setPosting(false)
     if (error) { toast.error('Erreur publication'); return }
@@ -2075,9 +2075,9 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
         })
         .select(`
           *,
-          user:profiles(id, username, avatar_url, last_seen_at),
-          shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles(username, avatar_url)),
-          parent_post:parent_post_id(id, content, image_url, created_at, user:profiles(id, username, avatar_url))
+          user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at),
+          shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)),
+          parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url))
         `)
         .single()
 

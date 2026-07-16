@@ -49,7 +49,7 @@ export default function PublicProfilePage() {
     // Posts
     const { data: postsData } = await supabase
       .from('posts')
-      .select('*, shop:shops(id, name, slug, cover_url)')
+      .select('*, user:profiles!posts_user_id_fkey(id, username, avatar_url), shop:shops(id, name, slug, cover_url)')
       .eq('user_id', prof.id)
       .order('created_at', { ascending: false })
       .limit(30)
