@@ -30,11 +30,14 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
 
   const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=16a34a&color=fff&size=${widthMap[size] || 100}`
 
-  // FIX: Si pas de src, on utilise direct le fallback. Sinon on optimise
+  // FIX: Si pas de src, on utilise direct le fallback.
+  // Sinon on tente l'URL optimisée, mais on garde l'URL brute sous le coude :
+  // si getOptimizedImageUrl renvoie une URL cassée (mauvais domaine, service down, etc.),
+  // on ne veut PAS tomber direct sur les initiales alors que la vraie photo existe.
   let finalSrc = fallbackUrl
   if (src) {
     try {
-      finalSrc = src
+      finalSrc = getOptimizedImageUrl(src, { width: widthMap[size] || 100, format: 'webp', quality: 80 }) || src
     } catch {
       finalSrc = src // si getOptimizedImageUrl crash, on prend l'url brute
     }
@@ -47,7 +50,13 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
         alt={name || 'Avatar'}
         className={clsx(sizes[size], 'rounded-2xl object-cover bg-surface-100')}
         onError={(e) => {
-          if (e.target.src!== fallbackUrl) {
+          // 1) Si l'URL optimisée a échoué, on retente avec l'URL brute (src d'origine)
+          if (src && e.target.src !== src && e.target.src !== fallbackUrl) {
+            e.target.src = src
+            return
+          }
+          // 2) Si l'URL brute échoue aussi (ou qu'il n'y avait pas de src), initiales
+          if (e.target.src !== fallbackUrl) {
             e.target.src = fallbackUrl
           }
         }}
