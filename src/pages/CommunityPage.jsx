@@ -122,21 +122,18 @@ function StoryCard({ label, thumbnail, avatar, avatarName, unseen, onClick, show
           <Avatar src={avatar} name={avatarName} size="xs" />
         </div>
 
-        {/* Badge "+" pour ajouter une story */}
+        {/* Badge "+" pour ajouter une story — en haut à droite pour ne jamais gêner le libellé du bas */}
         {showAddBadge && (
           <button
             onClick={(e) => { e.stopPropagation(); onAddClick() }}
-            className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-primary-600 border-2 border-white dark:border-dark-900 flex items-center justify-center text-white shadow-md active:scale-90"
+            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-primary-600 border-2 border-white dark:border-dark-900 flex items-center justify-center text-white shadow-md active:scale-90"
           >
             <Plus size={13} strokeWidth={3} />
           </button>
         )}
 
-        {/* Nom en bas */}
-        <span className={clsx(
-          'absolute left-2 right-2 text-white text-[11px] font-bold leading-tight drop-shadow',
-          showAddBadge ? 'top-1.5 left-10' : 'bottom-1.5'
-        )}>
+        {/* Nom en bas — position unique, pas de classes contradictoires */}
+        <span className="absolute bottom-1.5 left-2 right-2 text-white text-[11px] font-bold leading-tight drop-shadow truncate">
           {label}
         </span>
       </div>
