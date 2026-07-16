@@ -17,44 +17,6 @@ import { fr } from 'date-fns/locale'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getOptimizedImageUrl } from '@/utils/image'
 
-// ============================================================
-// MOCK STORIES (Visuels Agricoles Riches)
-// ============================================================
-const MOCK_STORIES = [
-  {
-    id: 's1',
-    username: 'agri_bio',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-    media: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=500&q=80',
-    caption: 'Récolte fraîche du matin 🍅 100% bio !',
-    shopSlug: 'agri-bio'
-  },
-  {
-    id: 's2',
-    username: 'coop_nord',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    media: 'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=500&q=80',
-    caption: 'Préparation des sacs de riz premium 🌾',
-    shopSlug: 'coop-nord'
-  },
-  {
-    id: 's3',
-    username: 'miel_local',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
-    media: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=500&q=80',
-    caption: 'Extraction de miel pur de forêt 🍯 Direct producteur.',
-    shopSlug: 'miel-local'
-  },
-  {
-    id: 's4',
-    username: 'ferme_moderne',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-    media: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=500&q=80',
-    caption: 'Nos poules pondeuses en plein air 🐔🥚',
-    shopSlug: 'ferme-moderne'
-  }
-]
-
 const TABS = [
   { key: 'feed',    label: '🌍 Pour toi'     },
   { key: 'following', label: '👥 Abonnements' },
@@ -113,11 +75,11 @@ export default function CommunityPage() {
 // ============================================================
 // STORIES CAROUSEL
 // ============================================================
-function StoriesCarousel({ profile, onOpenStory }) {
+function StoriesCarousel({ profile, stories = [], onOpenStory, onAddStory }) {
   return (
     <div className="bg-white dark:bg-dark-900 border-b border-surface-100 dark:border-dark-800 px-4 py-4 flex gap-3.5 overflow-x-auto no-scrollbar">
       {/* Ajouter ma story */}
-      <div className="flex flex-col items-center flex-shrink-0 cursor-pointer">
+      <div onClick={onAddStory} className="flex flex-col items-center flex-shrink-0 cursor-pointer">
         <div className="relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-surface-300 dark:border-dark-700 flex items-center justify-center bg-surface-50 dark:bg-dark-955">
           <Avatar src={profile?.avatar_url} name={profile?.username} size="md" />
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-white dark:border-dark-900 font-bold text-xs">
@@ -127,12 +89,12 @@ function StoriesCarousel({ profile, onOpenStory }) {
         <span className="text-[10px] font-bold text-dark-600 dark:text-dark-400 mt-1">Ma story</span>
       </div>
 
-      {/* Liste des stories mockées */}
-      {MOCK_STORIES.map((s, idx) => (
+      {/* Liste des stories réelles */}
+      {stories.map((s, idx) => (
         <div key={s.id} onClick={() => onOpenStory(idx)} className="flex flex-col items-center flex-shrink-0 cursor-pointer">
           <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-primary-500 to-gold-400 flex items-center justify-center shadow-md active:scale-95 transition-transform">
             <div className="w-full h-full rounded-full border-2 border-white dark:border-dark-900 overflow-hidden">
-              <img src={s.avatar} className="w-full h-full object-cover" alt={s.username} />
+              <Avatar src={s.avatar} name={s.username} size="md" />
             </div>
           </div>
           <span className="text-[10px] font-semibold text-dark-800 dark:text-white mt-1">@{s.username}</span>
@@ -145,11 +107,11 @@ function StoriesCarousel({ profile, onOpenStory }) {
 // ============================================================
 // STORY VIEWER MODAL
 // ============================================================
-function StoryViewer({ storyIndex, onClose }) {
+function StoryViewer({ stories = [], storyIndex, onClose }) {
   const [currentIdx, setCurrentIdx] = useState(storyIndex)
   const [progress, setProgress] = useState(0)
   const navigate = useNavigate()
-  const story = MOCK_STORIES[currentIdx]
+  const story = stories[currentIdx]
 
   useEffect(() => {
     setProgress(0)
@@ -167,7 +129,7 @@ function StoryViewer({ storyIndex, onClose }) {
   }, [currentIdx])
 
   const handleNext = () => {
-    if (currentIdx < MOCK_STORIES.length - 1) {
+    if (currentIdx < stories.length - 1) {
       setCurrentIdx(currentIdx + 1)
     } else {
       onClose()
@@ -187,7 +149,7 @@ function StoryViewer({ storyIndex, onClose }) {
       {/* Top indicator & Progress bars */}
       <div className="w-full space-y-3.5 pt-4">
         <div className="flex gap-1.5 w-full">
-          {MOCK_STORIES.map((_, i) => (
+          {stories.map((_, i) => (
             <div key={i} className="h-1 bg-white/20 rounded-full flex-1 overflow-hidden">
               <div
                 className="h-full bg-primary-400 transition-all duration-100"
@@ -201,9 +163,7 @@ function StoryViewer({ storyIndex, onClose }) {
 
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20">
-              <img src={story.avatar} className="w-full h-full object-cover" />
-            </div>
+            <Avatar src={story.avatar} name={story.username} size="sm" className="border border-white/20" />
             <span className="font-bold text-sm">@{story.username}</span>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -221,22 +181,28 @@ function StoryViewer({ storyIndex, onClose }) {
         
         <img src={story.media} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl" />
         
-        <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm p-4 rounded-2xl border border-white/10 text-white">
-          <p className="text-sm font-semibold leading-relaxed">{story.caption}</p>
-        </div>
+        {story.caption && (
+          <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm p-4 rounded-2xl border border-white/10 text-white">
+            <p className="text-sm font-semibold leading-relaxed">{story.caption}</p>
+          </div>
+        )}
       </div>
 
       {/* Bottom Shop Referral Link */}
       <div className="pb-4 pt-2">
-        <button
-          onClick={() => {
-            onClose()
-            navigate(`/boutique/${story.shopSlug}`)
-          }}
-          className="w-full py-4 bg-primary-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:bg-primary-500 active:scale-95 transition-transform"
-        >
-          <Store size={16} /> Visiter la boutique de @{story.username}
-        </button>
+        {story.shopSlug ? (
+          <button
+            onClick={() => {
+              onClose()
+              navigate(`/boutique/${story.shopSlug}`)
+            }}
+            className="w-full py-4 bg-primary-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:bg-primary-500 active:scale-95 transition-transform"
+          >
+            <Store size={16} /> Visiter la boutique de @{story.username}
+          </button>
+        ) : (
+          <div className="h-10" />
+        )}
       </div>
     </div>
   )
@@ -279,8 +245,100 @@ function PostsTab({ user, profile, mode }) {
   const [loadingMore, setLoadingMore]   = useState(false)
   const [searchQuery, setSearchQuery]   = useState('')
 
-  // Modals Riches
+  // Stories
+  const [stories, setStories]               = useState([])
   const [activeStoryIdx, setActiveStoryIdx] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const loadStories = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*, user:profiles(id, username, avatar_url)')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      const mapped = (data || []).map(s => ({
+        id: s.id,
+        username: s.user?.username || 'user',
+        avatar: s.user?.avatar_url,
+        media: s.media_url,
+        caption: s.caption || '',
+        shopSlug: s.shop_slug || ''
+      }))
+      setStories(mapped)
+    } catch (err) {
+      console.error('[Stories] Erreur:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadStories()
+  }, [loadStories])
+
+  const handleAddStoryClick = () => {
+    if (!user) {
+      toast.error('Connectez-vous d\'abord')
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('L\'image ne doit pas dépasser 5 Mo')
+      return
+    }
+
+    const toastId = toast.loading('Création de votre story...')
+    try {
+      const timestamp = Date.now()
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/${timestamp}.${ext}`
+
+      const { error: uploadErr } = await supabase.storage
+        .from('stories')
+        .upload(path, file)
+
+      if (uploadErr) throw uploadErr
+
+      const { data: urlData } = supabase.storage
+        .from('stories')
+        .getPublicUrl(path)
+
+      const { data: userShops } = await supabase
+        .from('shops')
+        .select('slug')
+        .eq('owner_id', user.id)
+        .limit(1)
+
+      const userShopSlug = userShops?.[0]?.slug || ''
+
+      const { error: insertErr } = await supabase
+        .from('stories')
+        .insert({
+          user_id: user.id,
+          media_url: urlData.publicUrl,
+          caption: `Story de @${profile?.username || 'user'}`,
+          shop_slug: userShopSlug
+        })
+
+      if (insertErr) throw insertErr
+
+      toast.success('Story ajoutée ! 🌟', { id: toastId })
+      loadStories()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de l\'ajout de la story', { id: toastId })
+    }
+  }
+
+  // Modals Riches
   const [lightboxImg, setLightboxImg]       = useState(null)
   const [reportedPostIds, setReportedPostIds] = useState(new Set())
   const [reportingPostId, setReportingPostId] = useState(null)
@@ -579,7 +637,8 @@ function PostsTab({ user, profile, mode }) {
 
       <div>
         {/* Carrousel de Stories Premium */}
-        <StoriesCarousel profile={profile} onOpenStory={setActiveStoryIdx} />
+        <StoriesCarousel profile={profile} stories={stories} onOpenStory={setActiveStoryIdx} onAddStory={handleAddStoryClick} />
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
 
         {/* Filtrage par recherche active */}
         {searchQuery && (
@@ -697,7 +756,7 @@ function PostsTab({ user, profile, mode }) {
 
       {/* Story viewer full screen */}
       {activeStoryIdx !== null && (
-        <StoryViewer storyIndex={activeStoryIdx} onClose={() => setActiveStoryIdx(null)} />
+        <StoryViewer stories={stories} storyIndex={activeStoryIdx} onClose={() => setActiveStoryIdx(null)} />
       )}
 
       {/* Lightbox full screen */}
