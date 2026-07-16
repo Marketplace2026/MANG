@@ -362,9 +362,9 @@ function PostsTab({ user, profile, mode }) {
 
   const buildQuery = useCallback((from = 0) => {
     let q = supabase
-      .from('posts')
-      .select(`*, user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at, badges), shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url, badges))`)
-      .range(from, from + PAGE_SIZE - 1)
+     .from('posts')
+     .select(`*, shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)), parent_post:parent_post_id(id, content, image_url, created_at, user_id)`) // <-- j'ai enlevé user:profiles
+     .range(from, from + PAGE_SIZE - 1)
 
     if (mode === 'trending') {
       q = q.order('likes_count', { ascending: false }).order('created_at', { ascending: false })
@@ -374,7 +374,7 @@ function PostsTab({ user, profile, mode }) {
     return q
   }, [mode])
 
-  const loadPosts = useCallback(async () => {
+const loadPosts = useCallback(async () => {
     setLoading(true)
     setPage(0)
     setHasMore(true)
@@ -383,15 +383,43 @@ function PostsTab({ user, profile, mode }) {
 
     if (mode === 'following' && user) {
       const { data: follows } = await supabase
-        .from('user_follows').select('following_id').eq('follower_id', user.id)
+       .from('user_follows').select('following_id').eq('follower_id', user.id)
       const ids = (follows || []).map(f => f.following_id)
       if (ids.length === 0) { setPosts([]); setLoading(false); return }
       q = q.in('user_id', ids)
     }
 
-    const { data } = await q
-    if (!data) { setLoading(false); return }
+    const { data: postsData, error: postsError } = await q
+    if (postsError ||!postsData) {
+      console.log('Erreur posts:', postsError)
+      setLoading(false);
+      return
+    }
 
+    // 1. Récupérer tous les user_id uniques des posts + parent_post
+    const userIds = new Set()
+    postsData.forEach(p => {
+      if(p.user_id) userIds.add(p.user_id)
+      if(p.parent_post?.user_id) userIds.add(p.parent_post.user_id)
+    })
+
+    // 2. Charger tous les profils en 1 seule requête
+    const { data: profilesData } = await supabase
+     .from('profiles')
+     .select('id, username, avatar_url, last_seen_at, badges')
+     .in('id', [...userIds])
+
+    // 3. Fusionner posts + profiles
+    const postsWithUsers = postsData.map(post => ({
+     ...post,
+      user: profilesData?.find(p => p.id === post.user_id) || null, // <-- on rajoute user ici
+      parent_post: post.parent_post? {
+       ...post.parent_post,
+        user: profilesData?.find(p => p.id === post.parent_post.user_id) || null // <-- et ici pour les reposts
+      } : null
+    }))
+
+    // 4. Charger likes et bookmarks
     if (user && user.id) {
       const [{ data: myLikes }, { data: myBookmarks }] = await Promise.all([
         supabase.from('post_likes').select('post_id').eq('user_id', user.id),
@@ -401,8 +429,9 @@ function PostsTab({ user, profile, mode }) {
       setBookmarkedPosts(new Set((myBookmarks || []).map(b => b.post_id)))
     }
 
-    setPosts(data)
-    setHasMore(data.length === PAGE_SIZE)
+    console.log('DEBUG postsWithUsers:', postsWithUsers) // <-- regarde ça dans la console
+    setPosts(postsWithUsers)
+    setHasMore(postsData.length === PAGE_SIZE)
     setLoading(false)
   }, [user, mode, buildQuery])
 
