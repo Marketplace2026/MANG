@@ -1,3 +1,18 @@
+
+{debugInfo && (
+  <div style={{
+    background: 'black', 
+    color: 'lime', 
+    padding: '10px', 
+    fontSize: '10px',
+    whiteSpace: 'pre-wrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 9999
+  }}>
+    {debugInfo}
+  </div>
+)}
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Heart, MessageCircle, Share2, Users, Search,
@@ -27,7 +42,9 @@ const TABS = [
 // ============================================================
 // PAGE PRINCIPALE
 // ============================================================
-export default function CommunityPage() {
+export default function CommunityPage() const [debugInfo, setDebugInfo] = useState('')
+const [profilesData, setProfilesData] = useState([])
+{
   const { user, profile } = useAuthStore()
   const [tab, setTab] = useState('feed')
   const tabsRef = useRef()
@@ -163,7 +180,11 @@ function StoryViewer({ stories = [], storyIndex, onClose }) {
 
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
-            <Avatar src={story.avatar} name={story.username} size="sm" className="border border-white/20" />
+            <Avatar
+  src={story.user?.avatar_url}  // <-- .user au lieu de .story
+  name={story.user?.username}   // <-- .user au lieu de .story
+  size="sm"
+/>
             <span className="font-bold text-sm">@{story.username}</span>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -402,22 +423,29 @@ const loadPosts = useCallback(async () => {
       if(p.user_id) userIds.add(p.user_id)
       if(p.parent_post?.user_id) userIds.add(p.parent_post.user_id)
     })
-
-    // 2. Charger tous les profils en 1 seule requête
+// 2. Charger tous les profils en 1 seule requête
     const { data: profilesData } = await supabase
-     .from('profiles')
-     .select('id, username, avatar_url, last_seen_at, badges')
-     .in('id', [...userIds])
+      .from('profiles')
+      .select('id, username, avatar_url, last_seen_at, badges')
+      .in('id', [...userIds])
 
-    // 3. Fusionner posts + profiles
+    console.log('DEBUG userIds:', [...userIds])
+    console.log('DEBUG profilesData:', profilesData)
+
+    // 3. Fusionner posts + profiles avec MAP au lieu de FIND
+    const profileMap = new Map(profilesData?.map(p => [p.id, p]))
+
     const postsWithUsers = postsData.map(post => ({
-     ...post,
-      user: profilesData?.find(p => p.id === post.user_id) || null, // <-- on rajoute user ici
-      parent_post: post.parent_post? {
-       ...post.parent_post,
-        user: profilesData?.find(p => p.id === post.parent_post.user_id) || null // <-- et ici pour les reposts
+      ...post,
+      user: profileMap.get(post.user_id) || null,
+      parent_post: post.parent_post ? {
+        ...post.parent_post,
+        user: profileMap.get(post.parent_post.user_id) || null
       } : null
     }))
+
+    console.log('DEBUG postsWithUsers:', postsWithUsers)
+
 
     // 4. Charger likes et bookmarks
     if (user && user.id) {
