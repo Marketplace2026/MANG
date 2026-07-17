@@ -226,9 +226,14 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
           {msg.type !== 'image' && msg.type !== 'video' && (
             <div className={clsx('flex items-center gap-1 mt-0.5', isMe ? 'justify-end' : 'justify-start')}>
               <span className={clsx('text-[9px]', isMe ? 'text-white/60' : 'text-dark-400/60')}>{fmtTime(msg.created_at)}</span>
-              {isMe && (msg.is_read
-                ? <CheckCheck size={11} className="text-blue-300"/>
-                : <Check size={11} className="text-white/60"/>
+              {isMe && (
+                msg.delivery_status === 'read' || msg.is_read ? (
+                  <CheckCheck size={12} className="text-sky-300" title="Lu" />
+                ) : msg.delivery_status === 'delivered' ? (
+                  <CheckCheck size={12} className="text-white/50" title="Distribué" />
+                ) : (
+                  <Check size={12} className="text-white/50" title="Envoyé" />
+                )
               )}
               {msg.is_starred && <Star size={9} className={isMe ? 'text-yellow-300 fill-yellow-300' : 'text-yellow-500 fill-yellow-500'}/>}
             </div>
@@ -330,6 +335,12 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [showSearch, setShowSearch] = useState(false)
   const [uploading, setUploading]   = useState(false)
   const [contextProduct, setContextProduct] = useState(null)
+  const [locked, setLocked]         = useState(false)
+  const [isCancelled, setIsCancelled] = useState(false)
+  const startYRef                   = useRef(0)
+  const startXRef                   = useRef(0)
+  const streamRef                   = useRef(null)
+  const [isOnlineState, setIsOnlineState] = useState(isOnline(other?.last_seen_at))
 
   // Fetch product context
   useEffect(() => {
@@ -372,7 +383,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const mediaRef    = useRef(null)
   const recTimer    = useRef(null)
   const typingTimer = useRef(null)
-  const online      = isOnline(other?.last_seen_at)
+  const online      = isOnlineState
 
   // Charger messages
   useEffect(() => { 
@@ -389,8 +400,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     const ch = supabase.channel(`chat-${conv.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
         payload => {
-          setMessages(prev => [...prev, payload.new])
+          setMessages(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev
+            return [...prev, payload.new]
+          })
           if (payload.new.sender_id !== user.id) {
+            // Update to read since chat is open
+            supabase.from('messages').update({ delivery_status: 'read' }).eq('id', payload.new.id)
             markRead(conv.id)
             onMarkRead?.(conv.id)
           }
@@ -405,17 +421,38 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     const typingCh = supabase.channel(`typing-${conv.id}`)
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         if (payload.user_id !== user.id) {
-          setOtherTyping(true)
+          setOtherTyping(payload.isTyping)
           clearTimeout(typingTimer.current)
-          typingTimer.current = setTimeout(() => setOtherTyping(false), 3000)
+          if (payload.isTyping) {
+            typingTimer.current = setTimeout(() => setOtherTyping(false), 3000)
+          }
         }
       })
       .subscribe()
 
+    // Presence Sync
+    const presenceCh = supabase.channel(`presence-${conv.id}`)
+    presenceCh
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceCh.presenceState()
+        const presenceUsers = Object.values(state).flat()
+        const otherOnline = presenceUsers.some(u => u.user_id === other?.id)
+        setIsOnlineState(otherOnline)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceCh.track({ user_id: user.id, online_at: new Date().toISOString() })
+        }
+      })
+
     // Mise à jour last_seen
     supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
 
-    return () => { supabase.removeChannel(ch); supabase.removeChannel(typingCh) }
+    return () => {
+      supabase.removeChannel(ch)
+      supabase.removeChannel(typingCh)
+      supabase.removeChannel(presenceCh)
+    }
   }, [conv.id])
 
   const loadMessages = async () => {
@@ -427,8 +464,12 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       .order('created_at', { ascending: true })
       .limit(100)
     setMessages(data || [])
-    // Marquer comme lus via fonction SQL (contourne RLS)
+    // Mettre à jour delivery_status à read pour les messages reçus non lus
     if (data?.length) {
+      const unreadIds = data.filter(m => m.sender_id !== user.id && m.delivery_status !== 'read').map(m => m.id)
+      if (unreadIds.length > 0) {
+        await supabase.from('messages').update({ delivery_status: 'read' }).in('id', unreadIds)
+      }
       const { error } = await supabase.rpc('mark_conversation_read', {
         p_conv_id: conv.id,
         p_user_id: user.id
@@ -445,15 +486,15 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     })
   }
 
-  const broadcastTyping = () => {
-    supabase.channel(`typing-${conv.id}`).send({ type: 'broadcast', event: 'typing', payload: { user_id: user.id } })
+  const broadcastTyping = (isTypingVal = true) => {
+    supabase.channel(`typing-${conv.id}`).send({ type: 'broadcast', event: 'typing', payload: { user_id: user.id, isTyping: isTypingVal } })
   }
 
   const handleTextChange = (e) => {
     setText(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
-    broadcastTyping()
+    broadcastTyping(true)
   }
 
   // Envoyer texte
@@ -461,6 +502,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     const content = text.trim()
     if (!content || sending) return
     setSending(true); setText('')
+    broadcastTyping(false)
     if (inputRef.current) inputRef.current.style.height = '40px'
     await supabase.from('messages').insert({
       conversation_id: conv.id,
@@ -500,11 +542,15 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
       const mr = new MediaRecorder(stream)
       const chunks = []
       mr.ondataavailable = e => chunks.push(e.data)
       mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop())
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(t => t.stop())
+          streamRef.current = null
+        }
         const blob = new Blob(chunks, { type: 'audio/webm' })
         const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
         await uploadFile(file)
@@ -512,15 +558,72 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       mr.start()
       mediaRef.current = mr
       setRecording(true)
+      setLocked(false)
+      setIsCancelled(false)
       let t = 0
       recTimer.current = setInterval(() => { t++; setRecordTime(t) }, 1000)
     } catch { toast.error('Microphone non disponible') }
   }
 
-  const stopRecording = () => {
-    if (mediaRef.current) { mediaRef.current.stop(); mediaRef.current = null }
+  const stopRecording = (shouldCancel = false) => {
     clearInterval(recTimer.current)
-    setRecording(false); setRecordTime(0)
+    if (mediaRef.current) {
+      if (shouldCancel) {
+        mediaRef.current.onstop = null
+      }
+      try {
+        mediaRef.current.stop()
+      } catch (err) {}
+      mediaRef.current = null
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+    setRecording(false)
+    setRecordTime(0)
+    setLocked(false)
+    setIsCancelled(false)
+  }
+
+  const handlePointerDown = (e) => {
+    e.preventDefault()
+    try {
+      e.target.setPointerCapture(e.pointerId)
+    } catch (err) {}
+    startYRef.current = e.clientY
+    startXRef.current = e.clientX
+    setLocked(false)
+    setIsCancelled(false)
+    startRecording()
+  }
+
+  const handlePointerMove = (e) => {
+    if (!mediaRef.current || locked || isCancelled) return
+    const currentY = e.clientY
+    const currentX = e.clientX
+    const deltaY = startYRef.current - currentY
+    const deltaX = startXRef.current - currentX
+    
+    if (deltaY > 80) {
+      setLocked(true)
+      toast.success('Enregistrement verrouillé 🔒')
+    } else if (deltaX > 80) {
+      setIsCancelled(true)
+      toast.error('Enregistrement annulé 🗑️')
+      stopRecording(true)
+    }
+  }
+
+  const handlePointerUp = (e) => {
+    e.preventDefault()
+    try {
+      e.target.releasePointerCapture(e.pointerId)
+    } catch (err) {}
+    if (!mediaRef.current || isCancelled) return
+    if (!locked) {
+      stopRecording(false)
+    }
   }
 
   // Réaction
@@ -577,13 +680,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </button>
 
           <div className="flex items-center gap-2.5 flex-1 min-w-0" onClick={() => setShowInfo(true)}>
-            <Avatar src={other?.avatar_url} name={other?.username} size="md" online={online}/>
+            <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
             <div className="min-w-0">
               <p className="text-white font-bold text-base truncate leading-tight">@{other?.username}</p>
               <p className="text-white/50 text-xs">
                 {otherTyping ? <span className="text-green-300 animate-pulse">En train d'écrire...</span>
-                  : online ? <span className="text-emerald-300">En ligne</span>
-                  : other?.last_seen_at ? `Vu ${formatDistanceToNow(new Date(other.last_seen_at), { locale: fr, addSuffix: true })}` : 'Hors ligne'}
+                  : isOnlineState ? <span className="text-emerald-300">En ligne</span>
+                  : other?.last_seen_at ? `Vu à ${format(new Date(other.last_seen_at), 'HH:mm')}` : 'Hors ligne'}
               </p>
             </div>
           </div>
@@ -722,19 +825,28 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
         {recording ? (
           /* Mode enregistrement */
-          <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200">
+          <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200 animate-scale-in">
             <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0"/>
-            <span className="text-red-600 font-bold text-sm flex-1">
-              {Math.floor(recordTime / 60)}:{String(recordTime % 60).padStart(2, '0')} — Enregistrement...
+            <span className="text-red-600 font-bold text-sm flex-1 flex items-center gap-1.5">
+              {Math.floor(recordTime / 60)}:{String(recordTime % 60).padStart(2, '0')}
+              <span className="text-xs font-normal text-red-500 animate-pulse">
+                {locked ? 'Enregistrement verrouillé 🔒' : 'Glissez ↑ verrouiller | ← annuler'}
+              </span>
             </span>
-            <button onClick={stopRecording}
-              className="px-4 py-1.5 bg-red-500 text-white font-bold text-sm rounded-xl active:scale-95">
-              Envoyer ✓
-            </button>
-            <button onClick={() => { stopRecording(); setRecordTime(0) }}
-              className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
-              <X size={14} className="text-red-600"/>
-            </button>
+            {locked ? (
+              <div className="flex items-center gap-2">
+                <button onClick={() => stopRecording(false)}
+                  className="px-3.5 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl active:scale-95 transition-transform flex items-center gap-1 shadow-md">
+                  Envoyer
+                </button>
+                <button onClick={() => stopRecording(true)}
+                  className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center transition-colors">
+                  <Trash2 size={14}/>
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-red-400">En cours...</span>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -775,10 +887,12 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               </button>
             ) : (
               <button
-                onPointerDown={startRecording}
-                className={clsx('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-all',
-                  recording ? 'bg-red-500 animate-pulse' : 'bg-surface-100')}>
-                <Mic size={17} className={recording ? 'text-white' : 'text-dark-500'}/>
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className={clsx('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-all select-none touch-none',
+                  recording ? 'bg-red-500 animate-pulse text-white' : 'bg-surface-100 text-dark-500')}>
+                <Mic size={17} />
               </button>
             )}
           </div>
@@ -859,6 +973,29 @@ function ConvItem({ conv, userId, onClick }) {
   const hasUnread = unread > 0
   const isAchat = conv.buyer_id === userId
 
+  const [isTyping, setIsTyping] = useState(false)
+  const typingTimer = useRef(null)
+
+  useEffect(() => {
+    if (!userId) return
+    const typingCh = supabase.channel(`typing-${conv.id}`)
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.user_id !== userId) {
+          setIsTyping(payload.isTyping)
+          clearTimeout(typingTimer.current)
+          if (payload.isTyping) {
+            typingTimer.current = setTimeout(() => setIsTyping(false), 4000)
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(typingCh)
+      clearTimeout(typingTimer.current)
+    }
+  }, [conv.id, userId])
+
   return (
     <button onClick={onClick}
       className={clsx(
@@ -901,9 +1038,9 @@ function ConvItem({ conv, userId, onClick }) {
           </p>
         )}
 
-        <p className={clsx('text-xs truncate',
-          hasUnread ? 'text-dark-800 font-bold' : 'text-dark-400 font-normal')}>
-          {conv.last_message || 'Démarrer la conversation...'}
+        <p className={clsx('text-xs truncate transition-all',
+          isTyping ? 'text-emerald-600 font-bold' : hasUnread ? 'text-dark-800 font-bold' : 'text-dark-400 font-normal')}>
+          {isTyping ? '... écrit' : (conv.last_message || 'Démarrer la conversation...')}
         </p>
       </div>
     </button>
@@ -950,6 +1087,9 @@ export default function MessagesPage() {
     }
   }, [openConvId, convs])
 
+  const activeRef = useRef(active)
+  useEffect(() => { activeRef.current = active }, [active])
+
   // Realtime - écouter nouveaux messages ET conversations
   useEffect(() => {
     if (!user) return
@@ -958,6 +1098,11 @@ export default function MessagesPage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         // Nouveau message → mettre à jour le badge si pas de notre part
         if (payload.new.sender_id !== user.id) {
+          // Si la conversation n'est pas active (chat fermé), on met à jour delivery_status à delivered
+          if (activeRef.current?.id !== payload.new.conversation_id) {
+            supabase.from('messages').update({ delivery_status: 'delivered' }).eq('id', payload.new.id)
+          }
+
           setConvs(prev => prev.map(c => {
             if (c.id === payload.new.conversation_id) {
               return {
@@ -986,9 +1131,21 @@ export default function MessagesPage() {
       .order('last_message_at', { ascending: false })
 
     if (data?.length) {
+      // Mettre à jour delivery_status à delivered pour tous les messages reçus non lus/non distribués
+      const convIds = data.map(c => c.id)
+      const { data: undelivered } = await supabase
+        .from('messages')
+        .select('id')
+        .in('conversation_id', convIds)
+        .neq('sender_id', user.id)
+        .eq('delivery_status', 'sent')
+      if (undelivered?.length) {
+        const undeliveredIds = undelivered.map(m => m.id)
+        await supabase.from('messages').update({ delivery_status: 'delivered' }).in('id', undeliveredIds)
+      }
+
       // Calculer unread_count pour chaque conversation
       // is_read peut être NULL ou false pour les messages non lus
-      const convIds = data.map(c => c.id)
       const { data: unreadData } = await supabase
         .from('messages')
         .select('conversation_id')
