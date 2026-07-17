@@ -15,6 +15,8 @@ import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
+const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+
 // ══════════════════════════════════════════════════════════
 // CONSTANTES
 // ══════════════════════════════════════════════════════════
@@ -309,7 +311,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 // ══════════════════════════════════════════════════════════
 // CHAT WINDOW
 // ══════════════════════════════════════════════════════════
-function ChatWindow({ conv, user, onBack, onMarkRead }) {
+function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const other = conv.buyer_id === user.id ? conv.seller : conv.buyer
   const [messages, setMessages]     = useState([])
   const [loading, setLoading]       = useState(true)
@@ -326,6 +328,41 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
   const [searchMsg, setSearchMsg]   = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [uploading, setUploading]   = useState(false)
+  const [contextProduct, setContextProduct] = useState(null)
+
+  // Fetch product context
+  useEffect(() => {
+    if (initialProductId) {
+      supabase.from('products').select('*').eq('id', initialProductId).single()
+        .then(({ data }) => {
+          if (data) {
+            setContextProduct(data)
+            setText(`Bonjour, je suis intéressé par votre produit : "${data.name}"`)
+          }
+        })
+    }
+  }, [initialProductId])
+
+  const sendProductLink = async () => {
+    if (!contextProduct || sending) return
+    setSending(true)
+    const content = `Je suis intéressé par ce produit :\n🛍️ *${contextProduct.name}*\n💰 Prix : ${formatFCFA(contextProduct.price)}\n🔗 Lien : ${window.location.origin}/produit/${contextProduct.id}`
+    
+    // Insérer en base de données
+    const { data: newMsg, error } = await supabase.from('messages').insert({
+      conversation_id: conv.id,
+      sender_id: user.id,
+      content,
+      type: 'text'
+    }).select('*, sender:profiles!messages_sender_id_fkey(id, username, avatar_url, last_seen_at)').single()
+
+    if (!error && newMsg) {
+      setMessages(prev => [...prev, newMsg])
+    }
+
+    setContextProduct(null)
+    setSending(false)
+  }
 
   const bottomRef   = useRef(null)
   const inputRef    = useRef(null)
@@ -534,7 +571,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
         )}
 
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+          <button onClick={onBack} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90 md:hidden">
             <ArrowLeft size={18} className="text-white"/>
           </button>
 
@@ -662,6 +699,25 @@ function ChatWindow({ conv, user, onBack, onMarkRead }) {
       {/* ── INPUT ── */}
       <div className="bg-white border-t border-surface-100 px-3 py-2.5 flex-shrink-0"
         style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
+
+        {/* Encart Produit MANG Contextuel */}
+        {contextProduct && (
+          <div className="mb-2 flex items-center gap-3 bg-emerald-50/70 border border-emerald-100/50 rounded-2xl p-2 animate-scale-in">
+            {contextProduct.image_url && (
+              <img src={contextProduct.image_url} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-dark-800 text-xs font-black truncate">{contextProduct.name}</p>
+              <p className="text-primary-700 text-[10px] font-black">{formatFCFA(contextProduct.price)}</p>
+            </div>
+            <button onClick={sendProductLink} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-bold active:scale-95 transition-transform flex items-center gap-1">
+              <Send size={10} /> Partager
+            </button>
+            <button onClick={() => setContextProduct(null)} className="w-6 h-6 bg-emerald-100/50 rounded-full flex items-center justify-center">
+              <X size={10} className="text-emerald-700"/>
+            </button>
+          </div>
+        )}
 
         {recording ? (
           /* Mode enregistrement */
@@ -876,6 +932,7 @@ export default function MessagesPage() {
   const { user }          = useAuthStore()
   const [searchParams]    = useSearchParams()
   const openConvId        = searchParams.get('conv')
+  const openProductId     = searchParams.get('product')
   const [convs, setConvs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
@@ -981,97 +1038,129 @@ export default function MessagesPage() {
     setTimeout(() => readConvsSet.current.delete(convId), 5000)
   }
 
-  if (active) return <ChatWindow conv={active} user={user} onBack={() => { setActive(null); loadConvs() }} onMarkRead={handleMarkRead}/>
-
   return (
-    <div className="min-h-screen bg-surface-50 flex flex-col">
-
-      {/* Header */}
-      <div className="flex-shrink-0 pt-14 pb-3 px-4"
-        style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="font-display text-2xl text-white font-bold">Messages</h1>
-            <p className="text-white/50 text-xs">
-              {convs.length} conversation{convs.length !== 1 ? 's' : ''}
-              {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={loadConvs} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
-              <Loader2 size={16} className="text-white"/>
-            </button>
-          </div>
-        </div>
-
-        {/* Recherche */}
-        <div className="relative mb-3">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>
-          <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/15"/>
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-white/40"/></button>}
-        </div>
-
-        {/* Onglets Achat / Vente / Tous / Non lus */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {[
-            { key: 'all',    label: 'Tous',    badge: unreadTotal },
-            { key: 'achat',  label: '🛒 Achat', badge: unreadAchat },
-            { key: 'vente',  label: '🏪 Vente', badge: unreadVente },
-            { key: 'unread', label: 'Non lus',  badge: unreadTotal },
-          ].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
-                tab === t.key ? 'bg-white text-primary-700' : 'bg-white/10 text-white/60')}>
-              {t.label}
-              {t.badge > 0 && (
-                <span className={clsx('w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center',
-                  tab === t.key ? 'bg-primary-600 text-white' : 'bg-red-500 text-white')}>
-                  {t.badge > 9 ? '9+' : t.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Liste */}
-      <div className="flex-1 overflow-y-auto pb-28">
-        {loading ? (
-          <div className="space-y-1 py-2">
-            {[1,2,3,4].map(i => <ConvSkeleton key={i}/>)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 px-6">
-            <div className="w-20 h-20 rounded-3xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-              <MessageCircle size={36} className="text-primary-400"/>
+    <div className="min-h-screen bg-surface-100 flex justify-center items-stretch py-0 md:py-6 md:px-4">
+      <div className="w-full max-w-6xl bg-white md:rounded-3xl md:shadow-card overflow-hidden flex">
+        
+        {/* Partie Gauche : Liste des Conversations */}
+        <div className={clsx(
+          "w-full md:w-[360px] lg:w-[400px] flex flex-col border-r border-surface-100 flex-shrink-0",
+          active ? "hidden md:flex" : "flex"
+        )}>
+          {/* Header */}
+          <div className="flex-shrink-0 pt-14 pb-3 px-4 bg-gradient-to-br from-emerald-900 to-emerald-800">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="font-display text-2xl text-white font-bold">Messages</h1>
+                <p className="text-white/50 text-xs">
+                  {convs.length} conversation{convs.length !== 1 ? 's' : ''}
+                  {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={loadConvs} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+                  <Loader2 size={16} className="text-white"/>
+                </button>
+              </div>
             </div>
-            <p className="font-bold text-dark-700 text-lg">
-              {search ? 'Aucun résultat' : tab === 'unread' ? 'Aucun message non lu' : 'Aucune conversation'}
-            </p>
-            <p className="text-dark-400 text-sm mt-2">
-              {!search && tab === 'all' && 'Contactez un vendeur depuis une boutique pour démarrer'}
-            </p>
+
+            {/* Recherche */}
+            <div className="relative mb-3">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>
+              <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/15"/>
+              {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-white/40"/></button>}
+            </div>
+
+            {/* Onglets Achat / Vente / Tous / Non lus */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {[
+                { key: 'all',    label: 'Tous',    badge: unreadTotal },
+                { key: 'achat',  label: '🛒 Achat', badge: unreadAchat },
+                { key: 'vente',  label: '🏪 Vente', badge: unreadVente },
+                { key: 'unread', label: 'Non lus',  badge: unreadTotal },
+              ].map(t => (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                    tab === t.key ? 'bg-white text-primary-700' : 'bg-white/10 text-white/60')}>
+                  {t.label}
+                  {t.badge > 0 && (
+                    <span className={clsx('w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center',
+                      tab === t.key ? 'bg-primary-600 text-white' : 'bg-red-500 text-white')}>
+                      {t.badge > 9 ? '9+' : t.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div>
-            {filtered.map(conv => (
-              <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={async () => {
-                // 1) Badge à 0 immédiatement + protéger contre reload realtime
-                readConvsSet.current.add(conv.id)
-                setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
-                // 2) Marquer en DB via fonction SQL (contourne RLS)
-                await supabase.rpc('mark_conversation_read', {
-                  p_conv_id: conv.id,
-                  p_user_id: user.id
-                })
-                // 3) DB confirmée → nettoyer le verrou
-                readConvsSet.current.delete(conv.id)
-                setActive(conv)
-              }}/>
-            ))}
+
+          {/* Liste */}
+          <div className="flex-1 overflow-y-auto pb-28">
+            {loading ? (
+              <div className="space-y-1 py-2">
+                {[1,2,3,4].map(i => <ConvSkeleton key={i}/>)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-20 px-6">
+                <div className="w-20 h-20 rounded-3xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle size={36} className="text-primary-400"/>
+                </div>
+                <p className="font-bold text-dark-700 text-lg">
+                  {search ? 'Aucun résultat' : tab === 'unread' ? 'Aucun message non lu' : 'Aucune conversation'}
+                </p>
+                <p className="text-dark-400 text-sm mt-2">
+                  {!search && tab === 'all' && 'Contactez un vendeur depuis une boutique pour démarrer'}
+                </p>
+              </div>
+            ) : (
+              <div>
+                {filtered.map(conv => (
+                  <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={async () => {
+                    // 1) Badge à 0 immédiatement + protéger contre reload realtime
+                    readConvsSet.current.add(conv.id)
+                    setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
+                    // 2) Marquer en DB via fonction SQL (contourne RLS)
+                    await supabase.rpc('mark_conversation_read', {
+                      p_conv_id: conv.id,
+                      p_user_id: user.id
+                    })
+                    // 3) DB confirmée → nettoyer le verrou
+                    readConvsSet.current.delete(conv.id)
+                    setActive(conv)
+                  }}/>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Partie Droite : Discussion Active (WhatsApp Web Style) */}
+        <div className={clsx(
+          "flex-grow flex flex-col bg-surface-50 relative",
+          active ? "flex" : "hidden md:flex items-center justify-center text-center p-8 bg-[url('/logo-mang.png')] bg-[length:150px] bg-center bg-no-repeat bg-blend-overlay opacity-80"
+        )}>
+          {active ? (
+            <ChatWindow 
+              conv={active} 
+              user={user} 
+              onBack={() => { setActive(null); loadConvs() }} 
+              onMarkRead={handleMarkRead}
+              initialProductId={openProductId}
+            />
+          ) : (
+            <div className="max-w-sm space-y-4">
+              <div className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto text-emerald-600 shadow-md">
+                <MessageCircle size={36} />
+              </div>
+              <h2 className="font-display font-bold text-dark-800 text-lg">MANG Direct Message</h2>
+              <p className="text-dark-600/50 text-xs leading-relaxed">
+                Sélectionnez une discussion à gauche pour négocier en direct, poser vos questions et passer commande en toute sécurité.
+              </p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShoppingBag, Store, Star, ShieldCheck,
   ChevronRight, Truck, Info, Phone, Plus, Minus, Send,
-  Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle
+  Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle, MessageCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCartStore, useCacheStore } from '@/store'
@@ -205,6 +205,35 @@ export default function ProductDetailPage() {
     }
     addItem(product, quantity, selectedVariant)
     navigate('/panier')
+  }
+
+  const handleContactSeller = async () => {
+    if (!user) {
+      toast.error('Connectez-vous d\'abord')
+      navigate('/connexion')
+      return
+    }
+    if (product.shop?.owner_id === user.id) {
+      toast.error('C\'est votre propre boutique')
+      return
+    }
+    
+    const toastId = toast.loading('Ouverture de la messagerie...')
+    try {
+      const { data: existing } = await supabase.from('conversations').select('id')
+        .eq('shop_id', product.shop_id).eq('buyer_id', user.id).maybeSingle()
+      let convId = existing?.id
+      if (!convId) {
+        const { data: newConv } = await supabase.from('conversations').insert({
+          shop_id: product.shop_id, buyer_id: user.id, seller_id: product.shop?.owner_id,
+        }).select('id').single()
+        convId = newConv?.id
+      }
+      navigate(`/messages?conv=${convId || ''}&product=${product.id}`)
+      toast.success('Discutez en direct !', { id: toastId })
+    } catch (e) {
+      toast.error('Erreur de connexion', { id: toastId })
+    }
   }
 
   const handleSendQuote = async () => {
@@ -576,6 +605,13 @@ export default function ProductDetailPage() {
           <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total à payer</p>
           <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">{formatFCFA(totalPrice)}</p>
         </div>
+
+        {/* Bouton Chat WhatsApp MANG */}
+        <button onClick={handleContactSeller}
+          className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform hover:bg-emerald-100"
+          title="Contacter le vendeur">
+          <MessageCircle size={20} className="text-emerald-600"/>
+        </button>
 
         {isOutofStock ? (
           <button disabled className="flex-1 py-3.5 rounded-2xl bg-surface-200 text-dark-600/40 font-bold text-xs cursor-not-allowed">
