@@ -1,3 +1,4 @@
+// split-screen layout version 2.0.0
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
