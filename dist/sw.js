@@ -1,4 +1,26 @@
-const CACHE_NAME = 'mang-cache-v4-' + Date.now();
-self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(key => key !== CACHE_NAME ? caches.delete(key) : null)))); self.clients.claim(); });
-self.addEventListener('fetch', e => { if (e.request.url.includes('/api') || e.request.url.includes('/messages')) return e.respondWith(fetch(e.request)); e.respondWith(fetch(e.request).catch(() => caches.match(e.request))) });
+const CACHE_NAME = 'mang-v2.1.1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/src/main.jsx',
+  '/src/App.jsx', 
+  '/src/index.css',
+  '/logo.png'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request).catch(() => caches.match('/index.html'));
+    })
+  );
+});
