@@ -10,7 +10,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useCacheStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -515,8 +515,9 @@ function Lightbox({ imageUrl, onClose }) {
 // ONGLET PUBLICATIONS (feed / following / trending)
 // ============================================================
 function PostsTab({ user, profile, mode }) {
-  const [posts, setPosts]               = useState([])
-  const [loading, setLoading]           = useState(true)
+  const cachedPosts = useCacheStore.getState().postsCache[mode] || []
+  const [posts, setPosts]               = useState(cachedPosts)
+  const [loading, setLoading]           = useState(cachedPosts.length === 0)
   const [likedPosts, setLikedPosts]     = useState(new Set())
   const [commentsPost, setCommentsPost] = useState(null)
   const [likersPost, setLikersPost]     = useState(null)
@@ -785,7 +786,9 @@ function PostsTab({ user, profile, mode }) {
   }, [mode])
 
   const loadPosts = useCallback(async () => {
-    setLoading(true)
+    if (!useCacheStore.getState().postsCache[mode] || useCacheStore.getState().postsCache[mode].length === 0) {
+      setLoading(true)
+    }
     setPage(0)
     setHasMore(true)
 
@@ -812,6 +815,7 @@ function PostsTab({ user, profile, mode }) {
     }
 
     setPosts(data)
+    useCacheStore.getState().setPosts(mode, data)
     setHasMore(data.length === PAGE_SIZE)
     setLoading(false)
   }, [user, mode, buildQuery])
@@ -2586,3 +2590,4 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
     </BottomSheet>
   )
 }
+

@@ -8,7 +8,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useCacheStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -21,10 +21,14 @@ export default function PublicProfilePage() {
   const navigate = useNavigate()
   const { user, profile: myProfile } = useAuthStore()
 
-  const [profile, setProfile]     = useState(null)
-  const [posts, setPosts]         = useState([])
-  const [shops, setShops]         = useState([])
-  const [loading, setLoading]     = useState(true)
+  const cachedProfile = useCacheStore.getState().membersCache[username] || null
+  const cachedPosts = useCacheStore.getState().postsCache["profile_" + username] || []
+  const cachedShops = useCacheStore.getState().shopsCache["profile_" + username] || []
+
+  const [profile, setProfile]     = useState(cachedProfile)
+  const [posts, setPosts]         = useState(cachedPosts)
+  const [shops, setShops]         = useState(cachedShops)
+  const [loading, setLoading]     = useState(!cachedProfile)
   const [isFollowing, setIsFollowing] = useState(false)
   const [tab, setTab]             = useState('posts')
   const [stats, setStats]         = useState({ posts: 0, followers: 0, following: 0 })
@@ -34,7 +38,9 @@ export default function PublicProfilePage() {
   const isMe = myProfile?.username === username
 
   const load = useCallback(async () => {
-    setLoading(true)
+    if (!useCacheStore.getState().membersCache[username]) {
+      setLoading(true)
+    }
 
     // Profil
     const { data: prof } = await supabase
@@ -45,6 +51,7 @@ export default function PublicProfilePage() {
 
     if (!prof) { setLoading(false); return }
     setProfile(prof)
+    useCacheStore.getState().setMembers(username, prof)
 
     // Posts
     const { data: postsData } = await supabase
@@ -54,6 +61,7 @@ export default function PublicProfilePage() {
       .order('created_at', { ascending: false })
       .limit(30)
     setPosts(postsData || [])
+    useCacheStore.getState().setPosts("profile_" + username, postsData || [])
 
     // Boutiques
     const { data: shopsData } = await supabase
@@ -63,6 +71,7 @@ export default function PublicProfilePage() {
       .eq('is_active', true)
       .order('followers_count', { ascending: false })
     setShops(shopsData || [])
+    useCacheStore.getState().setShops("profile_" + username, shopsData || [])
 
     // Stats followers / following
     const [{ count: followersCount }, { count: followingCount }] = await Promise.all([

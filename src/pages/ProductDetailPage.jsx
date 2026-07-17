@@ -7,8 +7,7 @@ import {
   Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store'
-import { useCartStore } from '@/store'
+import { useAuthStore, useCartStore, useCacheStore } from '@/store'
 import { Avatar, BottomSheet, Button } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
@@ -21,8 +20,9 @@ export default function ProductDetailPage() {
   const { user } = useAuthStore()
   const { items: cartItems, addItem } = useCartStore()
 
-  const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const cachedProduct = useCacheStore.getState().productDetailsCache[id]
+  const [product, setProduct] = useState(cachedProduct || null)
+  const [loading, setLoading] = useState(!cachedProduct)
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [quantity, setQuantity] = useState(1)
   const [reviews, setReviews] = useState([])
@@ -56,7 +56,9 @@ export default function ProductDetailPage() {
   }, [id])
 
   const loadProduct = async () => {
-    setLoading(true)
+    if (!useCacheStore.getState().productDetailsCache[id]) {
+      setLoading(true)
+    }
     try {
       const { data, error } = await supabase
         .from('products')
@@ -66,6 +68,7 @@ export default function ProductDetailPage() {
       
       if (error) throw error
       setProduct(data)
+      useCacheStore.getState().setProductDetails(id, data)
       
       // Sélectionner la première variante par défaut si disponible
       if (data?.variants?.length > 0) {

@@ -400,3 +400,50 @@ export const useCartStore = create(
     }
   )
 )
+
+// ============================================================
+// CACHE STORE (SWR)
+// ============================================================
+export const useCacheStore = create((set) => ({
+  shopsCache: {}, // key -> list of shops
+  shopDetailsCache: {}, // slugOrId -> { shop, products }
+  productDetailsCache: {}, // id -> product details
+  categoriesCache: null,
+  topShopsCache: null,
+  postsCache: {}, // mode -> list of posts
+  membersCache: {}, // username -> profile details
+
+  setShops: (key, shops) => set(state => ({
+    shopsCache: { ...state.shopsCache, [key]: shops }
+  })),
+
+  setShopDetails: (slugOrId, data) => set(state => ({
+    shopDetailsCache: { ...state.shopDetailsCache, [slugOrId]: data }
+  })),
+
+  setProductDetails: (id, product) => set(state => ({
+    productDetailsCache: { ...state.productDetailsCache, [id]: product }
+  })),
+
+  setCategories: (categories) => set({ categoriesCache: categories }),
+
+  setTopShops: (topShops) => set({ topShopsCache: topShops }),
+
+  setPosts: (mode, posts) => set(state => ({
+    postsCache: { ...state.postsCache, [mode]: posts }
+  })),
+
+  setMembers: (username, member) => set(state => ({
+    membersCache: { ...state.membersCache, [username]: member }
+  })),
+
+  clearCache: () => set({
+    shopsCache: {},
+    shopDetailsCache: {},
+    productDetailsCache: {},
+    categoriesCache: null,
+    topShopsCache: null,
+    postsCache: {},
+    membersCache: null
+  })
+}))

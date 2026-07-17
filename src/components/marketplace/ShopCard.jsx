@@ -3,6 +3,8 @@ import { clsx } from 'clsx'
 import { MapPin, Truck, Users, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, PremiumBadge } from '@/components/ui'
+import { useCacheStore } from '@/store'
+import { supabase } from '@/lib/supabase'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
@@ -22,6 +24,31 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
     0: '',
   }[shop.premium_level || 0]
 
+  const prefetchShop = () => {
+    const { shopDetailsCache, setShopDetails } = useCacheStore.getState()
+    if (!shopDetailsCache[shop.slug]) {
+      supabase
+        .from('shops')
+        .select(`
+          *,
+          owner:profiles(id, username, avatar_url, last_seen_at, city),
+          category:categories(id, name, icon)
+        `)
+        .eq('slug', shop.slug)
+        .single()
+        .then(async ({ data: shopData }) => {
+          if (!shopData) return
+          const { data: prods } = await supabase
+            .from('products')
+            .select('*')
+            .eq('shop_id', shopData.id)
+            .eq('is_available', true)
+            .order('created_at', { ascending: false })
+          setShopDetails(shop.slug, { shop: shopData, products: prods || [] })
+        })
+    }
+  }
+
   return (
     <div
       className={clsx(
@@ -30,6 +57,8 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
       )}
       style={style}
       onClick={() => navigate(`/boutique/${shop.slug}`)}
+      onMouseEnter={prefetchShop}
+      onTouchStart={prefetchShop}
     >
       {/* Cover */}
       <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
@@ -160,10 +189,37 @@ export function TopShopCard({ shop, rank }) {
     3: 'from-amber-700 to-amber-800',
   }
 
+  const prefetchShop = () => {
+    const { shopDetailsCache, setShopDetails } = useCacheStore.getState()
+    if (!shopDetailsCache[shop.slug]) {
+      supabase
+        .from('shops')
+        .select(`
+          *,
+          owner:profiles(id, username, avatar_url, last_seen_at, city),
+          category:categories(id, name, icon)
+        `)
+        .eq('slug', shop.slug)
+        .single()
+        .then(async ({ data: shopData }) => {
+          if (!shopData) return
+          const { data: prods } = await supabase
+            .from('products')
+            .select('*')
+            .eq('shop_id', shopData.id)
+            .eq('is_available', true)
+            .order('created_at', { ascending: false })
+          setShopDetails(shop.slug, { shop: shopData, products: prods || [] })
+        })
+    }
+  }
+
   return (
     <div
       className="flex-shrink-0 w-48 bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-95 transition-transform"
       onClick={() => navigate(`/boutique/${shop.slug}`)}
+      onMouseEnter={prefetchShop}
+      onTouchStart={prefetchShop}
     >
       <div className="relative h-24 bg-gradient-to-br from-primary-100 to-primary-200">
         {shop.cover_url
@@ -206,10 +262,28 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
   }
   const avail = AVAILABILITY_LABELS[product.availability] || AVAILABILITY_LABELS.now
 
+  const prefetchProduct = () => {
+    const { productDetailsCache, setProductDetails } = useCacheStore.getState()
+    if (!productDetailsCache[product.id]) {
+      supabase
+        .from('products')
+        .select('*, shop:shops(*, owner:profiles(*))')
+        .eq('id', product.id)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setProductDetails(product.id, data)
+          }
+        })
+    }
+  }
+
   return (
     <div 
       className="bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-[0.98] hover:shadow-md transition-all duration-150"
       onClick={() => navigate(`/produit/${product.id}`)}
+      onMouseEnter={prefetchProduct}
+      onTouchStart={prefetchProduct}
     >
       {/* Image */}
       <div className="relative h-40 bg-gradient-to-br from-surface-100 to-surface-200">

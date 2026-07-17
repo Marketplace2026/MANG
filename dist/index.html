@@ -19,10 +19,19 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <title>MANG — Marché Agricole Nouvelle Génération</title>
-    <script type="module" crossorigin src="/assets/index-COmvg9JL.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-nlLfQtku.css">
+    <script type="module" crossorigin src="/assets/index-St3n5X7h.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cg8rYL0g.css">
   </head>
   <body class="bg-surface-50 font-sans">
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('[MANG SW] Enregistré !', reg))
+            .catch(err => console.error('[MANG SW] Échec :', err));
+        });
+      }
+    </script>
   </body>
 </html>
