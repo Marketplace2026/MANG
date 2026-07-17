@@ -183,27 +183,39 @@ function StoriesCarousel({ profile, storyGroups = [], onOpenOwnStory, onOpenStor
 // ============================================================
 // STORY VIEWER MODAL
 // ============================================================
-function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen }) {
+function StoryViewer({
+  groups = [], startGroupIndex = 0, currentUserId,
+  onClose, onStorySeen, onDeleteStory, onReplyToStory
+}) {
   const [groupIdx, setGroupIdx] = useState(startGroupIndex)
   const [itemIdx, setItemIdx] = useState(0)
   const [progress, setProgress] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [viewersOpen, setViewersOpen] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sendingReply, setSendingReply] = useState(false)
   const navigate = useNavigate()
 
   const group = groups[groupIdx]
   const story = group?.items?.[itemIdx]
+  const isOwner = !!currentUserId && group?.userId === currentUserId
 
   // Marque la story courante comme vue dès qu'elle s'affiche
   useEffect(() => {
-    if (story) onStorySeen?.(story.id)
+    if (story) onStorySeen?.(story.id, group.userId)
   }, [story?.id])
 
   useEffect(() => {
     setProgress(0)
+    setMenuOpen(false)
+    setConfirmDelete(false)
+    setReplyText('')
   }, [groupIdx, itemIdx])
 
   useEffect(() => {
-    if (paused || !story) return
+    if (paused || !story || menuOpen || viewersOpen) return
     const interval = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -215,7 +227,7 @@ function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen })
       })
     }, 100)
     return () => clearInterval(interval)
-  }, [groupIdx, itemIdx, paused])
+  }, [groupIdx, itemIdx, paused, menuOpen, viewersOpen])
 
   const handleNext = () => {
     if (!group) return
@@ -239,6 +251,19 @@ function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen })
     }
   }
 
+  const handleConfirmDelete = async () => {
+    await onDeleteStory?.(story.id)
+    onClose() // la liste est rechargée côté parent ; on referme pour éviter un état incohérent
+  }
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || sendingReply) return
+    setSendingReply(true)
+    await onReplyToStory?.(story, group.userId, replyText)
+    setSendingReply(false)
+    setReplyText('')
+  }
+
   if (!story) return null
 
   return (
@@ -259,16 +284,43 @@ function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen })
         </div>
 
         <div className="flex items-center justify-between text-white">
-          <div className="flex items-center gap-2.5">
-            <Avatar src={group.avatar} name={group.username} size="sm" className="border border-white/20" />
-            <span className="font-bold text-sm">@{group.username}</span>
-            <span className="text-white/50 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar src={group.avatar} name={group.username} size="sm" className="border border-white/20 flex-shrink-0" />
+            <span className="font-bold text-sm truncate">@{group.username}</span>
+            <span className="text-white/50 text-xs flex-shrink-0">
               {formatDistanceToNow(new Date(story.createdAt || Date.now()), { addSuffix: true, locale: fr })}
             </span>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isOwner && (
+              <div className="relative">
+                <button onClick={() => setMenuOpen(v => !v)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                  <MoreHorizontal size={18} />
+                </button>
+                {menuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setConfirmDelete(false) }} />
+                    <div className="absolute right-0 top-10 z-20 bg-white rounded-2xl shadow-modal border border-surface-100 overflow-hidden min-w-[170px] animate-scale-in">
+                      {confirmDelete ? (
+                        <button onClick={handleConfirmDelete}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50">
+                          <Trash2 size={14} /> Confirmer la suppression
+                        </button>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(true)}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">
+                          <Trash2 size={14} /> Supprimer la story
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <X size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -294,9 +346,9 @@ function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen })
         )}
       </div>
 
-      {/* Bottom Shop Referral Link */}
-      <div className="pb-4 pt-2">
-        {story.shopSlug ? (
+      {/* Bas d'écran : lien boutique, "vu par" (propriétaire), ou réponse privée (autres) */}
+      <div className="pb-4 pt-2 space-y-2">
+        {story.shopSlug && (
           <button
             onClick={() => {
               onClose()
@@ -306,11 +358,95 @@ function StoryViewer({ groups = [], startGroupIndex = 0, onClose, onStorySeen })
           >
             <Store size={16} /> Visiter la boutique de @{group.username}
           </button>
+        )}
+
+        {isOwner ? (
+          <button
+            onClick={() => setViewersOpen(true)}
+            className="w-full py-3 flex items-center justify-center gap-2 text-white/80 text-sm font-semibold"
+          >
+            <Eye size={16} /> Vu par
+          </button>
         ) : (
-          <div className="h-10" />
+          <div className="flex items-center gap-2">
+            <input
+              value={replyText}
+              onChange={e => setReplyText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSendReply() }}
+              placeholder={`Répondre à @${group.username}...`}
+              className="flex-1 bg-white/10 text-white placeholder-white/40 rounded-full px-4 py-3 text-sm outline-none focus:bg-white/20 transition-colors"
+            />
+            <button
+              onClick={handleSendReply}
+              disabled={!replyText.trim() || sendingReply}
+              className="w-11 h-11 rounded-full bg-primary-600 flex items-center justify-center text-white disabled:opacity-40 active:scale-90 transition-transform flex-shrink-0"
+            >
+              {sendingReply ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            </button>
+          </div>
         )}
       </div>
+
+      {viewersOpen && (
+        <StoryViewersSheet open={viewersOpen} onClose={() => setViewersOpen(false)} storyId={story.id} />
+      )}
     </div>
+  )
+}
+
+// ============================================================
+// LISTE "VU PAR" D'UNE STORY
+// ============================================================
+function StoryViewersSheet({ open, onClose, storyId }) {
+  const [viewers, setViewers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!open || !storyId) return
+    setLoading(true)
+    supabase
+      .from('story_views')
+      .select('viewed_at, viewer:profiles(id, username, avatar_url)')
+      .eq('story_id', storyId)
+      .order('viewed_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error('[StoryViewers] Erreur:', error)
+        setViewers(data || [])
+        setLoading(false)
+      })
+  }, [open, storyId])
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title={`👁 Vu par ${viewers.length > 0 ? `(${viewers.length})` : ''}`}>
+      <div className="px-4 pt-2 pb-8">
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex gap-3 items-center">
+                <div className="w-11 h-11 rounded-2xl skeleton" />
+                <div className="h-3.5 skeleton rounded-lg w-1/3" />
+              </div>
+            ))}
+          </div>
+        ) : viewers.length === 0 ? (
+          <p className="text-center text-dark-600/50 dark:text-dark-400 py-8">Personne n'a encore vu cette story</p>
+        ) : (
+          <div className="space-y-3">
+            {viewers.map((v, i) => (
+              <div key={i} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar src={v.viewer?.avatar_url} name={v.viewer?.username} size="md" />
+                  <p className="font-semibold text-dark-800 dark:text-white text-sm truncate">@{v.viewer?.username}</p>
+                </div>
+                <span className="text-xs text-dark-600/40 dark:text-dark-500 flex-shrink-0">
+                  {formatDistanceToNow(new Date(v.viewed_at), { addSuffix: true, locale: fr })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </BottomSheet>
   )
 }
 
@@ -447,8 +583,16 @@ function PostsTab({ user, profile, mode }) {
     }
   }, [])
 
+  // Temps réel : recharge la liste dès qu'une story est ajoutée/supprimée
   useEffect(() => {
     loadStories()
+    const channel = supabase
+      .channel('stories-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => {
+        loadStories()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [loadStories])
 
   const handleAddStoryClick = () => {
@@ -470,14 +614,60 @@ function PostsTab({ user, profile, mode }) {
     setStoryViewer({ groups: otherGroups, startIndex: idxInOtherGroups })
   }
 
-  const handleStorySeen = useCallback((storyId) => {
+  const handleStorySeen = useCallback((storyId, ownerId) => {
     markStorySeen(storyId)
     setStoryGroups(prev => prev.map(g => (
       g.items.some(it => it.id === storyId)
         ? { ...g, allSeen: g.items.every(it => getSeenStoryIds().has(it.id)) }
         : g
     )))
-  }, [])
+
+    // Enregistre la vue côté serveur pour le "vu par" (pas pour ses propres stories)
+    if (user && ownerId && ownerId !== user.id) {
+      supabase
+        .from('story_views')
+        .upsert({ story_id: storyId, viewer_id: user.id }, { onConflict: 'story_id,viewer_id' })
+        .then(({ error }) => { if (error) console.error('[StoryViews] Erreur:', error) })
+    }
+  }, [user])
+
+  const handleDeleteStory = async (storyId) => {
+    try {
+      const { error } = await supabase.from('stories').delete().eq('id', storyId)
+      if (error) throw error
+      toast.success('Story supprimée')
+      loadStories()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  const handleReplyToStory = async (story, ownerId, message) => {
+    if (!user) { toast.error('Connectez-vous d\'abord'); return }
+    try {
+      const { error } = await supabase.from('story_replies').insert({
+        story_id: story.id,
+        sender_id: user.id,
+        recipient_id: ownerId,
+        message: message.trim(),
+      })
+      if (error) throw error
+
+      if (ownerId !== user.id) {
+        await supabase.rpc('create_notification', {
+          p_user_id: ownerId, p_type: 'story_reply',
+          p_title: '💬 Réponse à votre story',
+          p_body: `@${profile?.username || 'quelqu\'un'} : ${message.trim().slice(0, 60)}`,
+          p_reference_id: story.id, p_reference_type: 'story',
+        })
+      }
+      toast.success('Réponse envoyée !')
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de l\'envoi de la réponse')
+    }
+  }
 
   // 1) Sélection du fichier → ouvre l'aperçu (pas d'upload immédiat)
   const handleFileChange = (e) => {
@@ -985,8 +1175,11 @@ function PostsTab({ user, profile, mode }) {
         <StoryViewer
           groups={storyViewer.groups}
           startGroupIndex={storyViewer.startIndex}
+          currentUserId={profile?.id}
           onClose={() => setStoryViewer(null)}
           onStorySeen={handleStorySeen}
+          onDeleteStory={handleDeleteStory}
+          onReplyToStory={handleReplyToStory}
         />
       )}
 
@@ -2239,157 +2432,4 @@ function PostSkeleton() {
 // MODAL SIGNALEMENT (TÂCHE D)
 // ============================================================
 const REPORT_REASONS = [
-  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou frauduleux' },
-  { key: 'prix_abusif', label: 'Prix Abusif 💸', desc: 'Prix anormalement élevé ou mensonger' },
-  { key: 'harcelement', label: 'Harcèlement ⚠️', desc: 'Contenu agressif, haineux ou insultes' },
-  { key: 'hors_sujet', label: 'Hors-sujet 📯', desc: 'N\'a aucun rapport avec l\'agriculture ou MANG' }
-]
-
-function ReportSheet({ open, onClose, onReportConfirmed }) {
-  const [selected, setSelected] = useState('')
-
-  return (
-    <BottomSheet open={open} onClose={onClose} title="🛡️ Signaler cette publication">
-      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-        <p className="text-xs font-semibold text-dark-600/70 dark:text-dark-300">
-          Pourquoi souhaitez-vous signaler cette publication ? Votre signalement sera examiné par l'équipe de modération.
-        </p>
-
-        <div className="space-y-2">
-          {REPORT_REASONS.map(r => (
-            <button
-              key={r.key}
-              onClick={() => setSelected(r.key)}
-              className={clsx(
-                "w-full text-left p-3.5 rounded-2xl border text-sm font-semibold transition-all flex flex-col gap-0.5",
-                selected === r.key
-                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100"
-                  : "border-surface-200 dark:border-dark-700 hover:border-surface-300 dark:hover:border-dark-600 text-dark-800 dark:text-dark-100"
-              )}
-            >
-              <span>{r.label}</span>
-              <span className="text-[10px] font-medium text-dark-600/50 dark:text-dark-400">{r.desc}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3.5 bg-surface-100 dark:bg-dark-800 hover:bg-surface-200 dark:hover:bg-dark-700 text-dark-800 dark:text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={() => {
-              if (!selected) { toast.error('Veuillez sélectionner un motif'); return }
-              onReportConfirmed(selected)
-            }}
-            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md"
-          >
-            Signaler
-          </button>
-        </div>
-      </div>
-    </BottomSheet>
-  )
-}
-
-// ============================================================
-// COMPOSER DE REPOST / QUOTE POST (TÂCHE A)
-// ============================================================
-function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted }) {
-  const [content, setContent] = useState('')
-  const [posting, setPosting] = useState(false)
-
-  const handleClose = () => { setContent(''); onClose() }
-
-  const publish = async () => {
-    setPosting(true)
-    try {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert({
-          user_id: user.id,
-          content: content.trim(),
-          parent_post_id: postToQuote.id
-        })
-        .select(`
-          *,
-          user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at),
-          shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)),
-          parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url))
-        `)
-        .single()
-
-      if (error) throw error
-      
-      toast.success('Republié avec succès ! 🔄')
-      onPosted(data)
-      handleClose()
-    } catch (err) {
-      console.error(err)
-      toast.error('Erreur lors du repost')
-    } finally {
-      setPosting(false)
-    }
-  }
-
-  if (!postToQuote) return null
-
-  return (
-    <BottomSheet open={open} onClose={handleClose} title="🔄 Republier la publication">
-      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-        
-        {/* Auteur du Repost */}
-        <div className="flex items-center gap-3">
-          <Avatar src={profile?.avatar_url} name={profile?.username} size="sm"/>
-          <div>
-            <p className="font-bold text-dark-800 text-sm">@{profile?.username}</p>
-            <p className="text-dark-600/40 text-xs">Partage sur votre fil d'actualité</p>
-          </div>
-        </div>
-
-        {/* Text Area */}
-        <textarea
-          placeholder="Ajouter une remarque..."
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={3}
-          className="w-full bg-surface-50 rounded-2xl px-4 py-3 text-sm text-dark-800 placeholder-dark-600/40 outline-none resize-none font-medium border border-surface-200 focus:border-primary-400 transition-colors"
-        />
-
-        {/* Aperçu du post original à citer */}
-        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-3.5 flex flex-col gap-2 pointer-events-none select-none">
-          <div className="flex items-center gap-2">
-            <Avatar src={postToQuote.user?.avatar_url} name={postToQuote.user?.username} size="xs"/>
-            <p className="font-bold text-dark-800 text-xs">@{postToQuote.user?.username}</p>
-          </div>
-          <p className="text-dark-700 text-xs line-clamp-3 leading-relaxed">
-            {postToQuote.content?.startsWith('{"is_poll"') ? '📊 Sondage communauté' : postToQuote.content}
-          </p>
-          {postToQuote.image_url && (
-            <img src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />
-          )}
-        </div>
-
-        {/* Boutons d'action */}
-        <div className="flex gap-2 pt-2">
-          <button
-            onClick={handleClose}
-            className="flex-1 py-3.5 bg-surface-100 hover:bg-surface-200 text-dark-800 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={publish}
-            disabled={posting}
-            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md disabled:opacity-50"
-          >
-            {posting ? 'Publication...' : 'Republier'}
-          </button>
-        </div>
-      </div>
-    </BottomSheet>
-  )
-}
+  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou fraud
