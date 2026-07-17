@@ -100,3 +100,43 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Listener pour recevoir les notifications Push
+self.addEventListener('push', (event) => {
+  let data = { title: 'MANG', body: 'Nouvelle notification !' };
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (e) {
+    if (event.data) {
+      data = { title: 'MANG', body: event.data.text() };
+    }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/favicon.png',
+      badge: '/favicon.png'
+    })
+  );
+});
+
+// Listener pour l'interaction avec la notification Push (clic)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Si l'application est déjà ouverte, focus
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      // Sinon on ouvre un nouvel onglet
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
