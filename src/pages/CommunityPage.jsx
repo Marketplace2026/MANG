@@ -2432,4 +2432,157 @@ function PostSkeleton() {
 // MODAL SIGNALEMENT (TÂCHE D)
 // ============================================================
 const REPORT_REASONS = [
-  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou fraud
+  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou frauduleux' },
+  { key: 'prix_abusif', label: 'Prix Abusif 💸', desc: 'Prix anormalement élevé ou mensonger' },
+  { key: 'harcelement', label: 'Harcèlement ⚠️', desc: 'Contenu agressif, haineux ou insultes' },
+  { key: 'hors_sujet', label: 'Hors-sujet 📯', desc: 'N\'a aucun rapport avec l\'agriculture ou MANG' }
+]
+
+function ReportSheet({ open, onClose, onReportConfirmed }) {
+  const [selected, setSelected] = useState('')
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="🛡️ Signaler cette publication">
+      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        <p className="text-xs font-semibold text-dark-600/70 dark:text-dark-300">
+          Pourquoi souhaitez-vous signaler cette publication ? Votre signalement sera examiné par l'équipe de modération.
+        </p>
+
+        <div className="space-y-2">
+          {REPORT_REASONS.map(r => (
+            <button
+              key={r.key}
+              onClick={() => setSelected(r.key)}
+              className={clsx(
+                "w-full text-left p-3.5 rounded-2xl border text-sm font-semibold transition-all flex flex-col gap-0.5",
+                selected === r.key
+                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-900 dark:text-primary-100"
+                  : "border-surface-200 dark:border-dark-700 hover:border-surface-300 dark:hover:border-dark-600 text-dark-800 dark:text-dark-100"
+              )}
+            >
+              <span>{r.label}</span>
+              <span className="text-[10px] font-medium text-dark-600/50 dark:text-dark-400">{r.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3.5 bg-surface-100 dark:bg-dark-800 hover:bg-surface-200 dark:hover:bg-dark-700 text-dark-800 dark:text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => {
+              if (!selected) { toast.error('Veuillez sélectionner un motif'); return }
+              onReportConfirmed(selected)
+            }}
+            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md"
+          >
+            Signaler
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
+// ============================================================
+// COMPOSER DE REPOST / QUOTE POST (TÂCHE A)
+// ============================================================
+function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted }) {
+  const [content, setContent] = useState('')
+  const [posting, setPosting] = useState(false)
+
+  const handleClose = () => { setContent(''); onClose() }
+
+  const publish = async () => {
+    setPosting(true)
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          content: content.trim(),
+          parent_post_id: postToQuote.id
+        })
+        .select(`
+          *,
+          user:profiles!posts_user_id_fkey(id, username, avatar_url, last_seen_at),
+          shop:shops(id, name, slug, cover_url, city, has_delivery, premium_level, owner:profiles!shops_owner_id_fkey(username, avatar_url)),
+          parent_post:parent_post_id(id, content, image_url, created_at, user:profiles!posts_user_id_fkey(id, username, avatar_url))
+        `)
+        .single()
+
+      if (error) throw error
+      
+      toast.success('Republié avec succès ! 🔄')
+      onPosted(data)
+      handleClose()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors du repost')
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  if (!postToQuote) return null
+
+  return (
+    <BottomSheet open={open} onClose={handleClose} title="🔄 Republier la publication">
+      <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        
+        {/* Auteur du Repost */}
+        <div className="flex items-center gap-3">
+          <Avatar src={profile?.avatar_url} name={profile?.username} size="sm"/>
+          <div>
+            <p className="font-bold text-dark-800 text-sm">@{profile?.username}</p>
+            <p className="text-dark-600/40 text-xs">Partage sur votre fil d'actualité</p>
+          </div>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          placeholder="Ajouter une remarque..."
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={3}
+          className="w-full bg-surface-50 rounded-2xl px-4 py-3 text-sm text-dark-800 placeholder-dark-600/40 outline-none resize-none font-medium border border-surface-200 focus:border-primary-400 transition-colors"
+        />
+
+        {/* Aperçu du post original à citer */}
+        <div className="bg-surface-50 border border-surface-150 rounded-2xl p-3.5 flex flex-col gap-2 pointer-events-none select-none">
+          <div className="flex items-center gap-2">
+            <Avatar src={postToQuote.user?.avatar_url} name={postToQuote.user?.username} size="xs"/>
+            <p className="font-bold text-dark-800 text-xs">@{postToQuote.user?.username}</p>
+          </div>
+          <p className="text-dark-700 text-xs line-clamp-3 leading-relaxed">
+            {postToQuote.content?.startsWith('{"is_poll"') ? '📊 Sondage communauté' : postToQuote.content}
+          </p>
+          {postToQuote.image_url && (
+            <img src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />
+          )}
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={handleClose}
+            className="flex-1 py-3.5 bg-surface-100 hover:bg-surface-200 text-dark-800 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={publish}
+            disabled={posting}
+            className="flex-1 py-3.5 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform shadow-md disabled:opacity-50"
+          >
+            {posting ? 'Publication...' : 'Republier'}
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
+  )
+}
