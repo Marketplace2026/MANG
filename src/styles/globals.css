@@ -6,7 +6,7 @@
 @tailwind utilities;
 body { 
   padding-top: env(safe-area-inset-top); 
-  background-color: #004D00;
+  background-color: white;
   margin: 0;
 }
 /* ============================================================
