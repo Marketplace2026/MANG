@@ -1137,7 +1137,7 @@ export default function MarketplacePage() {
       {isScanning && (
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center max-w-[480px] mx-auto">
           <div className="relative w-48 h-48 border-4 border-primary-500 rounded-3xl flex items-center justify-center overflow-hidden bg-black/40 shadow-2xl">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-primary-400 shadow-[0_0_15px_#22c55e] animate-scan-laser" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary-400 shadow-[0_0_15px_#004D00] animate-scan-laser" />
             <span className="text-6xl animate-pulse">📸</span>
           </div>
           <p className="text-white font-bold mt-6 text-sm tracking-wider animate-pulse uppercase">Analyse MANG AI en cours...</p>

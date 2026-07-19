@@ -729,7 +729,7 @@ async function downloadPDF(tx) {
     doc.text('Marché Agricole Nouvelle Génération', startX, 62)
     doc.text('REÇU OFFICIEL', 390, 48, { align:'right' })
 
-    doc.setTextColor(isCredit ? '#16a34a' : '#dc2626')
+    doc.setTextColor(isCredit ? '#004D00' : '#dc2626')
     doc.setFontSize(32); doc.setFont(undefined,'bold')
     doc.text(`${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`, 210, 140, { align:'center' })
 
@@ -868,11 +868,11 @@ function MiniChart({ transactions }) {
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H+18}`} className="w-full" style={{height:75}}>
-        <polyline points={last7.map((d,i)=>`${x(i)},${y(d.in)}`).join(' ')} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points={last7.map((d,i)=>`${x(i)},${y(d.in)}`).join(' ')} fill="none" stroke="#004D00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         <polyline points={last7.map((d,i)=>`${x(i)},${y(d.out)}`).join(' ')} fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         {last7.map((d,i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(d.in)}  r="3" fill="#22c55e"/>
+            <circle cx={x(i)} cy={y(d.in)}  r="3" fill="#004D00"/>
             <circle cx={x(i)} cy={y(d.out)} r="3" fill="#f87171"/>
             <text x={x(i)} y={H+14} textAnchor="middle" fontSize="8" fill="#9ca3af">{d.day}</text>
           </g>

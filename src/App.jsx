@@ -157,7 +157,7 @@ export default function App() {
           fontWeight: '600', padding: '12px 16px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
         },
-        success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+        success: { iconTheme: { primary: '#004D00', secondary: '#fff' } },
         error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
       }}/>
     </BrowserRouter>

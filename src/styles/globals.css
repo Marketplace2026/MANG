@@ -1,3 +1,6 @@
+:root {
+  --mang-green: #004D00;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
