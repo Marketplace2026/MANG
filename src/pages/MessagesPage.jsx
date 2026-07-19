@@ -1206,22 +1206,24 @@ export default function MessagesPage() {
           active ? "hidden md:flex" : "flex"
         )}>
           {/* Header */}
-          <div className="flex-shrink-0 pt-14 pb-3 px-4 bg-gradient-to-br from-emerald-900 to-emerald-800">
-            <div className="flex items-center justify-between mb-4">
+          <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50 flex-shrink-0">
+            <div className="flex justify-between items-center">
               <div>
-                <h1 className="font-display text-2xl text-white font-bold">Messages</h1>
-                <p className="text-white/50 text-xs">
+                <h1 className="text-white text-2xl font-bold">Messages</h1>
+                <p className="text-white/80 text-sm">
                   {convs.length} conversation{convs.length !== 1 ? 's' : ''}
                   {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button onClick={loadConvs} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
                   <Loader2 size={16} className="text-white"/>
                 </button>
               </div>
             </div>
+          </header>
 
+          <div className="bg-[#004D00] px-4 pb-3 flex-shrink-0">
             {/* Recherche */}
             <div className="relative mb-3">
               <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>

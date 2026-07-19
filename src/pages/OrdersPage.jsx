@@ -532,21 +532,25 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-surface-50 pb-28">
       {/* HEADER */}
-      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5"
-          style={{ backgroundImage: 'radial-gradient(circle,white 1px,transparent 1px)', backgroundSize: '20px 20px' }}/>
-        <div className="relative">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="font-display text-2xl text-white font-bold">Commandes</h1>
-              <p className="text-primary-300 text-sm">Achats & ventes</p>
-            </div>
+      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-white text-2xl font-bold">Commandes</h1>
+            <p className="text-white/80 text-sm">Achats & ventes</p>
+          </div>
+          <div className="flex gap-3">
             <button onClick={() => loadOrders(false)}
               className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90">
               <RefreshCw size={16} className="text-white"/>
             </button>
           </div>
+        </div>
+      </header>
 
+      <div className="bg-[#004D00] pb-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5"
+          style={{ backgroundImage: 'radial-gradient(circle,white 1px,transparent 1px)', backgroundSize: '20px 20px' }}/>
+        <div className="relative pt-2">
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2">
             {[

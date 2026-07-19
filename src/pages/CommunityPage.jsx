@@ -57,16 +57,21 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col transition-colors duration-300">
       {/* HEADER */}
-      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-0 px-4">
-        <div className="flex items-center justify-between mb-3">
+      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-display text-2xl text-white font-bold">Communauté</h1>
-            <p className="text-primary-200 text-xs">🌿 MANG — Ensemble, on grandit</p>
+            <h1 className="text-white text-2xl font-bold">Communauté</h1>
+            <p className="text-white/80 text-sm">🌿 MANG — Ensemble, on grandit</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-            <Flame size={18} className="text-gold-300"/>
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+              <Flame size={18} className="text-gold-300"/>
+            </div>
           </div>
         </div>
+      </header>
+
+      <div className="bg-[#004D00] pb-0 px-4 flex-shrink-0">
         {/* Tabs scrollables */}
         <div ref={tabsRef} className="flex gap-1 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
           {TABS.map(t => (

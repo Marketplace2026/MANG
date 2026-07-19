@@ -206,18 +206,13 @@ export default function VendorPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER */}
-      <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-12 pb-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>
-
-        <div className="relative px-4">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h1 className="font-display text-2xl text-white font-bold">Espace Vendeur</h1>
-              <p className="text-primary-300 text-sm mt-0.5">Gérez vos boutiques & produits</p>
-            </div>
-            {/* Pièces */}
+      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-white text-2xl font-bold">Espace Vendeur</h1>
+            <p className="text-white/80 text-sm">Gérez vos boutiques & produits</p>
+          </div>
+          <div className="flex gap-3">
             <button onClick={() => setCoinsOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gold-500/20 border border-gold-400/30 active:scale-95 transition-transform">
               <span className="text-xl">🪙</span>
@@ -227,6 +222,15 @@ export default function VendorPage() {
               </div>
             </button>
           </div>
+        </div>
+      </header>
+
+      <div className="bg-[#004D00] pb-24 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5"
+          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
+        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>
+
+        <div className="relative px-4 pt-2">
 
           {/* Badge premium actif */}
           {premiumStatus && (

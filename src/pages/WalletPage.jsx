@@ -980,24 +980,13 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
-      {/* CARTE */}
-      <div className="relative overflow-hidden pt-14 pb-28 px-4"
-        style={{background:'linear-gradient(135deg,#0b3d2e,#1a5c2e 55%,#2d8a3e)'}}>
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none"/>
-        <div className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'24px 24px'}}/>
-
-        <div className="relative flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <Wallet size={20} className="text-white"/>
-            </div>
-            <div>
-              <p className="text-white font-black text-base">MANG Wallet</p>
-              <p className="text-white/50 text-xs">Portefeuille numérique sécurisé</p>
-            </div>
+      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-white text-2xl font-bold">MANG Wallet</h1>
+            <p className="text-white/80 text-sm">Portefeuille numérique sécurisé</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button onClick={() => setBV(v=>!v)} className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center active:scale-90">
               {balanceVisible ? <Eye size={15} className="text-white"/> : <EyeOff size={15} className="text-white"/>}
             </button>
@@ -1006,6 +995,12 @@ export default function WalletPage() {
             </button>
           </div>
         </div>
+      </header>
+
+      <div className="relative overflow-hidden pb-28 px-4 bg-[#004D00]">
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none"/>
+        <div className="absolute inset-0 opacity-5 pointer-events-none"
+          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'24px 24px'}}/>
 
         <div className="relative mb-5">
           <p className="text-white/60 text-xs mb-1">Solde disponible</p>
