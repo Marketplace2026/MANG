@@ -7,7 +7,8 @@ import {
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
   ChevronDown, Info, Bell, BellOff, Archive,
-  MessageCircle, Users, Clock, Loader2, ZoomIn
+  MessageCircle, Users, Clock, Loader2, ZoomIn,
+  Lock, StopCircle, Play, Pause
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -129,6 +130,47 @@ function AudioPlayer({ url, isMe }) {
         </p>
       </div>
       <Mic size={12} className={isMe ? 'text-white/40' : 'text-dark-400'}/>
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// LECTEUR D'APERÇU — audio pas encore envoyé (waveform figée du recording)
+// ══════════════════════════════════════════════════════════
+function VoicePreviewPlayer({ url, waveform = [], duration = 0 }) {
+  const [playing, setPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const audioRef = useRef(null)
+
+  const toggle = () => {
+    if (!audioRef.current) return
+    if (playing) audioRef.current.pause()
+    else audioRef.current.play()
+    setPlaying(!playing)
+  }
+
+  const bars = waveform.length ? waveform : Array.from({ length: 30 }, () => 0.3)
+  const activeBars = Math.round(progress * bars.length)
+
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0 bg-white rounded-2xl px-3 py-2 border border-surface-200">
+      <audio ref={audioRef} src={url}
+        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || duration || 1))}
+        onEnded={() => { setPlaying(false); setProgress(0) }}/>
+      <button onClick={toggle}
+        className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90">
+        {playing ? <Pause size={13} className="text-white"/> : <Play size={13} className="text-white ml-0.5"/>}
+      </button>
+      <div className="flex items-center gap-[2px] flex-1 h-6 overflow-hidden">
+        {bars.map((v, i) => (
+          <div key={i}
+            className={clsx('w-[3px] rounded-full flex-shrink-0 transition-colors', i < activeBars ? 'bg-primary-600' : 'bg-surface-300')}
+            style={{ height: `${Math.max(15, v * 100)}%` }}/>
+        ))}
+      </div>
+      <span className="text-[10px] font-bold text-dark-500 flex-shrink-0">
+        {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
+      </span>
     </div>
   )
 }
@@ -337,9 +379,18 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [contextProduct, setContextProduct] = useState(null)
   const [locked, setLocked]         = useState(false)
   const [isCancelled, setIsCancelled] = useState(false)
+  const [waveBars, setWaveBars]     = useState([])
+  const [recordedBlob, setRecordedBlob]       = useState(null)
+  const [recordedUrl, setRecordedUrl]         = useState(null)
+  const [recordedWaveform, setRecordedWaveform] = useState([])
   const startYRef                   = useRef(0)
   const startXRef                   = useRef(0)
   const streamRef                   = useRef(null)
+  const chunksRef                   = useRef([])
+  const pendingActionRef            = useRef('send') // 'send' | 'preview' | 'cancel'
+  const audioCtxRef                 = useRef(null)
+  const analyserRef                 = useRef(null)
+  const waveIntervalRef             = useRef(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline(other?.last_seen_at))
 
   // Fetch product context
@@ -538,42 +589,93 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     setReplyTo(null); setUploading(false)
   }
 
+  // Waveform live pendant l'enregistrement (Web Audio API)
+  const startWaveform = (stream) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      const audioCtx = new AudioCtx()
+      const source = audioCtx.createMediaStreamSource(stream)
+      const analyser = audioCtx.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+      audioCtxRef.current = audioCtx
+      analyserRef.current = analyser
+      const dataArray = new Uint8Array(analyser.frequencyBinCount)
+      setWaveBars([])
+      waveIntervalRef.current = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray)
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+        const normalized = Math.min(1, avg / 90)
+        setWaveBars(prev => {
+          const next = [...prev, normalized]
+          return next.length > 40 ? next.slice(next.length - 40) : next
+        })
+      }, 120)
+    } catch { /* Web Audio indisponible : l'enregistrement continue sans visuel */ }
+  }
+
+  const stopWaveform = () => {
+    clearInterval(waveIntervalRef.current)
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {})
+      audioCtxRef.current = null
+    }
+    analyserRef.current = null
+  }
+
   // Enregistrement audio
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
+      chunksRef.current = []
       const mr = new MediaRecorder(stream)
-      const chunks = []
-      mr.ondataavailable = e => chunks.push(e.data)
+      mr.ondataavailable = e => chunksRef.current.push(e.data)
       mr.onstop = async () => {
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(t => t.stop())
           streamRef.current = null
         }
-        const blob = new Blob(chunks, { type: 'audio/webm' })
-        const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
-        await uploadFile(file)
+        const action = pendingActionRef.current
+        if (action === 'cancel') { chunksRef.current = []; return }
+
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        if (action === 'preview') {
+          setRecordedBlob(blob)
+          setRecordedUrl(URL.createObjectURL(blob))
+        } else {
+          const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
+          await uploadFile(file)
+        }
       }
       mr.start()
       mediaRef.current = mr
       setRecording(true)
       setLocked(false)
       setIsCancelled(false)
+      setRecordedBlob(null)
+      setRecordedUrl(null)
       let t = 0
+      setRecordTime(0)
       recTimer.current = setInterval(() => { t++; setRecordTime(t) }, 1000)
+      startWaveform(stream)
     } catch { toast.error('Microphone non disponible') }
   }
 
-  const stopRecording = (shouldCancel = false) => {
+  // action : 'send' (relâché sans verrou → envoi direct), 'preview' (verrouillé → aperçu avant envoi), 'cancel' (glissé pour annuler)
+  const stopRecording = (action = 'send') => {
     clearInterval(recTimer.current)
+    stopWaveform()
+    pendingActionRef.current = action
+
+    if (action === 'preview') setRecordedWaveform(waveBars)
+
     if (mediaRef.current) {
-      if (shouldCancel) {
-        mediaRef.current.onstop = null
+      if (action === 'cancel') mediaRef.current.onstop = () => {
+        if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
+        chunksRef.current = []
       }
-      try {
-        mediaRef.current.stop()
-      } catch (err) {}
+      try { mediaRef.current.stop() } catch (err) {}
       mediaRef.current = null
     }
     if (streamRef.current) {
@@ -581,10 +683,45 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       streamRef.current = null
     }
     setRecording(false)
+    if (action !== 'preview') {
+      setRecordTime(0)
+      setLocked(false)
+      setIsCancelled(false)
+    }
+  }
+
+  const discardRecording = () => {
+    if (recordedUrl) URL.revokeObjectURL(recordedUrl)
+    setRecordedBlob(null)
+    setRecordedUrl(null)
+    setRecordedWaveform([])
     setRecordTime(0)
     setLocked(false)
-    setIsCancelled(false)
   }
+
+  const sendRecordedVoice = async () => {
+    if (!recordedBlob || sending) return
+    setSending(true)
+    const file = new File([recordedBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
+    await uploadFile(file)
+    if (recordedUrl) URL.revokeObjectURL(recordedUrl)
+    setRecordedBlob(null)
+    setRecordedUrl(null)
+    setRecordedWaveform([])
+    setRecordTime(0)
+    setLocked(false)
+    setSending(false)
+  }
+
+  // Nettoyage si la fenêtre de chat se ferme en cours d'enregistrement
+  useEffect(() => {
+    return () => {
+      clearInterval(recTimer.current)
+      stopWaveform()
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      if (recordedUrl) URL.revokeObjectURL(recordedUrl)
+    }
+  }, [])
 
   const handlePointerDown = (e) => {
     e.preventDefault()
@@ -611,7 +748,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     } else if (deltaX > 80) {
       setIsCancelled(true)
       toast.error('Enregistrement annulé 🗑️')
-      stopRecording(true)
+      stopRecording('cancel')
     }
   }
 
@@ -622,7 +759,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     } catch (err) {}
     if (!mediaRef.current || isCancelled) return
     if (!locked) {
-      stopRecording(false)
+      stopRecording('send')
     }
   }
 
@@ -823,29 +960,63 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </div>
         )}
 
-        {recording ? (
+        {recordedUrl ? (
+          /* Aperçu avant envoi : écouter, supprimer ou envoyer */
+          <div className="flex items-center gap-2 animate-scale-in">
+            <button onClick={discardRecording}
+              className="w-10 h-10 rounded-xl bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-colors">
+              <Trash2 size={16}/>
+            </button>
+            <VoicePreviewPlayer url={recordedUrl} waveform={recordedWaveform} duration={recordTime} />
+            <button onClick={sendRecordedVoice} disabled={sending}
+              className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform disabled:opacity-50 shadow-lg"
+              style={{ boxShadow: '0 4px 15px rgba(46,204,113,0.4)' }}>
+              {sending ? <Loader2 size={16} className="text-white animate-spin"/> : <Send size={16} className="text-white ml-0.5"/>}
+            </button>
+          </div>
+        ) : recording ? (
           /* Mode enregistrement */
-          <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200 animate-scale-in">
+          <div className="relative flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200 animate-scale-in">
+            {/* Badge verrou flottant — se rapproche visuellement pendant qu'on glisse vers le haut */}
+            {!locked && (
+              <div className="absolute -top-16 right-3 flex flex-col items-center gap-1 animate-bounce">
+                <div className="w-10 h-10 rounded-full bg-white shadow-lg border border-surface-200 flex items-center justify-center text-dark-500">
+                  <Lock size={16}/>
+                </div>
+                <ChevronDown size={13} className="rotate-180 text-dark-300"/>
+              </div>
+            )}
+
             <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0"/>
-            <span className="text-red-600 font-bold text-sm flex-1 flex items-center gap-1.5">
+            <span className="text-red-600 font-bold text-sm flex-shrink-0">
               {Math.floor(recordTime / 60)}:{String(recordTime % 60).padStart(2, '0')}
-              <span className="text-xs font-normal text-red-500 animate-pulse">
-                {locked ? 'Enregistrement verrouillé 🔒' : 'Glissez ↑ verrouiller | ← annuler'}
-              </span>
             </span>
+
+            {/* Waveform en direct */}
+            <div className="flex items-center gap-[2px] flex-1 h-6 overflow-hidden">
+              {waveBars.length === 0 ? (
+                <span className="text-xs font-normal text-red-500 animate-pulse">
+                  {locked ? 'Verrouillé 🔒' : 'Glissez ↑ verrouiller · ← annuler'}
+                </span>
+              ) : waveBars.map((v, i) => (
+                <div key={i} className="w-[3px] bg-red-400 rounded-full flex-shrink-0"
+                  style={{ height: `${Math.max(15, v * 100)}%` }}/>
+              ))}
+            </div>
+
             {locked ? (
-              <div className="flex items-center gap-2">
-                <button onClick={() => stopRecording(false)}
-                  className="px-3.5 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl active:scale-95 transition-transform flex items-center gap-1 shadow-md">
-                  Envoyer
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button onClick={() => stopRecording('cancel')}
+                  className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center transition-colors active:scale-90">
+                  <Trash2 size={15}/>
                 </button>
-                <button onClick={() => stopRecording(true)}
-                  className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center transition-colors">
-                  <Trash2 size={14}/>
+                <button onClick={() => stopRecording('preview')}
+                  className="w-9 h-9 bg-dark-800 text-white rounded-xl flex items-center justify-center active:scale-90 shadow-md">
+                  <StopCircle size={17}/>
                 </button>
               </div>
             ) : (
-              <span className="text-xs text-red-400">En cours...</span>
+              <span className="text-[10px] text-red-400 flex-shrink-0">●REC</span>
             )}
           </div>
         ) : (
