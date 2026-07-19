@@ -135,11 +135,17 @@ function AudioPlayer({ url, isMe }) {
 }
 
 // ══════════════════════════════════════════════════════════
-// LECTEUR D'APERÇU — audio pas encore envoyé (waveform figée du recording)
+// APERÇU VOCAL AVANT ENVOI — même disposition que WhatsApp
+// (ligne 1 : minuteur + curseur en pointillés + vitesse
+//  ligne 2 : supprimer + pilule Lecture/Pause + envoyer)
 // ══════════════════════════════════════════════════════════
-function VoicePreviewPlayer({ url, waveform = [], duration = 0 }) {
+const DOTS_COUNT = 28
+
+function VoicePreviewPlayer({ url, duration = 0, onDelete, onSend, sending }) {
   const [playing, setPlaying] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [progress, setProgress] = useState(0) // 0 → 1
+  const [speed, setSpeed] = useState(1)
+  const [realDuration, setRealDuration] = useState(duration)
   const audioRef = useRef(null)
 
   const toggle = () => {
@@ -149,28 +155,65 @@ function VoicePreviewPlayer({ url, waveform = [], duration = 0 }) {
     setPlaying(!playing)
   }
 
-  const bars = waveform.length ? waveform : Array.from({ length: 30 }, () => 0.3)
-  const activeBars = Math.round(progress * bars.length)
+  const cycleSpeed = () => {
+    const next = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1
+    setSpeed(next)
+    if (audioRef.current) audioRef.current.playbackRate = next
+  }
+
+  const total = realDuration || duration || 0
+  const currentSeconds = playing || progress > 0 ? Math.floor(progress * total) : Math.floor(total)
+  const thumbIndex = Math.min(DOTS_COUNT - 1, Math.round(progress * (DOTS_COUNT - 1)))
+
+  const seek = (e) => {
+    if (!audioRef.current || !total) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+    audioRef.current.currentTime = ratio * total
+    setProgress(ratio)
+  }
 
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0 bg-white rounded-2xl px-3 py-2 border border-surface-200">
+    <div className="w-full bg-dark-900 rounded-3xl px-4 py-3 animate-scale-in">
       <audio ref={audioRef} src={url}
-        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || duration || 1))}
+        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || total || 1))}
+        onLoadedMetadata={e => setRealDuration(Math.round(e.target.duration))}
         onEnded={() => { setPlaying(false); setProgress(0) }}/>
-      <button onClick={toggle}
-        className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90">
-        {playing ? <Pause size={13} className="text-white"/> : <Play size={13} className="text-white ml-0.5"/>}
-      </button>
-      <div className="flex items-center gap-[2px] flex-1 h-6 overflow-hidden">
-        {bars.map((v, i) => (
-          <div key={i}
-            className={clsx('w-[3px] rounded-full flex-shrink-0 transition-colors', i < activeBars ? 'bg-primary-600' : 'bg-surface-300')}
-            style={{ height: `${Math.max(15, v * 100)}%` }}/>
-        ))}
+
+      {/* Ligne 1 : minuteur, curseur en pointillés, vitesse */}
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-white text-sm font-semibold tabular-nums w-8 flex-shrink-0">
+          {Math.floor(currentSeconds / 60)}:{String(currentSeconds % 60).padStart(2, '0')}
+        </span>
+        <div onClick={seek} className="flex-1 flex items-center gap-[3px] cursor-pointer py-2">
+          {Array.from({ length: DOTS_COUNT }).map((_, i) => (
+            i === thumbIndex
+              ? <div key={i} className="w-[3px] h-4 bg-white rounded-full flex-shrink-0"/>
+              : <div key={i} className="w-1 h-1 bg-white/30 rounded-full flex-shrink-0"/>
+          ))}
+        </div>
+        <button onClick={cycleSpeed}
+          className="w-7 h-7 rounded-full border border-white/30 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+          {speed % 1 === 0 ? speed : speed.toFixed(1)}x
+        </button>
       </div>
-      <span className="text-[10px] font-bold text-dark-500 flex-shrink-0">
-        {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
-      </span>
+
+      {/* Ligne 2 : supprimer, lecture/pause, envoyer */}
+      <div className="flex items-center gap-2.5">
+        <button onClick={onDelete}
+          className="w-11 h-11 rounded-full bg-red-950/70 text-red-400 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+          <Trash2 size={18}/>
+        </button>
+        <button onClick={toggle}
+          className="flex-1 h-11 rounded-full bg-dark-700 text-white flex items-center justify-center gap-2 font-semibold text-sm active:scale-[0.98] transition-transform">
+          {playing ? <Pause size={16} className="fill-white"/> : <Play size={16} className="fill-white"/>}
+          {playing ? 'Pause' : 'Lecture'}
+        </button>
+        <button onClick={onSend} disabled={sending}
+          className="w-11 h-11 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform disabled:opacity-50 shadow-lg">
+          {sending ? <Loader2 size={18} className="text-white animate-spin"/> : <Send size={18} className="text-white ml-0.5"/>}
+        </button>
+      </div>
     </div>
   )
 }
@@ -382,7 +425,6 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [waveBars, setWaveBars]     = useState([])
   const [recordedBlob, setRecordedBlob]       = useState(null)
   const [recordedUrl, setRecordedUrl]         = useState(null)
-  const [recordedWaveform, setRecordedWaveform] = useState([])
   const startYRef                   = useRef(0)
   const startXRef                   = useRef(0)
   const streamRef                   = useRef(null)
@@ -668,7 +710,6 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     stopWaveform()
     pendingActionRef.current = action
 
-    if (action === 'preview') setRecordedWaveform(waveBars)
 
     if (mediaRef.current) {
       if (action === 'cancel') mediaRef.current.onstop = () => {
@@ -694,7 +735,6 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     if (recordedUrl) URL.revokeObjectURL(recordedUrl)
     setRecordedBlob(null)
     setRecordedUrl(null)
-    setRecordedWaveform([])
     setRecordTime(0)
     setLocked(false)
   }
@@ -707,7 +747,6 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     if (recordedUrl) URL.revokeObjectURL(recordedUrl)
     setRecordedBlob(null)
     setRecordedUrl(null)
-    setRecordedWaveform([])
     setRecordTime(0)
     setLocked(false)
     setSending(false)
@@ -961,19 +1000,14 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         )}
 
         {recordedUrl ? (
-          /* Aperçu avant envoi : écouter, supprimer ou envoyer */
-          <div className="flex items-center gap-2 animate-scale-in">
-            <button onClick={discardRecording}
-              className="w-10 h-10 rounded-xl bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-colors">
-              <Trash2 size={16}/>
-            </button>
-            <VoicePreviewPlayer url={recordedUrl} waveform={recordedWaveform} duration={recordTime} />
-            <button onClick={sendRecordedVoice} disabled={sending}
-              className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform disabled:opacity-50 shadow-lg"
-              style={{ boxShadow: '0 4px 15px rgba(46,204,113,0.4)' }}>
-              {sending ? <Loader2 size={16} className="text-white animate-spin"/> : <Send size={16} className="text-white ml-0.5"/>}
-            </button>
-          </div>
+          /* Aperçu avant envoi : écouter, supprimer ou envoyer — même disposition que WhatsApp */
+          <VoicePreviewPlayer
+            url={recordedUrl}
+            duration={recordTime}
+            onDelete={discardRecording}
+            onSend={sendRecordedVoice}
+            sending={sending}
+          />
         ) : recording ? (
           /* Mode enregistrement */
           <div className="relative flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200 animate-scale-in">
