@@ -110,7 +110,21 @@ function AudioPlayer({ url, isMe }) {
     <div className="flex items-center gap-2 min-w-[180px]">
       <audio ref={audioRef} src={url}
         onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || 1))}
-        onLoadedMetadata={e => setDuration(e.target.duration)}
+        onLoadedMetadata={e => {
+          const d = e.target.duration
+          // Bug connu de Chrome : les fichiers audio/webm issus de MediaRecorder
+          // renvoient parfois duration = Infinity au premier chargement.
+          if (d === Infinity || Number.isNaN(d)) {
+            e.target.currentTime = 1e101
+            e.target.ontimeupdate = () => {
+              e.target.ontimeupdate = null
+              setDuration(e.target.duration)
+              e.target.currentTime = 0
+            }
+          } else {
+            setDuration(d)
+          }
+        }}
         onEnded={() => { setPlaying(false); setProgress(0) }}/>
       <button onClick={toggle}
         className={clsx('w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
@@ -177,7 +191,19 @@ function VoicePreviewPlayer({ url, duration = 0, onDelete, onSend, sending }) {
     <div className="w-full bg-dark-900 rounded-3xl px-4 py-3 animate-scale-in">
       <audio ref={audioRef} src={url}
         onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || total || 1))}
-        onLoadedMetadata={e => setRealDuration(Math.round(e.target.duration))}
+        onLoadedMetadata={e => {
+          const d = e.target.duration
+          if (d === Infinity || Number.isNaN(d)) {
+            e.target.currentTime = 1e101
+            e.target.ontimeupdate = () => {
+              e.target.ontimeupdate = null
+              setRealDuration(Math.round(e.target.duration))
+              e.target.currentTime = 0
+            }
+          } else {
+            setRealDuration(Math.round(d))
+          }
+        }}
         onEnded={() => { setPlaying(false); setProgress(0) }}/>
 
       {/* Ligne 1 : minuteur, curseur en pointillés, vitesse */}
@@ -797,9 +823,9 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       e.target.releasePointerCapture(e.pointerId)
     } catch (err) {}
     if (!mediaRef.current || isCancelled) return
-    if (!locked) {
-      stopRecording('send')
-    }
+    // Tout relâchement (verrouillé ou non) amène à l'écran d'aperçu avant envoi,
+    // exactement comme la référence WhatsApp — plus d'envoi instantané au relâchement.
+    stopRecording('preview')
   }
 
   // Réaction
