@@ -456,6 +456,8 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const streamRef                   = useRef(null)
   const chunksRef                   = useRef([])
   const pendingActionRef            = useRef('send') // 'send' | 'preview' | 'cancel'
+  const startingRef                 = useRef(false)  // true tant que startRecording() attend le micro
+  const pendingStopRef              = useRef(null)    // action à exécuter dès que le micro est prêt, si on a relâché entre-temps
   const audioCtxRef                 = useRef(null)
   const analyserRef                 = useRef(null)
   const waveIntervalRef             = useRef(null)
@@ -727,7 +729,20 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       setRecordTime(0)
       recTimer.current = setInterval(() => { t++; setRecordTime(t) }, 1000)
       startWaveform(stream)
-    } catch { toast.error('Microphone non disponible') }
+
+      startingRef.current = false
+      // Si l'utilisateur a déjà relâché pendant que le micro s'initialisait, on exécute
+      // maintenant l'action demandée au lieu de la perdre silencieusement.
+      if (pendingStopRef.current) {
+        const action = pendingStopRef.current
+        pendingStopRef.current = null
+        stopRecording(action)
+      }
+    } catch {
+      startingRef.current = false
+      pendingStopRef.current = null
+      toast.error('Microphone non disponible')
+    }
   }
 
   // action : 'send' (relâché sans verrou → envoi direct), 'preview' (verrouillé → aperçu avant envoi), 'cancel' (glissé pour annuler)
@@ -797,6 +812,8 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     startXRef.current = e.clientX
     setLocked(false)
     setIsCancelled(false)
+    pendingStopRef.current = null
+    startingRef.current = true
     startRecording()
   }
 
@@ -822,7 +839,14 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     try {
       e.target.releasePointerCapture(e.pointerId)
     } catch (err) {}
-    if (!mediaRef.current || isCancelled) return
+    if (isCancelled) return
+    if (!mediaRef.current) {
+      // Le micro est encore en cours d'initialisation (permission/latence) :
+      // on mémorise l'intention pour l'exécuter dès que startRecording() aura terminé,
+      // au lieu de ne rien faire.
+      if (startingRef.current) pendingStopRef.current = 'preview'
+      return
+    }
     // Tout relâchement (verrouillé ou non) amène à l'écran d'aperçu avant envoi,
     // exactement comme la référence WhatsApp — plus d'envoi instantané au relâchement.
     stopRecording('preview')
@@ -1037,14 +1061,16 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         ) : recording ? (
           /* Mode enregistrement */
           <div className="relative flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3 border border-red-200 animate-scale-in">
-            {/* Badge verrou flottant — se rapproche visuellement pendant qu'on glisse vers le haut */}
+            {/* Badge verrou flottant — cliquable, verrouille immédiatement l'enregistrement */}
             {!locked && (
-              <div className="absolute -top-16 right-3 flex flex-col items-center gap-1 animate-bounce">
+              <button
+                onClick={() => { setLocked(true); toast.success('Enregistrement verrouillé 🔒') }}
+                className="absolute -top-16 right-3 flex flex-col items-center gap-1 animate-bounce active:scale-90 transition-transform">
                 <div className="w-10 h-10 rounded-full bg-white shadow-lg border border-surface-200 flex items-center justify-center text-dark-500">
                   <Lock size={16}/>
                 </div>
                 <ChevronDown size={13} className="rotate-180 text-dark-300"/>
-              </div>
+              </button>
             )}
 
             <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0"/>
