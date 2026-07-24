@@ -7,20 +7,21 @@ import { useGoogleReferral } from '@/hooks/useGoogleReferral'
 import AppLayout          from '@/components/layout/AppLayout'
 import AuthLayout         from '@/components/layout/AuthLayout'
 
+import MarketplacePage from '@/pages/MarketplacePage'
+import MessagesPage    from '@/pages/MessagesPage'
+import VendorPage      from '@/pages/VendorPage'
+import WalletPage      from '@/pages/WalletPage'
+import CommunityPage   from '@/pages/CommunityPage'
+
 const OnboardingPage     = lazy(() => import('@/pages/OnboardingPage'))
 const LoginPage          = lazy(() => import('@/pages/LoginPage'))
 const RegisterPage       = lazy(() => import('@/pages/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'))
 const ResetPasswordPage  = lazy(() => import('@/pages/ResetPasswordPage'))
-const MarketplacePage    = lazy(() => import('@/pages/MarketplacePage'))
 const CheckoutPage       = lazy(() => import('@/pages/CheckoutPage'))
 const ShopPublicPage     = lazy(() => import('@/pages/ShopPublicPage'))
 const ProfilePage        = lazy(() => import('@/pages/ProfilePage'))
 const OrdersPage         = lazy(() => import('@/pages/OrdersPage'))
-const WalletPage         = lazy(() => import('@/pages/WalletPage'))
-const CommunityPage      = lazy(() => import('@/pages/CommunityPage'))
-const VendorPage         = lazy(() => import('@/pages/VendorPage'))
-const MessagesPage       = lazy(() => import('@/pages/MessagesPage'))
 const NotificationsPage  = lazy(() => import('@/pages/NotificationsPage'))
 const FavoritesPage      = lazy(() => import('@/pages/FavoritesPage'))
 const PublicProfilePage  = lazy(() => import('@/pages/PublicProfilePage'))
@@ -31,7 +32,7 @@ const CartPage           = lazy(() => import('@/pages/CartPage'))
 const SettingsPage       = lazy(() => import('@/pages/SettingsPage'))
 
 
-// ── Splash screen (photo existante) ──────────────────────
+// ── Splash screen (photo existante - initial boot uniquement) ──
 function SplashScreen() {
   return (
     <div className="fixed inset-0 bg-primary-900 flex flex-col items-center justify-center gap-4">
@@ -50,13 +51,17 @@ function SplashScreen() {
   )
 }
 
+// ── Loader discret pour navigation secondaire ──────────────
+function PageLoader() {
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-orange-500 animate-pulse" />
+  )
+}
+
 // ── Route racine intelligente ─────────────────────────────
-// Après le splash :
-// - Connecté → /marketplace
-// - Non connecté → /accueil (onboarding)
 function RootRoute() {
   const { user, loading } = useAuthStore()
-  if (loading) return <SplashScreen />
+  if (loading) return <PageLoader />
   if (user) return <Navigate to="/marketplace" replace />
   return <Navigate to="/accueil" replace />
 }
@@ -64,7 +69,7 @@ function RootRoute() {
 // ── Route privée ──────────────────────────────────────────
 function PrivateRoute({ children }) {
   const { user, loading } = useAuthStore()
-  if (loading) return <SplashScreen />
+  if (loading) return <PageLoader />
   if (!user) return <Navigate to="/accueil" replace />
   return children
 }
@@ -72,7 +77,7 @@ function PrivateRoute({ children }) {
 // ── Route publique (login/register) ──────────────────────
 function PublicRoute({ children }) {
   const { user, loading } = useAuthStore()
-  if (loading) return <SplashScreen />
+  if (loading) return <PageLoader />
   if (user) return <Navigate to="/marketplace" replace />
   return children
 }
@@ -97,7 +102,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Suspense fallback={<SplashScreen />}>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
 
           {/* Racine → logique splash */}
