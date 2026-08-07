@@ -1,26 +1,16 @@
-const CACHE_NAME = 'mang-v2.1.1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/src/main.jsx',
-  '/src/App.jsx', 
-  '/src/index.css',
-  '/logo.png'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+// Service Worker MANG - Nettoyage automatique des caches obsolètes
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).catch(() => caches.match('/index.html'));
-    })
-  );
+  // Contournement direct réseau sans blocage de cache statique
+  event.respondWith(fetch(event.request));
 });
