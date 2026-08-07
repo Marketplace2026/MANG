@@ -49,10 +49,15 @@ export default function QuickActionsGrid({ onDeposit, onWithdraw, onTransfer, on
       <div className="grid grid-cols-4 gap-2.5">
         {ACTIONS.map((act) => {
           const Icon = act.icon
+          const handleActionClick = () => {
+            if (navigator.vibrate) navigator.vibrate([15])
+            act.onClick()
+          }
+
           return (
             <button
               key={act.id}
-              onClick={act.onClick}
+              onClick={handleActionClick}
               className="group relative flex flex-col items-center justify-center p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-95"
             >
               {/* Badge supérieur */}

@@ -1,20 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Copy, Check, QrCode, Lock, Coins } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+function useCountUp(targetValue, duration = 800) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    let startTimestamp = null
+    const startValue = count
+    const endValue = Number(targetValue) || 0
+
+    if (startValue === endValue) return
+
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1)
+      const current = Math.floor(progress * (endValue - startValue) + startValue)
+      setCount(current)
+      if (progress < 1) {
+        window.requestAnimationFrame(step)
+      }
+    }
+    window.requestAnimationFrame(step)
+  }, [targetValue])
+
+  return count
+}
 
 export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscrow }) {
   const [showBalance, setShowBalance] = useState(true)
   const [copied, setCopied] = useState(false)
 
   const balanceFCFA = wallet?.balance_available || 0
+  const animatedBalance = useCountUp(balanceFCFA)
   const reservedFCFA = wallet?.balance_reserved || 0
   const pointsCount = pieces?.balance || 0
 
   const handleCopyWalletNumber = () => {
     if (!wallet?.wallet_number) return
+    if (navigator.vibrate) navigator.vibrate([15])
     navigator.clipboard.writeText(wallet.wallet_number)
     setCopied(true)
-    toast.success('Numéro Wallet copié !')
+    toast.success('Numéro de compte MANG copié avec succès !')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -38,7 +65,10 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={onOpenQR}
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate([15])
+              onOpenQR()
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold transition-all active:scale-95 backdrop-blur-md"
           >
             <QrCode size={14} className="text-amber-400" />
@@ -46,7 +76,10 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
           </button>
           
           <button
-            onClick={() => setShowBalance(!showBalance)}
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate([15])
+              setShowBalance(!showBalance)
+            }}
             className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 active:scale-90 transition-transform"
           >
             {showBalance ? <Eye size={15} className="text-white/80" /> : <EyeOff size={15} className="text-white/80" />}
@@ -54,12 +87,12 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
         </div>
       </div>
 
-      {/* Affichage du Solde Principal */}
+      {/* Affichage du Solde Principal avec CountUp */}
       <div className="mb-5">
         <p className="text-xs font-bold uppercase tracking-wider text-white/60 mb-1">Solde disponible</p>
         <div className="flex items-baseline gap-2">
           <h2 className="font-display font-black text-4xl sm:text-5xl text-white tracking-tight">
-            {showBalance ? balanceFCFA.toLocaleString('fr-FR') : '••••••••'}
+            {showBalance ? animatedBalance.toLocaleString('fr-FR') : '••••••••'}
           </h2>
           <span className="text-lg font-bold text-amber-400">FCFA</span>
         </div>

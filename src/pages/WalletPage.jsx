@@ -545,18 +545,24 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
             </div>
 
             {receiver && (
-              <div className="flex items-center gap-3 p-4 bg-green-50 border-2 border-green-300 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-green-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="flex items-center gap-3 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl">
+                <div className="w-12 h-12 rounded-xl bg-emerald-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {receiver.avatar_url
                     ? <img src={receiver.avatar_url} className="w-full h-full object-cover" alt=""/>
-                    : <span className="text-xl font-black text-green-700">{(receiver.username||'?')[0]?.toUpperCase()}</span>}
+                    : <span className="text-xl font-black text-emerald-800">{(receiver.username||'?')[0]?.toUpperCase()}</span>}
                 </div>
-                <div className="flex-1">
-                  <p className="font-black text-green-800">{receiver.full_name || receiver.username}</p>
-                  <p className="text-green-600 text-sm">@{receiver.username}</p>
-                  <p className="text-green-500 text-xs font-mono">#{receiver.wallet_number}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-black text-emerald-900 text-sm truncate">{receiver.full_name || receiver.username}</p>
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-900 text-[10px] font-bold">
+                      <Shield size={10} className="text-emerald-700 fill-emerald-700" />
+                      <span>Vérifié</span>
+                    </span>
+                  </div>
+                  <p className="text-emerald-700 text-xs font-semibold">@{receiver.username}</p>
+                  <p className="text-emerald-600 text-xs font-mono">#{receiver.wallet_number}</p>
                 </div>
-                <Check size={22} className="text-green-600"/>
+                <Check size={20} className="text-emerald-700 flex-shrink-0"/>
               </div>
             )}
 
@@ -571,14 +577,14 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
             </div>
 
             {receiver && amount && parseInt(amount) >= 100 && (
-              <div className="bg-gray-800 rounded-2xl p-4 space-y-1.5">
+              <div className="bg-gray-800 rounded-2xl p-4 space-y-1.5 text-white">
                 <div className="flex justify-between text-sm">
                   <span className="text-white/60">Destinataire</span>
-                  <span className="text-white font-bold">@{receiver.username}</span>
+                  <span className="text-white font-bold">{receiver.full_name || `@${receiver.username}`}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/60">Montant envoyé</span>
-                  <span className="text-white font-black text-base">{parseInt(amount).toLocaleString('fr-FR')} FCFA</span>
+                  <span className="text-amber-400 font-black text-base">{parseInt(amount).toLocaleString('fr-FR')} FCFA</span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-white/10 pt-1.5">
                   <span className="text-white/40">Solde restant</span>
@@ -594,16 +600,46 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
           </>
         ) : (
           <>
-            <div className="bg-gray-800 rounded-2xl p-5 text-center space-y-2">
-              <p className="text-white/60 text-sm">Envoi à @{receiver?.username}</p>
-              <p className="text-white font-black text-4xl">{parseInt(amount).toLocaleString('fr-FR')}</p>
-              <p className="text-white/60 text-lg">FCFA</p>
+            {/* Étape 2 : Confirmation de Sécurité avec nom complet & Avertissement > 50 000 FCFA */}
+            <div className="bg-gray-900 rounded-2xl p-5 text-center space-y-3 text-white border border-gray-800">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Shield size={18} className="text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-white/60 font-semibold">Destinataire certifié MANG</p>
+                  <p className="font-bold text-sm text-emerald-400">{receiver?.full_name || `@${receiver?.username}`}</p>
+                </div>
+              </div>
+
+              <div className="py-2 border-y border-white/10">
+                <p className="text-white/60 text-xs mb-0.5">Montant à envoyer</p>
+                <p className="text-amber-400 font-black text-4xl">{parseInt(amount).toLocaleString('fr-FR')} FCFA</p>
+              </div>
+
+              <p className="text-xs text-white/50">Compte #{receiver?.wallet_number}</p>
             </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-              <Shield size={18} className="text-amber-600 flex-shrink-0"/>
-              <p className="text-amber-700 text-sm font-semibold">Entrez votre PIN pour confirmer</p>
+
+            {/* Avertissement Spécial pour Transferts > 50 000 FCFA */}
+            {parseInt(amount) >= 50000 && (
+              <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-1">
+                <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
+                  <Shield size={16} className="text-amber-600" />
+                  <span>⚠️ ALERTE DE SÉCURITÉ — TRANSFERT ÉLEVÉ</span>
+                </div>
+                <p className="text-amber-900 text-xs font-medium">
+                  Vous vous préparez à envoyer <span className="font-bold text-amber-950">{parseInt(amount).toLocaleString('fr-FR')} FCFA</span> à <span className="font-bold text-amber-950">{receiver?.full_name || receiver?.username}</span>. Veuillez revérifier le destinataire avant d'entrer votre PIN.
+                </p>
+              </div>
+            )}
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3">
+              <Shield size={18} className="text-emerald-700 flex-shrink-0"/>
+              <p className="text-emerald-900 text-xs font-bold">Entrez votre code PIN à 4 chiffres pour valider</p>
             </div>
+
             <PinInput value={pin} onChange={v => { setPin(v); setPinError(false) }} error={pinError}/>
+
             <div className="flex gap-3">
               <button onClick={() => { setStep(1); setPin(''); setPinError(false) }}
                 className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-2xl">Retour</button>
