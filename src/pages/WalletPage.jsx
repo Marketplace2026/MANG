@@ -9,6 +9,12 @@ import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 
+import WalletHeaderCard from '@/components/wallet/WalletHeaderCard'
+import QuickActionsGrid from '@/components/wallet/QuickActionsGrid'
+import TransactionListPro from '@/components/wallet/TransactionListPro'
+import QRCodeModal from '@/components/wallet/QRCodeModal'
+import EscrowBreakdownModal from '@/components/wallet/EscrowBreakdownModal'
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 const OPERATORS = [
@@ -408,7 +414,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
 // ══════════════════════════════════════════════════════════
 // TRANSFERT — Montant en FCFA, converti en centimes dans SQL
 // ══════════════════════════════════════════════════════════
-function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
+function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNum }) {
   const [receiverNum, setReceiverNum] = useState('')
   const [receiver, setReceiver]       = useState(null)
   const [lookingUp, setLookingUp]     = useState(false)
@@ -420,6 +426,12 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess }) {
   const [pinError, setPinError]       = useState(false)
   const balanceFCFA = (wallet?.balance_available || 0)
   const timer = useRef(null)
+
+  useEffect(() => {
+    if (open && initialWalletNum) {
+      handleNumChange(initialWalletNum)
+    }
+  }, [open, initialWalletNum])
 
   const reset = () => {
     setStep(1); setPin(''); setPinError(false)
@@ -886,22 +898,24 @@ function MiniChart({ transactions }) {
 // PAGE PRINCIPALE
 // ══════════════════════════════════════════════════════════
 export default function WalletPage() {
-  const { user, wallet, refreshWallet } = useAuthStore()
+  const { user, wallet, pieces, refreshWallet } = useAuthStore()
   const [transactions, setTransactions] = useState([])
   const [loadingTx, setLoadingTx]       = useState(true)
-  const [balanceVisible, setBV]         = useState(true)
-  const [copied, setCopied]             = useState(false)
-  const [filter, setFilter]             = useState('all')
 
   const [depositOpen,  setDO] = useState(false)
   const [withdrawOpen, setWO] = useState(false)
   const [transferOpen, setTO] = useState(false)
   const [pinOpen,      setPO] = useState(false)
+  const [qrOpen,       setQO] = useState(false)
+  const [escrowOpen,   setEO] = useState(false)
   const [selectedTx,   setST] = useState(null)
+
+  const [scannedWalletNum, setScannedWalletNum] = useState('')
 
   useEffect(() => {
     if (!user) return
-    loadTx(); refreshWallet()
+    loadTx()
+    refreshWallet()
     const params = new URLSearchParams(window.location.search)
     if (params.get('recharged')) {
       const amt = parseInt(params.get('recharged'))
@@ -916,7 +930,8 @@ export default function WalletPage() {
             amountCents: amt, balanceAfterCents: wd.balance_available,
             description: `Rechargement ${amt.toLocaleString('fr-FR')} FCFA via ${params.get('op') || 'Mobile Money'}`,
           })
-          loadTx(); refreshWallet()
+          loadTx()
+          refreshWallet()
         }
       }, 2500)
     }
@@ -954,197 +969,105 @@ export default function WalletPage() {
     finally { setLoadingTx(false) }
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(wallet?.wallet_number || '')
-    setCopied(true); toast.success('Numéro copié !')
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   const onSuccess = () => { loadTx(); refreshWallet() }
 
-  // Montants RÉELS en FCFA
-  const balanceFCFA = (wallet?.balance_available || 0)
-  const reservedFCFA = (wallet?.balance_reserved || 0)
-  const now = new Date()
-  const monthTx  = transactions.filter(t => { const d=new Date(t.created_at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear() })
+  const handleScanResult = (num) => {
+    setScannedWalletNum(num)
+    setTO(true)
+  }
+
+  const monthTx  = transactions.filter(t => { const d=new Date(t.created_at); const now=new Date(); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear() })
   const monthIn  = monthTx.filter(t=>Number(t.amount)>0).reduce((s,t)=>s+toFCFA(t.amount),0)
   const monthOut = monthTx.filter(t=>Number(t.amount)<0).reduce((s,t)=>s+toFCFA(t.amount),0)
 
-  const filteredTx = transactions.filter(tx => {
-    if (filter==='all') return true
-    if (filter==='in')  return Number(tx.amount)>0
-    if (filter==='out') return Number(tx.amount)<0
-    const t=(tx.type||'').toLowerCase()
-    return t.includes(filter)
-  })
-
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
-      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+      {/* Header Unifié (pt-4) */}
+      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-40">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">MANG Wallet</h1>
-            <p className="text-white/80 text-sm">Portefeuille numérique sécurisé</p>
+            <h1 className="text-white text-2xl font-bold">MANG Wallet Pro</h1>
+            <p className="text-white/80 text-xs font-semibold">Portefeuille Numérique Sécurisé</p>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => setBV(v=>!v)} className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center active:scale-90">
-              {balanceVisible ? <Eye size={15} className="text-white"/> : <EyeOff size={15} className="text-white"/>}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setPO(true)} 
+              className="px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl flex items-center gap-1.5 text-white text-xs font-bold active:scale-95 transition-all"
+            >
+              <Shield size={14} className="text-amber-400" />
+              <span>PIN</span>
             </button>
-            <button onClick={() => { loadTx(); refreshWallet() }} className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center active:scale-90">
-              <RefreshCw size={15} className="text-white"/>
+            <button 
+              onClick={() => { loadTx(); refreshWallet() }} 
+              className="w-9 h-9 bg-white/15 hover:bg-white/25 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <RefreshCw size={15} className={`text-white ${loadingTx ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="relative overflow-hidden pb-28 px-4 bg-[#004D00]">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none"/>
-        <div className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'24px 24px'}}/>
+      <div className="px-4 pt-3 space-y-4">
+        {/* Carte Header 3D */}
+        <WalletHeaderCard
+          wallet={wallet}
+          pieces={pieces}
+          onOpenQR={() => setQO(true)}
+          onOpenEscrow={() => setEO(true)}
+        />
 
-        <div className="relative mb-5">
-          <p className="text-white/60 text-xs mb-1">Solde disponible</p>
-          <div className="flex items-end gap-2">
-            <h2 className="font-black text-5xl text-white leading-none">
-              {balanceVisible ? balanceFCFA.toLocaleString('fr-FR') : '••••••'}
-            </h2>
-            <span className="text-white/60 text-lg mb-1">FCFA</span>
-          </div>
-          {reservedFCFA > 0 && <p className="text-yellow-300 text-xs mt-2">🔒 {reservedFCFA.toLocaleString('fr-FR')} FCFA en escrow</p>}
-        </div>
+        {/* Grille d'Actions Rapides (4 Boutons) */}
+        <QuickActionsGrid
+          onDeposit={() => setDO(true)}
+          onWithdraw={() => setWO(true)}
+          onTransfer={() => setTO(true)}
+          onScan={() => setQO(true)}
+        />
 
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/10 border border-white/15 mb-6">
-          <div>
-            <p className="text-white/40 text-[10px] uppercase tracking-wider">Numéro wallet</p>
-            <p className="text-white font-mono font-bold tracking-[0.2em] text-base">
-              {wallet?.wallet_number?.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3') || '—— ——— ———'}
-            </p>
-          </div>
-          <button onClick={handleCopy} className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center active:scale-90">
-            {copied ? <Check size={16} className="text-emerald-300"/> : <Copy size={16} className="text-white/60"/>}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { icon:'➕', label:'Dépôt',    action:()=>setDO(true), color:'bg-emerald-500' },
-            { icon:'💸', label:'Retrait',  action:()=>setWO(true), color:'bg-red-500'     },
-            { icon:'🔄', label:'Transfert',action:()=>setTO(true), color:'bg-blue-500'    },
-            { icon:'🔐', label:'PIN',      action:()=>setPO(true), color:'bg-purple-500'  },
-          ].map(btn => (
-            <button key={btn.label} onClick={btn.action}
-              className="flex flex-col items-center gap-2 active:scale-90 transition-transform">
-              <div className={clsx('w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg', btn.color)}>
-                {btn.icon}
-              </div>
-              <span className="text-white/80 text-[11px] font-bold">{btn.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* STATS */}
-      <div className="px-4 -mt-14 relative z-10">
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ce mois-ci</p>
+        {/* Résumé du Mois & Statistiques */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Activité de ce mois</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-emerald-50 rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <TrendingUp size={18} className="text-emerald-600"/>
               </div>
-              <div>
-                <p className="text-xs text-emerald-600 font-semibold">Reçu</p>
-                <p className="font-black text-emerald-700 text-sm">+{monthIn.toLocaleString('fr-FR')} FCFA</p>
+              <div className="min-w-0">
+                <p className="text-[11px] text-emerald-700 font-semibold">Entrées</p>
+                <p className="font-black text-emerald-800 text-sm truncate">+{monthIn.toLocaleString('fr-FR')} F</p>
               </div>
             </div>
-            <div className="bg-red-50 rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <TrendingDown size={18} className="text-red-500"/>
               </div>
-              <div>
-                <p className="text-xs text-red-500 font-semibold">Dépensé</p>
-                <p className="font-black text-red-600 text-sm">-{monthOut.toLocaleString('fr-FR')} FCFA</p>
+              <div className="min-w-0">
+                <p className="text-[11px] text-red-700 font-semibold">Dépenses</p>
+                <p className="font-black text-red-700 text-sm truncate">-{monthOut.toLocaleString('fr-FR')} F</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Graphique Mini Chart */}
+        {transactions.length > 0 && <MiniChart transactions={transactions}/>}
+
+        {/* Liste des Transactions Pro avec Recherche & Filtres */}
+        <TransactionListPro
+          transactions={transactions}
+          loading={loadingTx}
+          onRefresh={loadTx}
+          onSelectTx={(tx) => setST(tx)}
+        />
       </div>
 
-      {transactions.length > 0 && <div className="px-4 mt-4"><MiniChart transactions={transactions}/></div>}
-
-      {/* HISTORIQUE */}
-      <div className="px-4 mt-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-bold text-gray-700 text-sm">Historique ({transactions.length})</p>
-          <button onClick={loadTx} className="w-8 h-8 bg-white rounded-xl border border-gray-100 flex items-center justify-center active:scale-90">
-            <RefreshCw size={13} className="text-gray-500"/>
-          </button>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
-          {[
-            {key:'all',     label:'Tout'},
-            {key:'in',      label:'📥 Entrées'},
-            {key:'out',     label:'📤 Sorties'},
-            {key:'deposit', label:'💰 Dépôts'},
-            {key:'withdraw',label:'💸 Retraits'},
-            {key:'transfer',label:'🔄 Transferts'},
-            {key:'order',   label:'🛒 Commandes'},
-          ].map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={clsx('flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors',
-                filter===f.key ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200')}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {loadingTx ? (
-          <div className="flex justify-center py-10"><Loader2 size={28} className="animate-spin text-green-500"/></div>
-        ) : filteredTx.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-            <div className="text-4xl mb-3">💳</div>
-            <p className="font-bold text-gray-500">Aucune transaction</p>
-            <p className="text-sm text-gray-400 mt-1">Vos transactions apparaîtront ici</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredTx.map(tx => {
-              const cfg = getTxCfg(tx)
-              const amtFCFA = toFCFA(tx.amount)
-              const isCredit = Number(tx.amount) > 0
-              const date = new Date(tx.created_at)
-              return (
-                <div key={tx.id} onClick={() => setST(tx)}
-                  className="bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform">
-                  <div className={clsx('w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0', cfg.bg)}>
-                    {cfg.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-800 text-sm truncate">{cfg.label}</p>
-                    <p className="text-gray-400 text-xs">
-                      {date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})} · {date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
-                    </p>
-                    {tx.receipt_number && <p className="text-gray-300 text-[10px] truncate">#{tx.receipt_number}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className={clsx('font-black text-base', isCredit ? 'text-emerald-600' : 'text-red-500')}>
-                      {isCredit?'+':'-'}{amtFCFA.toLocaleString('fr-FR')}
-                    </p>
-                    <p className="text-gray-400 text-[10px]">FCFA</p>
-                  </div>
-                  <ChevronRight size={14} className="text-gray-300 flex-shrink-0"/>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
+      {/* Modales & Sheets */}
       <DepositSheet  open={depositOpen}  onClose={()=>setDO(false)} user={user} wallet={wallet} onSuccess={onSuccess}/>
       <WithdrawSheet open={withdrawOpen} onClose={()=>setWO(false)} user={user} wallet={wallet} onSuccess={onSuccess}/>
-      <TransferSheet open={transferOpen} onClose={()=>setTO(false)} user={user} wallet={wallet} onSuccess={onSuccess}/>
+      <TransferSheet open={transferOpen} onClose={()=>setTO(false)} user={user} wallet={wallet} onSuccess={onSuccess} initialWalletNum={scannedWalletNum}/>
       <PinSetupSheet open={pinOpen}      onClose={()=>setPO(false)} user={user}/>
+      <QRCodeModal   open={qrOpen}       onClose={()=>setQO(false)} user={user} wallet={wallet} onScanResult={handleScanResult}/>
+      <EscrowBreakdownModal open={escrowOpen} onClose={()=>setEO(false)} user={user} wallet={wallet}/>
       <TxDetailSheet open={!!selectedTx} onClose={()=>setST(null)}  tx={selectedTx}/>
     </div>
   )
