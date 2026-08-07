@@ -3,12 +3,14 @@ import { Eye, EyeOff, Copy, Check, QrCode, Lock, Coins } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 function useCountUp(targetValue, duration = 800) {
-  const [count, setCount] = useState(0)
+  const targetNum = Number(targetValue) || 0
+  const [count, setCount] = useState(targetNum)
 
   useEffect(() => {
+    let animFrameId = null
     let startTimestamp = null
-    const startValue = count
-    const endValue = Number(targetValue) || 0
+    const startValue = typeof count === 'number' && !isNaN(count) ? count : 0
+    const endValue = targetNum
 
     if (startValue === endValue) return
 
@@ -18,13 +20,20 @@ function useCountUp(targetValue, duration = 800) {
       const current = Math.floor(progress * (endValue - startValue) + startValue)
       setCount(current)
       if (progress < 1) {
-        window.requestAnimationFrame(step)
+        animFrameId = window.requestAnimationFrame(step)
+      } else {
+        setCount(endValue)
       }
     }
-    window.requestAnimationFrame(step)
-  }, [targetValue])
 
-  return count
+    animFrameId = window.requestAnimationFrame(step)
+
+    return () => {
+      if (animFrameId) window.cancelAnimationFrame(animFrameId)
+    }
+  }, [targetNum])
+
+  return typeof count === 'number' && !isNaN(count) ? count : targetNum
 }
 
 export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscrow }) {
@@ -38,8 +47,16 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
 
   const handleCopyWalletNumber = () => {
     if (!wallet?.wallet_number) return
-    if (navigator.vibrate) navigator.vibrate([15])
-    navigator.clipboard.writeText(wallet.wallet_number)
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate([15]) } catch {}
+    }
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(wallet.wallet_number)
+      }
+    } catch (e) {
+      console.warn('Clipboard copy warning:', e)
+    }
     setCopied(true)
     toast.success('Numéro de compte MANG copié avec succès !')
     setTimeout(() => setCopied(false), 2000)

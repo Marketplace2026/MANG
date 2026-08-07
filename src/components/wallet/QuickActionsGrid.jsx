@@ -50,7 +50,9 @@ export default function QuickActionsGrid({ onDeposit, onWithdraw, onTransfer, on
         {ACTIONS.map((act) => {
           const Icon = act.icon
           const handleActionClick = () => {
-            if (navigator.vibrate) navigator.vibrate([15])
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate([15]) } catch {}
+            }
             act.onClick()
           }
 
