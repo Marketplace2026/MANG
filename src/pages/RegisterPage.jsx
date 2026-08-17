@@ -146,7 +146,7 @@ export default function RegisterPage() {
         })
 
         // 🎁 20 PIÈCES MANG OFFERTES À TOUT LE MONDE À L'INSCRIPTION !
-        await supabase.from('pieces').insert({ user_id: userId, balance: 20 })
+        await supabase.from('pieces').upsert({ user_id: userId, balance: 20 }, { onConflict: 'user_id' })
 
       } catch (err) {
         console.error('Erreur initialisation profil/pièces:', err)
