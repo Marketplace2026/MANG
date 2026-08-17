@@ -34,7 +34,7 @@ function getPasswordStrength(pwd) {
 export default function RegisterPage() {
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [form, setForm] = useState({ username: '', email: '', password: '', referralCode: '' })
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -42,9 +42,19 @@ export default function RegisterPage() {
   const [emailVerificationSent, setEmailVerificationSent] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [acceptTerms, setAcceptTerms] = useState(true)
 
   const usernameDebounce = useRef(null)
   const strength = getPasswordStrength(form.password)
+
+  // Auto-remplissage du code de parrainage depuis l'URL (?ref=CODE)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const refParam = params.get('ref')
+    if (refParam) {
+      setForm(prev => ({ ...prev, referralCode: refParam.toUpperCase() }))
+    }
+  }, [])
 
   // Cooldown du bouton de renvoi d'email
   useEffect(() => {
@@ -55,13 +65,14 @@ export default function RegisterPage() {
 
   const checkUsername = (value) => {
     clearTimeout(usernameDebounce.current)
-    if (!value) { setUsernameStatus(null); return }
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(value)) { setUsernameStatus('invalid'); return }
+    const cleanVal = (value || '').trim().toLowerCase()
+    if (!cleanVal) { setUsernameStatus(null); return }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(cleanVal)) { setUsernameStatus('invalid'); return }
     setUsernameStatus('checking')
     usernameDebounce.current = setTimeout(async () => {
       const { data } = await supabase
-       .from('profiles').select('id').eq('username', value.toLowerCase()).maybeSingle()
-      setUsernameStatus(data? 'taken' : 'available')
+       .from('profiles').select('id').eq('username', cleanVal).maybeSingle()
+      setUsernameStatus(data ? 'taken' : 'available')
     }, 500)
   }
 
@@ -78,32 +89,37 @@ export default function RegisterPage() {
     }
   }
 
-  // Inscription email/password - VERSION SANS TRIGGER
+  // Inscription email/password avec BONUS 20 PIÈCES OFFERTES
   const handleRegister = async (e) => {
     e.preventDefault()
-    if (form.password.length < 6) { toast.error('Mot de passe trop court (6 car. min)'); return }
-    if (usernameStatus === 'taken') { toast.error("Ce nom d'utilisateur est deja pris"); return }
-    if (usernameStatus === 'invalid') { toast.error('Nom invalide (3-20 car., lettres/chiffres/_)'); return }
+    const cleanEmail = form.email.trim().toLowerCase()
+    const cleanUsername = form.username.trim().toLowerCase()
+
+    if (!cleanEmail || !cleanUsername) { toast.error('Veuillez remplir tous les champs obligatoires'); return }
+    if (form.password.length < 6) { toast.error('Mot de passe trop court (6 caractères min)'); return }
+    if (usernameStatus === 'taken') { toast.error("Ce nom d'utilisateur est déjà pris"); return }
+    if (usernameStatus === 'invalid') { toast.error('Nom d’utilisateur invalide (3-20 caractères, lettres/chiffres/_)'); return }
+    if (!acceptTerms) { toast.error('Veuillez accepter les conditions générales'); return }
 
     setLoading(true)
 
-    // 1. Créer le compte
+    // 1. Créer le compte Supabase Auth
     const { data, error } = await supabase.auth.signUp({
-      email: form.email,
+      email: cleanEmail,
       password: form.password,
-      options: { data: { username: form.username.toLowerCase() } }
+      options: { data: { username: cleanUsername } }
     })
 
     if (error) {
       setLoading(false)
-      toast.error(error.message === 'User already registered'? 'Email deja utilise' : error.message || "Erreur lors de l'inscription")
+      toast.error(error.message === 'User already registered' ? 'Cet e-mail est déjà utilisé' : error.message || "Erreur lors de l'inscription")
       return
     }
 
     const userId = data?.user?.id
     const session = data?.session
 
-    // 2. SI INSCRIPTION OK, ON CRÉE PROFIL + WALLET + PIECES MANUELLEMENT
+    // 2. SI INSCRIPTION OK, ON CRÉE PROFIL + WALLET + 20 PIÈCES GRATUITES
     if (userId) {
       const w_number = Math.floor(1000000 + Math.random() * 9000000).toString().padStart(10, '0')
       const r_code = 'MNG' + userId.replace(/-/g, '').substring(0, 5).toUpperCase()
@@ -112,8 +128,8 @@ export default function RegisterPage() {
         // Créer profil
         await supabase.from('profiles').insert({
           id: userId,
-          username: form.username.toLowerCase(),
-          email: form.email,
+          username: cleanUsername,
+          email: cleanEmail,
           referral_code: r_code,
           referral_count: 0,
           created_at: new Date().toISOString(),
@@ -129,25 +145,25 @@ export default function RegisterPage() {
           balance_reser: 0
         })
 
-        // Créer pieces
-        await supabase.from('pieces').insert({ user_id: userId, balance: 0 })
+        // 🎁 20 PIÈCES MANG OFFERTES À TOUT LE MONDE À L'INSCRIPTION !
+        await supabase.from('pieces').insert({ user_id: userId, balance: 20 })
 
       } catch (err) {
-        console.error('Erreur creation profil:', err)
+        console.error('Erreur initialisation profil/pièces:', err)
       }
     }
 
     // 3. Gérer email verification
     if (!session) {
       setLoading(false)
-      setRegisteredEmail(form.email)
+      setRegisteredEmail(cleanEmail)
       setEmailVerificationSent(true)
-      toast.success('Inscription initiée! Veuillez valider votre e-mail.')
+      toast.success('🎁 Inscription réussie ! 20 Pièces MANG vous sont réservées. Validez votre e-mail.')
       return
     }
 
     setLoading(false)
-    toast.success('Compte cree avec succes!')
+    toast.success('🎁 Bienvenue ! Votre compte est créé avec 20 Pièces MANG gratuites !')
     navigate('/marketplace')
   }
 
@@ -162,7 +178,7 @@ export default function RegisterPage() {
     if (error) {
       toast.error(error.message || 'Erreur lors du renvoi')
     } else {
-      toast.success('E-mail de confirmation renvoyé!')
+      toast.success('E-mail de confirmation renvoyé !')
       setResendCooldown(60)
     }
   }
@@ -177,27 +193,31 @@ export default function RegisterPage() {
 
   const usernameHint = {
     available: { text: 'Disponible', cls: 'text-emerald-400' },
-    taken: { text: 'Deja pris', cls: 'text-red-400' },
-    invalid: { text: '3-20 caracteres, lettres/chiffres/_', cls: 'text-orange-400' },
-    checking: { text: 'Verification...', cls: 'text-white/40' },
+    taken: { text: 'Déjà pris', cls: 'text-red-400' },
+    invalid: { text: '3-20 caractères (lettres, chiffres, _)', cls: 'text-orange-400' },
+    checking: { text: 'Vérification...', cls: 'text-white/40' },
   }[usernameStatus]
 
-  const canSubmit =!loading &&!googleLoading
-    && usernameStatus!== 'taken'
-    && usernameStatus!== 'invalid'
-    && usernameStatus!== 'checking'
+  const canSubmit = !loading && !googleLoading
+    && usernameStatus !== 'taken'
+    && usernameStatus !== 'invalid'
+    && usernameStatus !== 'checking'
+    && acceptTerms
 
   if (emailVerificationSent) {
     return (
       <div className="animate-fade-in text-center py-4">
-        <div className="w-16 h-16 rounded-full bg-gold-500/20 flex items-center justify-center mx-auto mb-5 text-3xl">
-          ✉️
+        <div className="w-16 h-16 rounded-full bg-gold-500/20 flex items-center justify-center mx-auto mb-4 text-3xl">
+          🎁
         </div>
+        <span className="inline-block px-3 py-1 bg-gold-500/20 text-gold-300 rounded-full text-xs font-bold mb-3 border border-gold-500/30">
+          +20 Pièces MANG Offertes
+        </span>
         <h2 className="font-display text-2xl text-white font-bold mb-2">Vérifiez votre e-mail</h2>
         <p className="text-primary-200 text-sm mb-6 leading-relaxed">
           Nous avons envoyé un lien de confirmation à <br/>
           <strong className="text-gold-300 font-semibold">{registeredEmail}</strong>.<br/>
-          Veuillez cliquer sur ce lien pour activer votre compte MANG.
+          Cliquez sur ce lien pour activer votre compte et recevoir vos <strong>20 Pièces gratuites</strong>.
         </p>
 
         <div className="space-y-3">
@@ -207,7 +227,7 @@ export default function RegisterPage() {
             className="w-full py-3.5 bg-gold-500 hover:bg-gold-400 disabled:bg-white/10 disabled:text-white/40 disabled:border-white/10 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 text-sm shadow-gold"
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {resendCooldown > 0? `Renvoyer dans (${resendCooldown}s)` : "Renvoyer l'e-mail"}
+            {resendCooldown > 0 ? `Renvoyer dans (${resendCooldown}s)` : "Renvoyer l'e-mail"}
           </button>
 
           <a
@@ -232,25 +252,38 @@ export default function RegisterPage() {
 
   return (
     <div className="animate-fade-in">
-      <h2 className="font-display text-2xl text-white font-bold mb-1">Rejoignez MANG</h2>
-      <p className="text-primary-300 text-sm mb-6">Creez votre compte et commencez a vendre ou acheter</p>
+      <h2 className="font-display text-2xl text-white font-bold mb-1">Rejoignez MANG 🌿</h2>
+      <p className="text-primary-300 text-sm mb-4">Créez votre compte et profitez du marché agricole</p>
+
+      {/* 🎁 Banner Bonus Bienvenue 20 Pièces Gratuit */}
+      <div className="p-3 bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-400/30 rounded-2xl mb-5 flex items-center gap-3 backdrop-blur-md">
+        <div className="w-9 h-9 rounded-xl bg-amber-400/20 flex items-center justify-center text-xl flex-shrink-0">
+          🎁
+        </div>
+        <div>
+          <p className="text-xs font-black text-amber-300 uppercase tracking-wider">Cadeau de Bienvenue</p>
+          <p className="text-xs text-white font-semibold">
+            <span className="font-extrabold text-amber-400">20 Pièces MANG (20 FCFA)</span> gratuites créditées à l'inscription !
+          </p>
+        </div>
+      </div>
 
       {/* Bouton Google */}
       <button
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5"
+        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5 shadow-sm"
         style={{ background: 'rgba(255,255,255,0.95)', color: '#1a1a1a' }}
       >
-        {googleLoading? <Loader2 size={18} className="animate-spin text-gray-500"/> : <GoogleIcon />}
-        <span>{googleLoading? 'Redirection...' : 'Continuer avec Google'}</span>
+        {googleLoading ? <Loader2 size={18} className="animate-spin text-gray-500"/> : <GoogleIcon />}
+        <span>{googleLoading ? 'Redirection...' : 'Continuer avec Google'}</span>
       </button>
 
       {/* Séparateur */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-white/15"/>
-        <span className="text-white/35 text-xs font-semibold tracking-wider uppercase">ou</span>
+        <span className="text-white/35 text-xs font-semibold tracking-wider uppercase">ou par e-mail</span>
         <div className="flex-1 h-px bg-white/15"/>
       </div>
 
@@ -269,8 +302,8 @@ export default function RegisterPage() {
               autoComplete="username"
               className={clsx(
                 'w-full pl-10 pr-10 py-3.5 bg-white/10 border rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium transition-colors',
-                usernameStatus === 'available'? 'border-emerald-400/50' :
-                usernameStatus === 'taken' || usernameStatus === 'invalid'? 'border-red-400/50' :
+                usernameStatus === 'available' ? 'border-emerald-400/50' :
+                usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400/50' :
                 'border-white/20'
               )}
             />
@@ -289,7 +322,19 @@ export default function RegisterPage() {
             onChange={e => setForm({...form, email: e.target.value })}
             required
             autoComplete="email"
-            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+          />
+        </div>
+
+        {/* Code Parrain (Optionnel) */}
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm">🎟️</span>
+          <input
+            type="text"
+            placeholder="Code de parrainage (optionnel)"
+            value={form.referralCode}
+            onChange={e => setForm({...form, referralCode: e.target.value.toUpperCase() })}
+            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-mono tracking-wider"
           />
         </div>
 
@@ -298,17 +343,17 @@ export default function RegisterPage() {
           <div className="relative">
             <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>
             <input
-              type={showPass? 'text' : 'password'}
-              placeholder="Mot de passe (6 caracteres min)"
+              type={showPass ? 'text' : 'password'}
+              placeholder="Mot de passe (6 caractères min)"
               value={form.password}
               onChange={e => setForm({...form, password: e.target.value })}
               required minLength={6}
               autoComplete="new-password"
-              className="w-full pl-10 pr-12 py-3.5 bg-white/10 border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+              className="w-full pl-10 pr-12 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
             />
             <button type="button" onClick={() => setShowPass(!showPass)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
-              {showPass? <EyeOff size={16}/> : <Eye size={16}/>}
+              {showPass ? <EyeOff size={16}/> : <Eye size={16}/>}
             </button>
           </div>
           {form.password.length > 0 && (
@@ -317,7 +362,7 @@ export default function RegisterPage() {
                 {[1,2,3,4,5].map(i => (
                   <div key={i} className={clsx(
                     'flex-1 h-1 rounded-full transition-all duration-300',
-                    i <= strength.score? strength.color : 'bg-white/15'
+                    i <= strength.score ? strength.color : 'bg-white/15'
                   )}/>
                 ))}
               </div>
@@ -332,18 +377,31 @@ export default function RegisterPage() {
           )}
         </div>
 
+        {/* Case CGU & Confidentialité */}
+        <label className="flex items-start gap-2.5 cursor-pointer pt-1 px-1">
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={e => setAcceptTerms(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-white/30 text-emerald-600 focus:ring-gold-400 bg-white/10"
+          />
+          <span className="text-xs text-white/70 font-medium leading-tight">
+            J'accepte les <span className="text-gold-300 font-bold underline">Conditions Générales</span> et la <span className="text-gold-300 font-bold underline">Politique de Confidentialité</span> de MANG.
+          </span>
+        </label>
+
         <button
           type="submit"
           disabled={!canSubmit}
           className="w-full py-3.5 bg-gold-500 hover:bg-gold-400 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-gold mt-2 flex items-center justify-center gap-2"
         >
           {loading && <Loader2 size={16} className="animate-spin"/>}
-          {loading? 'Creation du compte...' : 'Creer mon compte'}
+          {loading ? 'Création du compte...' : 'Créer mon compte (20 Pièces offertes)'}
         </button>
       </form>
 
       <p className="text-center text-white/50 text-sm mt-6">
-        Deja un compte?{' '}
+        Déjà un compte ?{' '}
         <Link to="/connexion" className="text-gold-300 font-bold hover:text-gold-200">Se connecter</Link>
       </p>
     </div>

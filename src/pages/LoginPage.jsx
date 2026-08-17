@@ -21,17 +21,33 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      toast.error('Veuillez saisir votre adresse email')
+      return
+    }
+
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
     setLoading(false)
+
     if (error) {
-      toast.error('Email ou mot de passe incorrect')
+      const msg = error.message?.toLowerCase() || ''
+      if (msg.includes('invalid login credentials')) {
+        toast.error('Email ou mot de passe incorrect')
+      } else if (msg.includes('email not confirmed')) {
+        toast.error('Veuillez valider votre adresse e-mail avant de vous connecter.')
+      } else {
+        toast.error(error.message || 'Erreur lors de la connexion')
+      }
     } else {
+      toast.success('Connexion réussie !')
       navigate('/marketplace')
     }
   }
@@ -59,7 +75,7 @@ export default function LoginPage() {
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5"
+        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5 shadow-sm"
         style={{ background: 'rgba(255,255,255,0.95)', color: '#1a1a1a' }}
       >
         {googleLoading
@@ -72,7 +88,7 @@ export default function LoginPage() {
       {/* Séparateur */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-white/15"/>
-        <span className="text-white/35 text-xs font-semibold tracking-wider uppercase">ou</span>
+        <span className="text-white/35 text-xs font-semibold tracking-wider uppercase">ou par e-mail</span>
         <div className="flex-1 h-px bg-white/15"/>
       </div>
 
@@ -108,14 +124,26 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <Link to="/mot-de-passe-oublie" className="block text-right text-xs text-gold-300 hover:text-gold-200 font-medium">
-          Mot de passe oublié ?
-        </Link>
+        <div className="flex items-center justify-between px-1">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-white/30 text-emerald-600 focus:ring-gold-400 bg-white/10"
+            />
+            <span className="text-xs text-white/70 font-medium">Se souvenir de moi</span>
+          </label>
+
+          <Link to="/mot-de-passe-oublie" className="text-xs text-gold-300 hover:text-gold-200 font-semibold">
+            Mot de passe oublié ?
+          </Link>
+        </div>
 
         <button type="submit" disabled={loading || googleLoading}
           className="w-full py-3.5 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-green mt-2 flex items-center justify-center gap-2">
           {loading && <Loader2 size={16} className="animate-spin"/>}
-          {loading ? 'Connexion...' : 'Se connecter'}
+          {loading ? 'Connexion en cours...' : 'Se connecter'}
         </button>
 
         <button
