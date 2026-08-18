@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, UserCheck, UserPlus, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -13,7 +13,7 @@ import ProfileProductsGrid from '@/components/profile/ProfileProductsGrid'
 import ProfileReviewsList from '@/components/profile/ProfileReviewsList'
 import ProfileAboutTab from '@/components/profile/ProfileAboutTab'
 
-export default function PublicProfilePage() {
+function PublicProfilePageContent() {
   const { username } = useParams()
   const navigate = useNavigate()
   const { user, profile: myProfile } = useAuthStore()
@@ -305,16 +305,45 @@ export default function PublicProfilePage() {
   )
 }
 
-function PublicProfileSkeleton() {
+class ProfileErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ProfilePage Error Boundary caught:', error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-3xl flex items-center justify-center text-3xl mb-3">
+            ⚠️
+          </div>
+          <h2 className="font-bold text-gray-900 dark:text-white text-lg mb-1">Affichage du profil temporairement indisponible</h2>
+          <p className="text-gray-500 text-xs max-w-xs mb-4">
+            Une erreur est survenue lors du chargement des données. Veuillez réessayer.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2.5 bg-emerald-700 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+          >
+            Recharger la page
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+export default function PublicProfilePage() {
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 animate-pulse">
-      <div className="h-36 bg-surface-200 dark:bg-dark-800" />
-      <div className="p-4 space-y-4 -mt-12">
-        <div className="w-24 h-24 rounded-full bg-surface-300 dark:bg-dark-700 ring-4 ring-white" />
-        <div className="h-6 w-1/3 bg-surface-200 dark:bg-dark-800 rounded-xl" />
-        <div className="h-4 w-1/4 bg-surface-200 dark:bg-dark-800 rounded-xl" />
-        <div className="h-16 bg-surface-200 dark:bg-dark-800 rounded-2xl" />
-      </div>
-    </div>
+    <ProfileErrorBoundary>
+      <PublicProfilePageContent />
+    </ProfileErrorBoundary>
   )
 }
