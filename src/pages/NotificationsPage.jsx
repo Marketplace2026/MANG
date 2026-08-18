@@ -1,208 +1,234 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
-  Bell, Check, CheckCheck, Trash2, RefreshCw,
-  Heart, MessageCircle, UserPlus, Package,
-  CreditCard, Store, Star, ChevronRight, X
-} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, CheckCheck, Trash2, ArrowLeft, RefreshCw } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useNotificationsStore } from '@/store'
-import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import { useNavigate } from 'react-router-dom'
 
-// ============================================================
-// CONFIG NOTIFICATIONS
-// ============================================================
-const NOTIF_CONFIG = {
-  shop_follow:       { icon: '👥', color: 'bg-blue-100 text-blue-600',     label: 'Abonnement boutique' },
-  product_favorite:  { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Produit favori' },
-  shop_comment:      { icon: '💬', color: 'bg-primary-100 text-primary-600',label: 'Commentaire boutique' },
-  comment_reply:     { icon: '↩️', color: 'bg-primary-100 text-primary-600',label: 'Réponse commentaire' },
-  post_like:         { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Like publication' },
-  shop_like:         { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Like boutique' },
-  comment_like:      { icon: '👍', color: 'bg-blue-100 text-blue-600',     label: 'Like commentaire' },
-  user_follow:       { icon: '👤', color: 'bg-violet-100 text-violet-600', label: 'Nouvel abonné' },
-  new_message:       { icon: '💬', color: 'bg-emerald-100 text-emerald-600',label: 'Nouveau message' },
-  order_new:         { icon: '📦', color: 'bg-orange-100 text-orange-600', label: 'Nouvelle commande' },
-  order_accepted:    { icon: '✅', color: 'bg-emerald-100 text-emerald-600',label: 'Commande acceptée' },
-  order_refused:     { icon: '❌', color: 'bg-red-100 text-red-600',       label: 'Commande refusée' },
-  order_paid:        { icon: '💰', color: 'bg-gold-100 text-gold-700',     label: 'Commande payée' },
-  wallet_credit:     { icon: '💵', color: 'bg-emerald-100 text-emerald-600',label: 'Crédit wallet' },
-  wallet_debit:      { icon: '💸', color: 'bg-red-100 text-red-600',       label: 'Débit wallet' },
-}
+import NotificationItemWorldClass from '@/components/notifications/NotificationItemWorldClass'
+import NotificationFiltersNav from '@/components/notifications/NotificationFiltersNav'
 
-const FILTER_TABS = [
-  { key: 'all',     label: 'Toutes' },
-  { key: 'unread',  label: '🔵 Non lues' },
-  { key: 'orders',  label: '📦 Commandes' },
-  { key: 'social',  label: '❤️ Social' },
-  { key: 'wallet',  label: '💰 Wallet' },
-]
+const ORDER_TYPES  = ['order_new', 'order_accepted', 'order_refused', 'order_paid']
+const SOCIAL_TYPES = ['shop_follow', 'product_favorite', 'shop_comment', 'comment_reply', 'post_like', 'shop_like', 'comment_like', 'user_follow']
+const WALLET_TYPES = ['wallet_credit', 'wallet_debit']
 
-const ORDER_TYPES   = ['order_new','order_accepted','order_refused','order_paid']
-const SOCIAL_TYPES  = ['shop_follow','product_favorite','shop_comment','comment_reply','post_like','shop_like','comment_like','user_follow']
-const WALLET_TYPES  = ['wallet_credit','wallet_debit']
-
-// ============================================================
-// PAGE PRINCIPALE
-// ============================================================
 export default function NotificationsPage() {
-  const { user }     = useAuthStore()
-  const navigate     = useNavigate()
-  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotificationsStore()
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const {
+    notifications,
+    unreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification
+  } = useNotificationsStore()
 
-  const [filter, setFilter]     = useState('all')
-  const [loading, setLoading]   = useState(true)
-  const [deleting, setDeleting] = useState(null)
+  const [enrichedNotifs, setEnrichedNotifs] = useState([])
+  const [filter, setFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState(null)
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications(user.id).finally(() => setLoading(false))
+  const loadData = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+
+    try {
+      // 1. Tenter RPC v3.0 avec Profil Expéditeur Enrichi
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_user_notifications_v30', {
+        p_user_id: user.id,
+        p_limit: 60
+      })
+
+      if (!rpcErr && Array.isArray(rpcData)) {
+        setEnrichedNotifs(rpcData)
+      } else {
+        // Fallback Supabase REST si RPC non déployé
+        const { data: restData } = await supabase
+          .from('notifications')
+          .select('*, sender:profiles!notifications_sender_id_fkey(id, username, full_name, avatar_url, city)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(60)
+
+        setEnrichedNotifs(restData || notifications)
+      }
+
+      await fetchNotifications(user.id)
+    } catch (err) {
+      console.error('Erreur chargement notifications v3.0:', err)
+      setEnrichedNotifs(notifications)
+    } finally {
+      setLoading(false)
     }
   }, [user])
 
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Realtime update pour les nouvelles notifications
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase.channel(`notifs-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, async (payload) => {
+        // Recharger les notifications enrichies
+        const { data: senderProf } = await supabase.from('profiles').select('id, username, full_name, avatar_url, city').eq('id', payload.new.sender_id).maybeSingle()
+        const newNotif = { ...payload.new, sender: senderProf }
+        setEnrichedNotifs(prev => [newNotif, ...prev])
+        fetchNotifications(user.id)
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(ch)
+  }, [user])
+
   // Filtrage
-  const filtered = notifications.filter(n => {
-    if (filter === 'unread')  return !n.is_read
-    if (filter === 'orders')  return ORDER_TYPES.includes(n.type)
-    if (filter === 'social')  return SOCIAL_TYPES.includes(n.type)
-    if (filter === 'wallet')  return WALLET_TYPES.includes(n.type)
+  const filtered = enrichedNotifs.filter((n) => {
+    if (filter === 'unread') return !n.is_read
+    if (filter === 'orders') return ORDER_TYPES.includes(n.type)
+    if (filter === 'social') return SOCIAL_TYPES.includes(n.type)
+    if (filter === 'wallet') return WALLET_TYPES.includes(n.type)
     return true
   })
 
+  // Clic sur notification -> Navigation intelligente
   const handleClick = async (notif) => {
-    if (!notif.is_read) await markAsRead(notif.id)
-    // Navigation selon type
-    if (ORDER_TYPES.includes(notif.type))              navigate('/commandes')
-    else if (WALLET_TYPES.includes(notif.type))        navigate('/portefeuille')
-    else if (notif.type === 'new_message')             navigate('/messages')
-    else if (notif.type === 'user_follow' && notif.reference_id)
-      navigate('/profil/' + notif.reference_id)
-    else if (notif.type === 'post_like')
+    if (!notif.is_read) {
+      await markAsRead(notif.id)
+      setEnrichedNotifs(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n))
+    }
+
+    // Redirection selon le type
+    if (ORDER_TYPES.includes(notif.type)) {
+      navigate('/commandes')
+    } else if (WALLET_TYPES.includes(notif.type)) {
+      navigate('/portefeuille')
+    } else if (notif.type === 'new_message') {
+      navigate('/messages')
+    } else if (notif.type === 'user_follow' && (notif.sender?.username || notif.reference_id)) {
+      navigate(`/profile/${notif.sender?.username || notif.reference_id}`)
+    } else if (notif.type === 'post_like' || notif.type === 'shop_comment' || notif.type === 'comment_like') {
       navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'shop_comment')
-      navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'comment_like')
-      navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'shop_follow' && notif.reference_id)
-      navigate('/boutique/' + notif.reference_id)
-    else if (notif.type === 'verification_request')
-      navigate('/admin/verifications')
+    } else if (notif.type === 'shop_follow' && notif.reference_id) {
+      navigate(`/boutique/${notif.reference_id}`)
+    } else {
+      navigate('/marketplace')
+    }
   }
 
   const handleDelete = async (e, notifId) => {
     e.stopPropagation()
-    setDeleting(notifId)
+    setDeletingId(notifId)
     await deleteNotification(notifId)
-    setDeleting(null)
+    setEnrichedNotifs(prev => prev.filter(n => n.id !== notifId))
+    setDeletingId(null)
+    toast.success('Notification supprimée')
   }
 
   const handleMarkAll = async () => {
-    if (!unreadCount) { toast('Toutes les notifications sont déjà lues'); return }
+    if (!unreadCount) {
+      toast('Toutes les notifications sont déjà lues')
+      return
+    }
     await markAllAsRead(user.id)
-    toast.success('Toutes marquées comme lues ✅')
+    setEnrichedNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
+    toast.success('Toutes les notifications ont été marquées comme lues ✅')
   }
 
   const handleClearAll = async () => {
-    if (!confirm('Supprimer toutes les notifications ?')) return
+    if (!confirm('Supprimer définitivement toutes les notifications ?')) return
     await supabase.from('notifications').delete().eq('user_id', user.id)
+    setEnrichedNotifs([])
     await fetchNotifications(user.id)
-    toast.success('Notifications supprimées')
+    toast.success('Historique des notifications effacé')
   }
 
   // Grouper par date
   const groups = groupByDate(filtered)
 
+  // Compteurs par filtre
+  const counts = {
+    all: enrichedNotifs.length,
+    orders: enrichedNotifs.filter(n => ORDER_TYPES.includes(n.type)).length,
+    social: enrichedNotifs.filter(n => SOCIAL_TYPES.includes(n.type)).length,
+    wallet: enrichedNotifs.filter(n => WALLET_TYPES.includes(n.type)).length,
+  }
+
   return (
-    <div className="min-h-screen bg-surface-50">
-      {/* HEADER */}
-      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-white text-2xl font-bold">Notifications</h1>
-            <p className="text-white/80 text-sm">
-              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✅'}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={handleMarkAll}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
-              <CheckCheck size={16} className="text-white"/>
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-24">
+      {/* 1. HEADER VERT MANG */}
+      <header className="bg-emerald-900 dark:bg-dark-900 pt-4 pb-4 px-4 sticky top-0 z-50 border-b border-emerald-800 dark:border-dark-800 shadow-sm text-white">
+        <div className="flex items-center justify-between max-w-[var(--content-max-width)] mx-auto">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <ArrowLeft size={18} />
             </button>
-            <button onClick={handleClearAll}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
-              <Trash2 size={16} className="text-white"/>
+            <div>
+              <h1 className="text-xl font-display font-black leading-tight">Notifications</h1>
+              <p className="text-emerald-200 dark:text-gray-400 text-xs">
+                {unreadCount > 0 ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✅'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleMarkAll}
+              className="w-9 h-9 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+              title="Tout marquer comme lu"
+            >
+              <CheckCheck size={18} />
+            </button>
+            <button
+              onClick={handleClearAll}
+              className="w-9 h-9 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center active:scale-90 transition-transform text-red-300 hover:text-red-100"
+              title="Tout effacer"
+            >
+              <Trash2 size={18} />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="bg-[#004D00] pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
-        <div className="relative pt-2">
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: 'Total',     value: notifications.length,                        color: 'text-white' },
-              { label: 'Non lues',  value: unreadCount,                                  color: 'text-orange-300' },
-              { label: 'Commandes', value: notifications.filter(n => ORDER_TYPES.includes(n.type)).length,  color: 'text-blue-300' },
-              { label: 'Social',    value: notifications.filter(n => SOCIAL_TYPES.includes(n.type)).length, color: 'text-pink-300' },
-            ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-2xl p-2.5 text-center">
-                <p className={clsx('font-display font-bold text-xl leading-none', s.color)}>{s.value}</p>
-                <p className="text-white/50 text-[9px] font-medium mt-0.5">{s.label}</p>
-              </div>
+      {/* 2. ZONE DE FILTRES ET DE CONTENU */}
+      <div className="p-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
+        {/* Navigation des Filtres */}
+        <NotificationFiltersNav
+          activeFilter={filter}
+          onFilterChange={setFilter}
+          unreadCount={unreadCount}
+          counts={counts}
+        />
+
+        {/* LISTE ET GROUPES DE NOTIFICATIONS */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <NotifSkeleton key={i} />
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="relative -mt-10 px-4 pb-28 space-y-3">
-        {/* FILTRE TABS */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {FILTER_TABS.map(t => (
-            <button key={t.key} onClick={() => setFilter(t.key)}
-              className={clsx(
-                'flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border-2',
-                filter === t.key
-                  ? 'border-primary-600 bg-primary-600 text-white shadow-green'
-                  : 'border-surface-200 bg-white text-dark-600'
-              )}>
-              {t.label}
-              {t.key === 'unread' && unreadCount > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* LISTE */}
-        {loading ? (
-          <div className="space-y-2">
-            {[1,2,3,4,5].map(i => <NotifSkeleton key={i}/>)}
-          </div>
         ) : filtered.length === 0 ? (
-          <EmptyNotifications filter={filter}/>
+          <EmptyNotifications filter={filter} />
         ) : (
-          <div className="space-y-4">
-            {groups.map(group => (
-              <div key={group.label}>
-                <p className="text-xs font-bold text-dark-600/40 uppercase tracking-wider mb-2 px-1">
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <div key={group.label} className="space-y-2">
+                <p className="text-[11px] font-black text-gray-400 uppercase tracking-wider px-1">
                   {group.label}
                 </p>
-                <div className="bg-white rounded-3xl shadow-card overflow-hidden divide-y divide-surface-100">
-                  {group.items.map(notif => (
-                    <NotifItem
+                <div className="bg-white dark:bg-dark-900 rounded-3xl border border-surface-200 dark:border-dark-800 shadow-xs overflow-hidden divide-y divide-surface-100 dark:divide-dark-800">
+                  {group.items.map((notif) => (
+                    <NotificationItemWorldClass
                       key={notif.id}
                       notif={notif}
                       onClick={() => handleClick(notif)}
-                      onDelete={e => handleDelete(e, notif.id)}
-                      isDeleting={deleting === notif.id}
+                      onDelete={(e) => handleDelete(e, notif.id)}
+                      isDeleting={deletingId === notif.id}
                     />
                   ))}
                 </div>
@@ -215,117 +241,56 @@ export default function NotificationsPage() {
   )
 }
 
-// ============================================================
-// NOTIFICATION ITEM
-// ============================================================
-function NotifItem({ notif, onClick, onDelete, isDeleting }) {
-  const cfg = NOTIF_CONFIG[notif.type] || { icon: '🔔', color: 'bg-surface-100 text-dark-600' }
-
-  return (
-    <div
-      onClick={onClick}
-      className={clsx(
-        'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors active:bg-surface-50',
-        !notif.is_read && 'bg-primary-50/50'
-      )}
-    >
-      {/* Icône */}
-      <div className={clsx('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl', cfg.color)}>
-        {cfg.icon}
-      </div>
-
-      {/* Contenu */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className={clsx('text-sm leading-tight', notif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 font-bold')}>
-            {notif.title}
-          </p>
-          {/* Point non lu */}
-          {!notif.is_read && (
-            <div className="w-2 h-2 rounded-full bg-primary-600 flex-shrink-0 mt-1"/>
-          )}
-        </div>
-        {notif.body && (
-          <p className="text-dark-600/60 text-xs mt-0.5 line-clamp-2">{notif.body}</p>
-        )}
-        <p className="text-dark-600/40 text-[10px] mt-1">
-          {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: fr })}
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={onDelete}
-          disabled={isDeleting}
-          className="w-7 h-7 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90 transition-transform"
-        >
-          {isDeleting
-            ? <div className="w-3 h-3 border-2 border-dark-300 border-t-dark-600 rounded-full animate-spin"/>
-            : <X size={13} className="text-dark-600/50"/>}
-        </button>
-        <ChevronRight size={15} className="text-dark-600/30"/>
-      </div>
-    </div>
-  )
-}
-
-// ============================================================
-// EMPTY STATE
-// ============================================================
 function EmptyNotifications({ filter }) {
-  const config = {
-    all:     { emoji: '🔔', title: 'Aucune notification', sub: 'Vos notifications apparaîtront ici' },
-    unread:  { emoji: '✅', title: 'Tout est lu !',        sub: 'Vous êtes à jour sur toutes vos notifications' },
-    orders:  { emoji: '📦', title: 'Aucune commande',     sub: 'Vos notifications de commandes apparaîtront ici' },
-    social:  { emoji: '❤️', title: 'Aucune interaction',  sub: 'Likes, commentaires et abonnements apparaîtront ici' },
-    wallet:  { emoji: '💰', title: 'Aucune transaction',  sub: 'Vos mouvements wallet apparaîtront ici' },
+  const configs = {
+    all:    { emoji: '🔔', title: 'Aucune notification', sub: 'Vos notifications d\'activités apparaîtront ici.' },
+    unread: { emoji: '✅', title: 'Tout est lu !', sub: 'Vous êtes parfaitement à jour sur vos notifications.' },
+    orders: { emoji: '📦', title: 'Aucune commande', sub: 'Vos notifications de suivi de commandes apparaîtront ici.' },
+    social: { emoji: '❤️', title: 'Aucune interaction', sub: 'Nouveaux abonnés, likes et commentaires apparaîtront ici.' },
+    wallet: { emoji: '💰', title: 'Aucune transaction', sub: 'Vos mouvements de crédit et débit wallet apparaîtront ici.' },
   }
-  const { emoji, title, sub } = config[filter] || config.all
+  const { emoji, title, sub } = configs[filter] || configs.all
 
   return (
-    <div className="text-center py-16 bg-white rounded-3xl shadow-card px-6">
-      <p className="text-5xl mb-3">{emoji}</p>
-      <p className="font-display text-lg font-bold text-dark-800">{title}</p>
-      <p className="text-dark-600/50 text-sm mt-2">{sub}</p>
+    <div className="py-16 px-6 text-center bg-white dark:bg-dark-900 rounded-3xl border border-surface-200 dark:border-dark-800 shadow-xs">
+      <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-3">
+        {emoji}
+      </div>
+      <h3 className="font-display font-bold text-gray-900 dark:text-white text-base mb-1">{title}</h3>
+      <p className="text-gray-500 text-xs max-w-xs mx-auto leading-relaxed">{sub}</p>
     </div>
   )
 }
 
-// ============================================================
-// SKELETON
-// ============================================================
 function NotifSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-card p-4 flex gap-3">
-      <div className="w-11 h-11 rounded-2xl skeleton flex-shrink-0"/>
+    <div className="p-4 bg-white dark:bg-dark-900 rounded-3xl border border-surface-200 dark:border-dark-800 flex gap-3 animate-pulse">
+      <div className="w-11 h-11 rounded-2xl bg-surface-200 dark:bg-dark-800 flex-shrink-0" />
       <div className="flex-1 space-y-2">
-        <div className="h-3.5 skeleton rounded-lg w-3/4"/>
-        <div className="h-3 skeleton rounded-lg w-full"/>
-        <div className="h-2.5 skeleton rounded-lg w-1/4"/>
+        <div className="h-3.5 bg-surface-200 dark:bg-dark-800 rounded-lg w-1/2" />
+        <div className="h-3 bg-surface-200 dark:bg-dark-800 rounded-lg w-3/4" />
+        <div className="h-2.5 bg-surface-200 dark:bg-dark-800 rounded-lg w-1/4" />
       </div>
     </div>
   )
 }
 
-// ============================================================
-// HELPER — Grouper par date
-// ============================================================
 function groupByDate(notifs) {
   const groups = {}
-  notifs.forEach(n => {
+  notifs.forEach((n) => {
     const d = new Date(n.created_at)
     const now = new Date()
-    let label
-    const diff = (now - d) / 86400000
-    if (diff < 1)       label = "Aujourd'hui"
-    else if (diff < 2)  label = 'Hier'
-    else if (diff < 7)  label = 'Cette semaine'
-    else if (diff < 30) label = 'Ce mois'
-    else                label = 'Plus ancien'
+    const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24))
+
+    let label = 'Plus ancien'
+    if (diffDays === 0)       label = "Aujourd'hui"
+    else if (diffDays === 1)  label = 'Hier'
+    else if (diffDays < 7)   label = 'Cette semaine'
+    else if (diffDays < 30)  label = 'Ce mois'
 
     if (!groups[label]) groups[label] = []
     groups[label].push(n)
   })
+
   return Object.entries(groups).map(([label, items]) => ({ label, items }))
 }
