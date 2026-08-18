@@ -16,6 +16,10 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import ChatHeaderEnriched from '@/components/chat/ChatHeaderEnriched'
+import AudioPlayerAdvanced from '@/components/chat/AudioPlayerAdvanced'
+import ChatCommerceBanner from '@/components/chat/ChatCommerceBanner'
+import ChatSearchOverlay from '@/components/chat/ChatSearchOverlay'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
@@ -312,7 +316,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 
           {/* Audio */}
           {msg.type === 'audio' && (
-            <div className="py-1"><AudioPlayer url={msg.file_url} isMe={isMe}/></div>
+            <div className="py-1"><AudioPlayerAdvanced url={msg.file_url} isMe={isMe}/></div>
           )}
 
           {/* Fichier */}
@@ -887,62 +891,34 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
 
-      {/* ── HEADER ── */}
-      <div className="relative bg-primary-700 pt-12 pb-3 px-4 flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e)' }}>
+      {/* ── HEADER CHAT ENRICHI AVEC USERLINK ── */}
+      <ChatHeaderEnriched
+        otherUser={other}
+        shop={conv.shop}
+        isOnline={isOnlineState}
+        onBack={onBack}
+        onToggleSearch={() => setShowSearch(!showSearch)}
+        onOpenInfo={() => setShowInfo(true)}
+      />
 
-        {/* Bandeau message épinglé */}
-        {pinned && (
-          <div className="mb-2 flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2">
-            <Pin size={12} className="text-yellow-300 flex-shrink-0"/>
-            <p className="text-white/80 text-xs truncate flex-1">{pinned.content}</p>
-            <button onClick={() => setPinned(null)}><X size={12} className="text-white/50"/></button>
-          </div>
-        )}
+      {/* Recherche textuelle In-Chat */}
+      {showSearch && (
+        <ChatSearchOverlay
+          searchQuery={searchMsg}
+          onSearchChange={setSearchMsg}
+          matchCount={filtered.length}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
 
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90 md:hidden">
-            <ArrowLeft size={18} className="text-white"/>
-          </button>
-
-          <div className="flex items-center gap-2.5 flex-1 min-w-0" onClick={() => setShowInfo(true)}>
-            <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
-            <div className="min-w-0">
-              <p className="text-white font-bold text-base truncate leading-tight">@{other?.username}</p>
-              <p className="text-white/50 text-xs">
-                {otherTyping ? <span className="text-green-300 animate-pulse">En train d'écrire...</span>
-                  : isOnlineState ? <span className="text-emerald-300">En ligne</span>
-                  : other?.last_seen_at ? `Vu à ${format(new Date(other.last_seen_at), 'HH:mm')}` : 'Hors ligne'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button onClick={() => setShowSearch(!showSearch)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
-              <Search size={16} className="text-white"/>
-            </button>
-            <button onClick={() => setMenuOpen(false)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
-              <Phone size={16} className="text-white"/>
-            </button>
-            <button onClick={() => setShowInfo(true)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
-              <MoreVertical size={16} className="text-white"/>
-            </button>
-          </div>
-        </div>
-
-        {/* Recherche dans messages */}
-        {showSearch && (
-          <div className="mt-2 relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"/>
-            <input autoFocus value={searchMsg} onChange={e => setSearchMsg(e.target.value)}
-              placeholder="Rechercher dans la conversation..."
-              className="w-full pl-9 pr-4 py-2.5 bg-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none border border-white/15"/>
-          </div>
-        )}
-      </div>
+      {/* Encart produit commercial contextuel MANG Pay */}
+      {contextProduct && (
+        <ChatCommerceBanner
+          product={contextProduct}
+          shop={conv.shop}
+          onClose={() => setContextProduct(null)}
+        />
+      )}
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
