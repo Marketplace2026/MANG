@@ -11,7 +11,7 @@ import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCacheStore } from '@/store'
-import { Avatar, BottomSheet } from '@/components/ui'
+import { Avatar, BottomSheet, UserLink } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -1727,21 +1727,15 @@ function PostCard({
   return (
     <div className="bg-white dark:bg-dark-900 px-4 py-4 rounded-3xl mb-3 shadow-sm border border-surface-100 dark:border-dark-800 relative">
       {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
-        <button onClick={() => navigate(`/profil/${post.user?.username}`)} className="relative flex-shrink-0">
-          <Avatar src={post.user?.avatar_url} name={post.user?.username} size="md"/>
-          {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => navigate(`/profil/${post.user?.username}`)}>
-              <p className="font-bold text-dark-800 dark:text-white text-sm">@{post.user?.username}</p>
-            </button>
-            {renderUserBadges(post.user)}
-          </div>
-          <p className="text-dark-600/40 dark:text-dark-300/40 text-xs mt-0.5">
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
-          </p>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <UserLink
+            user={post.user}
+            size="md"
+            showUsername={true}
+            subtext={formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
+          />
+          {renderUserBadges(post.user)}
         </div>
         
         <div className="relative">
@@ -2215,12 +2209,23 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
 function CommentItem({ comment, userId, isReply, onReply, onDelete, isLiked, onLike }) {
   const isOwner = comment.user_id === userId
   return (
-    <div className="flex gap-2">
-      <Avatar src={comment.user?.avatar_url} name={comment.user?.username}
-        size={isReply ? 'xs' : 'sm'} className="flex-shrink-0 mt-0.5"/>
+    <div className="flex gap-2 items-start">
+      <UserLink
+        user={comment.user}
+        size={isReply ? 'xs' : 'sm'}
+        showAvatar={true}
+        showName={false}
+        showUsername={false}
+      />
       <div className="flex-1 min-w-0">
         <div className="bg-surface-100 dark:bg-dark-800 rounded-2xl rounded-tl-sm px-3 py-2">
-          <p className="font-bold text-dark-800 dark:text-white text-xs">@{comment.user?.username}</p>
+          <UserLink
+            user={comment.user}
+            size="xs"
+            showAvatar={false}
+            showName={true}
+            showUsername={true}
+          />
           <p className="text-dark-700 dark:text-dark-200 text-sm mt-0.5 leading-relaxed">{comment.content}</p>
         </div>
         <div className="flex items-center gap-3 mt-1 px-1">
@@ -2386,18 +2391,14 @@ function MembersTab({ user, profile }) {
             const isOnline = member.last_seen_at ? (new Date() - new Date(member.last_seen_at)) < 120000 : false
             const isFollowed = following.has(member.id)
             return (
-              <div key={member.id} className="flex items-center gap-3 px-4 py-3">
-                <button onClick={() => navigate(`/profil/${member.username}`)} className="relative flex-shrink-0">
-                  <Avatar src={member.avatar_url} name={member.username} size="md"/>
-                  {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <button onClick={() => navigate(`/profil/${member.username}`)} className="text-left">
-                    <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{member.full_name || member.username}</p>
-                    <p className="text-dark-600/50 dark:text-dark-400 text-xs">@{member.username}</p>
-                  </button>
-                  {member.city && <p className="text-dark-600/40 dark:text-dark-500 text-[10px] mt-0.5">📍 {member.city}</p>}
-                </div>
+              <div key={member.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <UserLink
+                  user={member}
+                  size="md"
+                  showUsername={true}
+                  subtext={member.city ? `📍 ${member.city}` : null}
+                  className="flex-1 min-w-0"
+                />
                 <button onClick={() => toggleFollow(member.id)}
                   className={clsx(
                     'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex-shrink-0',

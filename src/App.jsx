@@ -209,6 +209,7 @@ export default function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/parrainage"         element={<ReferralPage />} />
               <Route path="/profil/:username" element={<PublicProfilePage />} />
+              <Route path="/profile/:username" element={<PublicProfilePage />} />
               <Route path="/admin/verifications" element={<AdminVerificationPage />} />
               <Route path="/produit/:id"   element={<ProductDetailPage />} />
               <Route path="/panier"        element={<CartPage />} />
