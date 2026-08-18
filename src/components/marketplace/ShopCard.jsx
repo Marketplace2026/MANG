@@ -2,7 +2,7 @@
 import { clsx } from 'clsx'
 import { MapPin, Truck, Users, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Avatar, PremiumBadge } from '@/components/ui'
+import { Avatar, PremiumBadge, UserLink } from '@/components/ui'
 import { useCacheStore } from '@/store'
 import { supabase } from '@/lib/supabase'
 
@@ -91,7 +91,7 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
       {/* Infos */}
       <div className="px-3 pt-2.5 pb-3">
 
-        {/* Avatar + nom — dans le flux, pas en débordement */}
+        {/* Avatar + nom de la boutique et du propriétaire */}
         <div className="flex items-center gap-2 mb-2">
           <div className="relative flex-shrink-0">
             <Avatar
@@ -108,9 +108,16 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
             <h3 className="font-display font-bold text-dark-800 text-sm leading-tight truncate">
               {shop.name}
             </h3>
-            <p className="text-dark-600/40 text-xs truncate">
-              @{shop.owner?.username}
-            </p>
+            {shop.owner && (
+              <UserLink
+                user={shop.owner}
+                size="xs"
+                showAvatar={false}
+                showName={false}
+                showUsername={true}
+                className="text-dark-600/60 hover:text-emerald-700"
+              />
+            )}
           </div>
         </div>
 

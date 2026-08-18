@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCartStore, useCacheStore } from '@/store'
-import { Avatar, BottomSheet, Button } from '@/components/ui'
+import { Avatar, BottomSheet, Button, UserLink } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 
@@ -410,7 +410,18 @@ export default function ProductDetailPage() {
                   <BadgeCheck size={14} className="text-emerald-500 fill-emerald-50/50"/>
                 )}
               </div>
-              <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username}</p>
+              {product.shop?.owner ? (
+                <UserLink
+                  user={product.shop.owner}
+                  size="xs"
+                  showAvatar={false}
+                  showName={false}
+                  showUsername={true}
+                  subtext="Propriétaire de la boutique"
+                />
+              ) : (
+                <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username || 'vendeur'}</p>
+              )}
             </div>
             <button onClick={() => navigate(`/boutique/${product.shop?.slug || product.shop_id}`)}
               className="px-3.5 py-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-700 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1">

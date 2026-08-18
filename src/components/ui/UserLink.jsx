@@ -4,7 +4,7 @@ import { Avatar } from './index'
 
 /**
  * UserLink — Composant réutilisable pour rendre le nom d'utilisateur et l'avatar cliquables
- * Redirige vers /profil/:username avec propagation d'événement bloquée (e.stopPropagation())
+ * Redirige vers /profile/:username avec propagation d'événement bloquée (e.stopPropagation())
  *
  * @param {Object} props
  * @param {Object} props.user Object utilisateur { id, username, full_name, avatar_url }
@@ -32,7 +32,8 @@ export default function UserLink({
 }) {
   if (!user) return null
 
-  const username = user.username || user.user_metadata?.username || 'user'
+  // Fallback si user.username est vide -> user.id -> 'user'
+  const username = user.username || user.user_metadata?.username || user.id || 'user'
   const displayName = user.full_name || user.name || user.username || 'Utilisateur'
   const avatarUrl = user.avatar_url || user.avatarUrl || user.user_metadata?.avatar_url || null
 
@@ -51,7 +52,7 @@ export default function UserLink({
 
   return (
     <Link
-      to={`/profil/${username}`}
+      to={`/profile/${username}`}
       onClick={handleClick}
       className={clsx(
         'inline-flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-opacity',
