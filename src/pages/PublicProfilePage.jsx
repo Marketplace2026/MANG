@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, UserCheck, UserPlus, X } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Lock, AlertCircle, Home } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -18,14 +18,16 @@ function PublicProfilePageContent() {
   const navigate = useNavigate()
   const { user, profile: myProfile } = useAuthStore()
 
-  const cachedProfile = useCacheStore.getState().membersCache[username] || null
+  const cleanUsername = (username || '').replace(/^@/, '').trim().toLowerCase()
+  const cachedProfile = useCacheStore.getState().membersCache[cleanUsername] || null
 
   const [profile, setProfile] = useState(cachedProfile)
   const [shop, setShop] = useState(null)
   const [products, setProducts] = useState([])
   const [posts, setPosts] = useState([])
   const [reviews, setReviews] = useState([])
-  const [loading, setLoading] = useState(!cachedProfile)
+  const [loading, setLoading] = useState(true)
+  const [errorState, setErrorState] = useState(null) // null | 'NOT_FOUND' | 'RLS_RESTRICTED' | 'NETWORK_ERROR'
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState('products') // 'products' | 'posts' | 'reviews' | 'about'
   const [stats, setStats] = useState({
@@ -42,102 +44,117 @@ function PublicProfilePageContent() {
   const [followersList, setFollowersList] = useState([])
   const [followingList, setFollowingList] = useState([])
 
-  const isMe = myProfile?.username === username
+  const isMe = myProfile?.username?.toLowerCase() === cleanUsername
 
   const loadData = useCallback(async () => {
-    if (!username) return
-    if (!useCacheStore.getState().membersCache[username]) {
-      setLoading(true)
+    if (!cleanUsername) {
+      setErrorState('NOT_FOUND')
+      setLoading(false)
+      return
     }
 
+    setLoading(true)
+    setErrorState(null)
+
     try {
-      // 1. Tenter RPC v2.5 haute performance
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_public_profile_v25', { p_username: username })
+      // 1. REQUÊTE SUPABASE ANTI N+1 JOINTE (profiles + shops)
+      const { data: prof, error: fetchErr } = await supabase
+        .from('profiles')
+        .select(`*, shops(*)`)
+        .ilike('username', cleanUsername)
+        .maybeSingle()
 
-      let profData = null
-      let shopData = null
-      let statsData = null
+      // GESTION ERREURS FETCH SUPABASE
+      if (fetchErr) {
+        console.error('PROFILE_FETCH_ERROR', fetchErr)
+        if (fetchErr.code === 'PGRST301' || fetchErr.code === '42501') {
+          setErrorState('RLS_RESTRICTED')
+        } else {
+          setErrorState('NETWORK_ERROR')
+        }
+        setLoading(false)
+        return
+      }
 
-      if (!rpcErr && rpcData?.profile) {
-        profData = rpcData.profile
-        shopData = rpcData.shop
-        statsData = rpcData.stats
-      } else {
-        // Fallback REST si RPC non déployé
-        const { data: p } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle()
-        if (!p) { setLoading(false); return }
-        profData = p
+      // CAS A : Profil introuvable
+      if (!prof) {
+        setErrorState('NOT_FOUND')
+        setLoading(false)
+        return
+      }
 
-        const { data: s } = await supabase.from('shops').select('*').eq('owner_id', p.id).eq('is_active', true).maybeSingle()
-        shopData = s
+      // Extraction de la boutique jointe sans requête N+1
+      const shopObj = Array.isArray(prof.shops)
+        ? prof.shops.find(s => s.is_active) || prof.shops[0] || null
+        : (prof.shops?.is_active ? prof.shops : null)
 
-        const [{ count: fers }, { count: fing }, { count: postCnt }] = await Promise.all([
-          supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', p.id),
-          supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', p.id),
-          supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', p.id),
+      setProfile(prof)
+      setShop(shopObj)
+      useCacheStore.getState().setMembers(cleanUsername, prof)
+
+      // 2. Charger les statistiques (Abonnés, Abonnements, Publications)
+      const [{ count: fers }, { count: fing }, { count: postCnt }] = await Promise.all([
+        supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
+        supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', prof.id),
+        supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', prof.id),
+      ])
+
+      setStats({
+        followers_count: fers || 0,
+        following_count: fing || 0,
+        posts_count: postCnt || 0,
+        products_count: 0,
+        avg_rating: 5.0,
+        reviews_count: 0
+      })
+
+      // 3. Charger les Produits et Avis si boutique disponible
+      if (shopObj?.id) {
+        const [{ data: prods }, { data: revs }] = await Promise.all([
+          supabase.from('products').select('*').eq('shop_id', shopObj.id).eq('is_available', true).order('created_at', { ascending: false }),
+          supabase.from('shop_reviews').select('*, user:profiles(*)').eq('shop_id', shopObj.id).order('created_at', { ascending: false })
         ])
 
-        statsData = {
-          followers_count: fers || 0,
-          following_count: fing || 0,
-          posts_count: postCnt || 0,
-          products_count: 0,
-          avg_rating: 5.0,
-          reviews_count: 0
-        }
-      }
-
-      setProfile(profData)
-      setShop(shopData)
-      setStats(statsData)
-      useCacheStore.getState().setMembers(username, profData)
-
-      // 2. Charger les Produits si boutique présente
-      if (shopData?.id) {
-        const { data: prods } = await supabase
-          .from('products')
-          .select('*')
-          .eq('shop_id', shopData.id)
-          .eq('is_available', true)
-          .order('created_at', { ascending: false })
         setProducts(prods || [])
-        setStats(prev => ({ ...prev, products_count: prods?.length || 0 }))
-
-        // Avis
-        const { data: revs } = await supabase
-          .from('shop_reviews')
-          .select('*, user:profiles(*)')
-          .eq('shop_id', shopData.id)
-          .order('created_at', { ascending: false })
         setReviews(revs || [])
+
+        const avg = revs?.length > 0
+          ? revs.reduce((acc, r) => acc + (r.rating || 5), 0) / revs.length
+          : 5.0
+
+        setStats(prev => ({
+          ...prev,
+          products_count: prods?.length || 0,
+          reviews_count: revs?.length || 0,
+          avg_rating: avg
+        }))
       }
 
-      // 3. Charger les Posts
-      if (profData?.id) {
-        const { data: psts } = await supabase
-          .from('posts')
-          .select('*, user:profiles(*), shop:shops(*)')
-          .eq('user_id', profData.id)
-          .order('created_at', { ascending: false })
-        setPosts(psts || [])
-      }
+      // 4. Charger les Publications du membre
+      const { data: psts } = await supabase
+        .from('posts')
+        .select('*, user:profiles(*), shop:shops(*)')
+        .eq('user_id', prof.id)
+        .order('created_at', { ascending: false })
+      setPosts(psts || [])
 
-      // 4. Vérifier si je suis abonné
-      if (user && profData?.id && user.id !== profData.id) {
+      // 5. Statut d'abonnement courant
+      if (user && user.id !== prof.id) {
         const { data: f } = await supabase
           .from('user_follows')
           .select('id')
           .eq('follower_id', user.id)
-          .eq('following_id', profData.id)
+          .eq('following_id', prof.id)
           .maybeSingle()
         setIsFollowing(!!f)
       }
-    } catch (e) {
-      console.error('Erreur chargement profil public:', e)
+    } catch (err) {
+      console.error('PROFILE_FETCH_EXCEPTION', err)
+      setErrorState('NETWORK_ERROR')
     } finally {
       setLoading(false)
     }
-  }, [username, user])
+  }, [cleanUsername, user])
 
   useEffect(() => {
     loadData()
@@ -183,23 +200,69 @@ function PublicProfilePageContent() {
     setFollowingList((data || []).map(d => d.following).filter(Boolean))
   }
 
-  if (loading) return <PublicProfileSkeleton />
+  // 1. ÉTAT SKELETON (Chargement en cours)
+  if (loading) {
+    return <PublicProfileSkeleton />
+  }
 
-  if (!profile) {
+  // 2. ÉTAT ERREUR B : Profil Privé (RLS)
+  if (errorState === 'RLS_RESTRICTED') {
     return (
-      <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <div className="w-20 h-20 bg-surface-100 dark:bg-dark-800 rounded-3xl flex items-center justify-center text-4xl mb-2">
-          🕵️
+      <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-amber-500/20 text-amber-500 rounded-3xl flex items-center justify-center text-4xl mb-3">
+          <Lock size={36} />
         </div>
-        <h2 className="font-bold text-gray-900 dark:text-white text-xl">Profil introuvable</h2>
-        <p className="text-gray-500 text-xs max-w-xs">
-          Le profil @{username} n'existe pas ou n'est pas accessible actuellement.
+        <h2 className="font-bold text-gray-900 dark:text-white text-xl mb-1">Profil privé</h2>
+        <p className="text-gray-500 text-xs max-w-xs mb-5">
+          L'accès à ce profil a été restreint par son propriétaire.
         </p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/marketplace')}
           className="px-6 py-3 bg-emerald-700 text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
         >
-          Retourner en arrière
+          Retour au Marketplace
+        </button>
+      </div>
+    )
+  }
+
+  // 3. ÉTAT ERREUR C : Erreur Réseau
+  if (errorState === 'NETWORK_ERROR') {
+    return (
+      <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-red-500/20 text-red-500 rounded-3xl flex items-center justify-center text-4xl mb-3">
+          <AlertCircle size={36} />
+        </div>
+        <h2 className="font-bold text-gray-900 dark:text-white text-xl mb-1">Erreur réseau</h2>
+        <p className="text-gray-500 text-xs max-w-xs mb-5">
+          Impossible de contacter le serveur. Vérifiez votre connexion Internet.
+        </p>
+        <button
+          onClick={loadData}
+          className="px-6 py-3 bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center gap-2 active:scale-95 transition-transform"
+        >
+          <RefreshCw size={14} /> Réessayer
+        </button>
+      </div>
+    )
+  }
+
+  // 4. ÉTAT ERREUR A : Profil Introuvable
+  if (errorState === 'NOT_FOUND' || !profile) {
+    return (
+      <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <div className="w-20 h-20 bg-surface-100 dark:bg-dark-800 rounded-3xl flex items-center justify-center text-4xl mb-1">
+          🕵️
+        </div>
+        <h2 className="font-bold text-gray-900 dark:text-white text-xl">Ce profil n'existe pas</h2>
+        <p className="text-gray-500 text-xs max-w-xs mb-4">
+          Le nom d'utilisateur @{cleanUsername || username} est introuvable sur MANG.
+        </p>
+        <button
+          onClick={() => navigate('/marketplace')}
+          className="px-6 py-3 bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center gap-2 active:scale-95 transition-transform"
+        >
+          <Home size={14} /> Retour à l'accueil
         </button>
       </div>
     )
@@ -301,6 +364,20 @@ function PublicProfilePageContent() {
           )}
         </div>
       </BottomSheet>
+    </div>
+  )
+}
+
+function PublicProfileSkeleton() {
+  return (
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 animate-pulse">
+      <div className="h-36 bg-surface-200 dark:bg-dark-800" />
+      <div className="p-4 space-y-4 -mt-12">
+        <div className="w-24 h-24 rounded-full bg-surface-300 dark:bg-dark-700 ring-4 ring-white" />
+        <div className="h-6 w-1/3 bg-surface-200 dark:bg-dark-800 rounded-xl" />
+        <div className="h-4 w-1/4 bg-surface-200 dark:bg-dark-800 rounded-xl" />
+        <div className="h-16 bg-surface-200 dark:bg-dark-800 rounded-2xl" />
+      </div>
     </div>
   )
 }
