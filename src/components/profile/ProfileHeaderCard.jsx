@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapPin, UserPlus, UserCheck, MessageCircle, Share2, Star, CheckCircle, ShieldCheck, Phone, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -15,6 +16,7 @@ export default function ProfileHeaderCard({
   onOpenFollowing,
   onNavigateBack
 }) {
+  const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
 
   if (!profile) return null
@@ -155,32 +157,51 @@ export default function ProfileHeaderCard({
           </button>
         </div>
 
-        {/* 4. BOUTONS D'ACTION SOCIALE & WHATSAPP DIRECT */}
-        {!isMe && (
-          <div className="flex gap-2.5 pt-1">
+        {/* 4. BOUTONS D'ACTION SOCIALE & MESSAGERIE */}
+        {!isMe ? (
+          <div className="flex gap-2 pt-1">
             {/* Suivre / Désabonner */}
             <button
               onClick={onToggleFollow}
               className={clsx(
-                'flex-1 py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm',
+                'flex-1 py-3 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm',
                 isFollowing
                   ? 'bg-surface-200 dark:bg-dark-800 text-gray-800 dark:text-white border border-gray-300 dark:border-dark-700'
                   : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-700/20'
               )}
             >
-              {isFollowing ? <><UserCheck size={16} /> Abonné</> : <><UserPlus size={16} /> Suivre</>}
+              {isFollowing ? <><UserCheck size={15} /> Abonné</> : <><UserPlus size={15} /> Suivre</>}
             </button>
 
-            {/* WhatsApp Direct */}
+            {/* 💬 Messagerie Chat Direct MANG */}
+            <button
+              onClick={() => navigate('/messages', { state: { recipientId: profile.id, recipientName: profile.username } })}
+              className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+            >
+              <MessageCircle size={15} />
+              <span>Message</span>
+            </button>
+
+            {/* 📲 WhatsApp Direct */}
             {whatsappNumber && (
               <button
                 onClick={handleWhatsApp}
-                className="flex-1 py-3 px-4 rounded-2xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
               >
                 <Phone size={15} />
                 <span>WhatsApp</span>
               </button>
             )}
+          </div>
+        ) : (
+          <div className="pt-1">
+            <button
+              onClick={() => navigate('/messages')}
+              className="w-full py-3 px-4 rounded-2xl font-bold text-xs bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
+            >
+              <MessageCircle size={16} />
+              <span>Accéder à ma messagerie</span>
+            </button>
           </div>
         )}
       </div>
