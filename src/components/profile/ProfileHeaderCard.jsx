@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, UserPlus, UserCheck, MessageCircle, Share2, Star, CheckCircle, ShieldCheck, Phone, ChevronRight } from 'lucide-react'
+import { MapPin, UserPlus, UserCheck, MessageCircle, Share2, Star, CheckCircle, ShieldCheck, Phone, ChevronRight, Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store'
 import { Avatar } from '@/components/ui'
 
 export default function ProfileHeaderCard({
@@ -17,7 +19,61 @@ export default function ProfileHeaderCard({
   onNavigateBack
 }) {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const [copied, setCopied] = useState(false)
+  const [creatingConv, setCreatingConv] = useState(false)
+
+  const handleDirectMessage = async () => {
+    if (!user) {
+      toast.error('Connectez-vous d\'abord pour envoyer un message')
+      return
+    }
+    if (user.id === profile.id) {
+      navigate('/messages')
+      return
+    }
+
+    setCreatingConv(true)
+    const toastId = toast.loading('Ouverture de la discussion...')
+
+    try {
+      // 1. Recherche si une conversation existe déjà entre les 2 utilisateurs
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${profile.id}),and(buyer_id.eq.${profile.id},seller_id.eq.${user.id})`)
+        .maybeSingle()
+
+      let convId = existing?.id
+
+      // 2. Si aucune conversation n'existe, LA CRÉER EN TEMPS RÉEL dans Supabase
+      if (!convId) {
+        const { data: newConv, error: createErr } = await supabase
+          .from('conversations')
+          .insert({
+            buyer_id: user.id,
+            seller_id: profile.id,
+            shop_id: shop?.id || null,
+            created_at: new Date().toISOString(),
+            last_message_at: new Date().toISOString()
+          })
+          .select('id')
+          .single()
+
+        if (createErr) throw createErr
+        convId = newConv?.id
+      }
+
+      toast.success('Discussion ouverte !', { id: toastId })
+      navigate(`/messages?conv=${convId}`)
+    } catch (err) {
+      console.error('Erreur création conversation:', err)
+      toast.error('Ouverture de la messagerie...', { id: toastId })
+      navigate(`/messages?user=${profile.id}`)
+    } finally {
+      setCreatingConv(false)
+    }
+  }
 
   if (!profile) return null
 
@@ -173,12 +229,17 @@ export default function ProfileHeaderCard({
               {isFollowing ? <><UserCheck size={15} /> Abonné</> : <><UserPlus size={15} /> Suivre</>}
             </button>
 
-            {/* 💬 Messagerie Chat Direct MANG */}
+            {/* 💬 Messagerie Chat Direct MANG avec Création Instantanée */}
             <button
-              onClick={() => navigate('/messages', { state: { recipientId: profile.id, recipientName: profile.username } })}
-              className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
+              onClick={handleDirectMessage}
+              disabled={creatingConv}
+              className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm disabled:opacity-60"
             >
-              <MessageCircle size={15} />
+              {creatingConv ? (
+                <Loader2 size={15} className="animate-spin text-white" />
+              ) : (
+                <MessageCircle size={15} />
+              )}
               <span>Message</span>
             </button>
 

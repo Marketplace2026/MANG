@@ -1328,6 +1328,7 @@ export default function MessagesPage() {
   const [searchParams]    = useSearchParams()
   const openConvId        = searchParams.get('conv')
   const openProductId     = searchParams.get('product')
+  const openUserId        = searchParams.get('user')
   const [convs, setConvs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
@@ -1341,8 +1342,28 @@ export default function MessagesPage() {
     if (openConvId && convs.length > 0) {
       const c = convs.find(c => c.id === openConvId)
       if (c) setActive(c)
+    } else if (openUserId && user && convs.length >= 0) {
+      const existing = convs.find(c => (c.buyer_id === openUserId || c.seller_id === openUserId))
+      if (existing) {
+        setActive(existing)
+      } else {
+        // En cas de fallback direct sans convId
+        supabase.from('conversations').insert({
+          buyer_id: user.id,
+          seller_id: openUserId,
+          created_at: new Date().toISOString(),
+          last_message_at: new Date().toISOString()
+        }).select(`*, shop:shops(id, name, cover_url, slug),
+          buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
+          seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`).single().then(({ data: newConv }) => {
+            if (newConv) {
+              setConvs(prev => [newConv, ...prev])
+              setActive(newConv)
+            }
+          })
+      }
     }
-  }, [openConvId, convs])
+  }, [openConvId, openUserId, convs, user])
 
   const activeRef = useRef(active)
   useEffect(() => { activeRef.current = active }, [active])
