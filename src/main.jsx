@@ -1,14 +1,13 @@
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) { 
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (let registration of registrations) {
-      registration.unregister()
-    }
-  }).catch(() => {})
-  if ('caches' in window) {
-    caches.keys().then(names => {
-      for (let name of names) caches.delete(name)
-    }).catch(() => {})
-  }
+// Capture précoce de l'événement d'installation PWA
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window.__mangDeferredPrompt = e
+})
+
+if ('serviceWorker' in navigator) { 
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+  })
 }
 
 import React from 'react'

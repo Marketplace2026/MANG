@@ -439,7 +439,3 @@ export function NotificationToast({ notification, onClose }) {
     </div>
   )
 }
-
-// Re-export UserLink
-export { default as UserLink } from './UserLink'
-

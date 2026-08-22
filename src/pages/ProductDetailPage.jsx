@@ -8,9 +8,10 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCartStore, useCacheStore } from '@/store'
-import { Avatar, BottomSheet, Button, UserLink } from '@/components/ui'
+import { Avatar, BottomSheet, Button } from '@/components/ui'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
+import TraceabilityTimeline from '@/components/marketplace/TraceabilityTimeline'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
@@ -410,18 +411,7 @@ export default function ProductDetailPage() {
                   <BadgeCheck size={14} className="text-emerald-500 fill-emerald-50/50"/>
                 )}
               </div>
-              {product.shop?.owner ? (
-                <UserLink
-                  user={product.shop.owner}
-                  size="xs"
-                  showAvatar={false}
-                  showName={false}
-                  showUsername={true}
-                  subtext="Propriétaire de la boutique"
-                />
-              ) : (
-                <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username || 'vendeur'}</p>
-              )}
+              <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username}</p>
             </div>
             <button onClick={() => navigate(`/boutique/${product.shop?.slug || product.shop_id}`)}
               className="px-3.5 py-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-700 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1">
@@ -541,6 +531,11 @@ export default function ProductDetailPage() {
         <div className="bg-white rounded-3xl p-5 shadow-card space-y-2">
           <p className="text-xs font-black text-dark-600/40 uppercase tracking-wider pl-0.5">Description complète</p>
           <p className="text-dark-700 text-xs leading-relaxed">{product.description || 'Aucune description rédigée.'}</p>
+        </div>
+
+        {/* TRACABILITE DU PRODUIT */}
+        <div className="mt-4">
+          <TraceabilityTimeline productId={product.id} />
         </div>
 
         {/* SECTION 5: PRODUITS SIMILAIRES (Vous pourriez aimer) */}

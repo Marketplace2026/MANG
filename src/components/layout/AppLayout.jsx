@@ -46,7 +46,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
   return (
     <div className="min-h-dvh flex flex-col bg-surface-50">
       {/* HEADER DESKTOP */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
+      <header className="sticky top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
           <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" />
           <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
@@ -90,7 +90,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
         </div>
       </header>
 
-      <main className="flex-1 safe-pb md:pt-16">
+      <main className="flex-1 safe-pb">
         <div className="mx-auto w-full max-w-[var(--content-max-width)]">
           <Outlet />
         </div>

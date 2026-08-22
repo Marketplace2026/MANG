@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 import { Avatar, Button, BottomSheet, Modal, PremiumBadge, Skeleton } from '@/components/ui'
+import FarmerCycleManager from '@/components/marketplace/FarmerCycleManager'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
@@ -689,6 +690,7 @@ function ProductItem({ product, onDelete, onToggle }) {
           <span className="font-display font-bold text-primary-700 text-sm">{formatFCFA(product.price)}</span>
           <span className="text-[10px] text-dark-600/40">{AVAIL_LABELS[product.availability] || '✅ Dispo'}</span>
         </div>
+        <FarmerCycleManager productId={product.id} shopId={product.shop_id} productName={product.name} />
       </div>
     </div>
   )

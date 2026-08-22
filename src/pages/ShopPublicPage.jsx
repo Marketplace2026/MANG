@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 import { useCartStore } from '@/store'
-import { Avatar, PremiumBadge, BottomSheet, Modal, Button, UserLink } from '@/components/ui'
+import { Avatar, PremiumBadge, BottomSheet, Modal, Button } from '@/components/ui'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -252,16 +252,9 @@ export default function ShopPublicPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {shop.owner && (
-                  <UserLink
-                    user={shop.owner}
-                    size="xs"
-                    showAvatar={false}
-                    showName={false}
-                    showUsername={true}
-                    subtext={shop.city ? `📍 ${shop.city}` : null}
-                  />
-                )}
+                <p className="text-gray-400 text-xs">@{shop.owner?.username}
+                  {shop.city && <span className="text-gray-300 ml-1">· 📍 {shop.city}</span>}
+                </p>
                 {shop.reviews_count > 0 && (
                   <button onClick={() => setShowReviews(true)}
                     className="flex items-center gap-0.5 active:scale-95">

@@ -106,41 +106,23 @@ export const useAuthStore = create((set, get) => ({
       }
     }
 
-    // 4. Si les pièces n'existent pas ou sont à 0, attribution automatique des 20 PIÈCES MANG OFFERTES !
+    // 4. Si les pièces n'existent pas, on les crée côté client (Tâche 3)
     if (!pieces && profile) {
-      console.log('[AuthStore] Pièces absentes, attribution du bonus de bienvenue (20 Pièces)...')
+      console.log('[AuthStore] Pièces absentes, initialisation...')
       const { data: newPieces, error: piecesErr } = await supabase
         .from('pieces')
         .insert({
           user_id: user.id,
-          balance: 20
+          balance: 0
         })
         .select()
         .maybeSingle()
 
       if (piecesErr) {
-        console.error('[AuthStore] Échec création pièces :', piecesErr)
+        console.error('[AuthStore] Échec création pièces (vérifiez RLS) :', piecesErr)
       } else {
         pieces = newPieces
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`bonus_claimed_${user.id}`, 'true')
-        }
-        toast.success('🎁 Bienvenue ! 20 Pièces MANG gratuites vous ont été offertes !')
-      }
-    } else if (pieces && Number(pieces.balance) === 0 && typeof window !== 'undefined' && !localStorage.getItem(`bonus_claimed_${user.id}`)) {
-      // Pour les comptes récents dont le solde était initialisé à 0
-      console.log('[AuthStore] Crédit automatique du bonus de 20 Pièces MANG...')
-      const { data: updatedPieces } = await supabase
-        .from('pieces')
-        .update({ balance: 20 })
-        .eq('user_id', user.id)
-        .select()
-        .maybeSingle()
-
-      if (updatedPieces) {
-        pieces = updatedPieces
-        localStorage.setItem(`bonus_claimed_${user.id}`, 'true')
-        toast.success('🎁 Bienvenue ! 20 Pièces MANG gratuites vous ont été crédités !')
+        console.log('[AuthStore] Pièces créées avec succès :', pieces)
       }
     }
 

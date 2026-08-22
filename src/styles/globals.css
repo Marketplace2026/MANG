@@ -1,13 +1,17 @@
 :root {
   --mang-green: #004D00;
+  --pwa-banner-offset: 0px;
 }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 body { 
-  padding-top: env(safe-area-inset-top); 
+  padding-top: calc(env(safe-area-inset-top) + var(--pwa-banner-offset, 0px)); 
   background-color: white;
   margin: 0;
+}
+.fixed.top-0:not(.pwa-install-top-banner) {
+  top: var(--pwa-banner-offset, 0px) !important;
 }
 /* ============================================================
    MANG — Global Styles
