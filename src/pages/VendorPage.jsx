@@ -987,7 +987,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
     service: ['Formation agricole', 'Conseil & Accompagnement', 'Transport & Logistique', 'Location de matériel', 'Analyse de sol', 'Vétérinaire', 'Autre'],
   }
 
-  const canGoStep2 = fullName.trim() && phone.trim()
+  const canGoStep2 = fullName.trim() && phone.trim() && idPhoto && selfiePhoto
   const canGoStep3 = profileType && activityType && location.trim()
   const canSubmit = deliveryScope && (
     profileType === 'producteur' ? productionMethod : productsType
