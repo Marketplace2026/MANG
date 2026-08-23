@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Mic, Plus, Save, X, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, uploadImage } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 const STEP_GROUPS = [
@@ -100,7 +100,11 @@ export default function FarmerCycleManager({ productId, shopId, productName }) {
     try {
       let media_url = null;
       if (mediaFile) {
-        media_url = URL.createObjectURL(mediaFile); // Simulation
+        const path = `cycles/${cycleId}/${Date.now()}_${mediaFile.name}`;
+        media_url = await uploadImage('product-images', mediaFile, path);
+        if (!media_url) {
+          throw new Error("L'image n'a pas pu être téléchargée.");
+        }
       }
 
       const { error } = await supabase
