@@ -1,10 +1,10 @@
-﻿import React, { useState, useRef } from 'react'
-import { Plus, X, Upload, Check, AlertCircle, Info, MapPin } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import { Plus, X, Upload, Check, AlertCircle, Info, MapPin, Camera, Store, ChevronRight, ChevronDown, Package, Trash2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { Button, BottomSheet } from '@/components/ui'
-import { CATEGORIES, slugify, AVAILABILITY_OPTIONS } from '@/components/vendor/shared'
+import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA } from '@/components/vendor/shared'
 
 export default function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', price:'', availability:'now' })
