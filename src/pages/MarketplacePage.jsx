@@ -323,7 +323,7 @@ export default function MarketplacePage() {
       // Charger également les produits actifs pour la recherche produit avec leurs coordonnées de boutique
       const { data: prodsData } = await supabase
         .from('products')
-        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level, latitude, longitude, category_id)')
+        .select('*, shop:shops(name, slug, is_active, is_verified, premium_level, latitude, longitude, category_id), production_cycles(id)')
         .eq('is_available', true)
       
       const activeProducts = (prodsData || []).map(p => {

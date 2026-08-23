@@ -58,7 +58,7 @@ export default function ShopPublicPage() {
     if (!data) { setLoading(false); return }
     setShop(data)
 
-    const { data: prods } = await supabase.from('products').select('*')
+    const { data: prods } = await supabase.from('products').select('*, production_cycles(id)')
       .eq('shop_id', data.id).eq('is_available', true).order('created_at', { ascending: false })
     setProducts(prods || [])
 

@@ -289,8 +289,17 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
       <div className="relative h-40 bg-gradient-to-br from-surface-100 to-surface-200">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">📦</div>
         }
+        {/* Badge Certification Bio */}
+        {product.production_cycles && product.production_cycles.length > 0 && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/95 backdrop-blur-sm shadow-sm border border-emerald-400/30">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span className="text-white text-[9px] font-black tracking-wider uppercase">Traçabilité</span>
+          </div>
+        )}
         {/* Favori */}
         <button
           onClick={e => { e.stopPropagation(); onFavorite?.() }}
