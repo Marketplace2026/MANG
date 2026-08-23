@@ -1,11 +1,13 @@
 {
-  "name": "MANG",
+  "name": "MANG — Marché Agricole Nouvelle Génération",
   "short_name": "MANG",
+  "description": "Marché Agricole Nouvelle Génération. La marketplace agricole et bio du Bénin.",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "theme_color": "#004D00",
   "background_color": "#004D00",
   "start_url": "/",
+  "scope": "/",
   "orientation": "portrait",
   "icons": [
     {
@@ -18,7 +20,7 @@
       "src": "/logo-mang.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
