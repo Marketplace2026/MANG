@@ -3,12 +3,43 @@ import { Camera, Mic, Plus, Save, X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
-const STEP_TYPES = [
-  { value: 'semis', label: '🌱 Semis' },
-  { value: 'arrosage', label: '💧 Arrosage' },
-  { value: 'desherbage', label: '🌿 Désherbage' },
-  { value: 'traitement_bio', label: '🛡️ Traitement Bio' },
-  { value: 'recolte', label: '🍅 Récolte' }
+const STEP_GROUPS = [
+  {
+    category: 'Production végétale',
+    steps: [
+      { value: 'semis', label: '🌱 Semis / Plantation' },
+      { value: 'arrosage', label: '💧 Arrosage' },
+      { value: 'desherbage', label: '🌾 Désherbage / Entretien' },
+      { value: 'traitement_bio', label: '🛡️ Traitement Bio' },
+      { value: 'recolte', label: '🧺 Récolte' }
+    ]
+  },
+  {
+    category: 'Production animale',
+    steps: [
+      { value: 'naissance_achat', label: '🐣 Naissance / Achat' },
+      { value: 'vaccination', label: '💉 Vaccination / Soins' },
+      { value: 'alimentation', label: '🌽 Alimentation' },
+      { value: 'pesee', label: '⚖️ Pesée' }
+    ]
+  },
+  {
+    category: 'Transformation / Agro',
+    steps: [
+      { value: 'reception_mp', label: '📦 Matière première' },
+      { value: 'transformation', label: '⚙️ Transformation' },
+      { value: 'pasteurisation', label: '🔥 Cuisson / Chaleur' },
+      { value: 'emballage', label: '🏷️ Emballage / Embouteillage' },
+      { value: 'controle_qualite', label: '✅ Contrôle qualité' }
+    ]
+  },
+  {
+    category: 'Logistique / Autre',
+    steps: [
+      { value: 'stockage', label: '🏭 Stockage' },
+      { value: 'transport', label: '🚚 Expédition' }
+    ]
+  }
 ];
 
 export default function FarmerCycleManager({ productId, shopId, productName }) {
@@ -122,22 +153,32 @@ export default function FarmerCycleManager({ productId, shopId, productName }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Type d'action</label>
-          <div className="grid grid-cols-2 gap-2">
-            {STEP_TYPES.map(type => (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => setFormData({ ...formData, step_type: type.value })}
-                className={`p-1.5 text-xs border rounded-md text-center transition-colors ${
-                  formData.step_type === type.value 
-                    ? 'border-green-500 bg-green-50 text-green-700 font-bold' 
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {type.label}
-              </button>
+          <select
+            value={formData.step_type}
+            onChange={(e) => setFormData({ ...formData, step_type: e.target.value })}
+            className="w-full text-sm border-gray-300 rounded-md py-1.5 bg-gray-50 focus:ring-green-500 focus:border-green-500 font-medium"
+          >
+            {STEP_GROUPS.map(group => (
+              <optgroup key={group.category} label={group.category}>
+                {group.steps.map(step => (
+                  <option key={step.value} value={step.value}>
+                    {step.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
-          </div>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Détails de l'action (Optionnel)</label>
+          <input
+            type="text"
+            placeholder="Ex: Température à 45°C, Quantité 10L..."
+            className="w-full text-sm border-gray-300 rounded-md py-1.5 bg-gray-50 placeholder:text-gray-400"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
