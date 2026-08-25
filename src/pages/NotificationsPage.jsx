@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { subscribeToPushNotifications } from '@/lib/push'
 import { useNavigate } from 'react-router-dom'
 
 // ============================================================
@@ -56,6 +57,19 @@ export default function NotificationsPage() {
   const [filter, setFilter]     = useState('all')
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState(null)
+  const [isSubscribing, setIsSubscribing] = useState(false)
+
+  const handleSubscribePush = async () => {
+    if (!user) return;
+    setIsSubscribing(true);
+    const { success, error } = await subscribeToPushNotifications(user.id);
+    if (success) {
+      toast.success('Notifications activées sur ce téléphone !');
+    } else {
+      toast.error("Impossible d'activer les notifications");
+    }
+    setIsSubscribing(false);
+  }
 
   useEffect(() => {
     if (user) {
@@ -142,7 +156,24 @@ export default function NotificationsPage() {
       <div className="bg-[#004D00] pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5"
           style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
-        <div className="relative pt-2">
+        <div className="relative pt-2 space-y-4">
+          {/* Bannière Activer Web Push */}
+          {('serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted') && (
+            <div className="bg-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 border border-white/20">
+              <div className="flex-1">
+                <p className="text-white font-bold text-sm">Recevoir les alertes 📱</p>
+                <p className="text-white/70 text-[10px] mt-0.5">Même quand l'app est fermée</p>
+              </div>
+              <button 
+                onClick={handleSubscribePush}
+                disabled={isSubscribing}
+                className="bg-white text-[#004D00] text-xs font-black px-4 py-2 rounded-xl active:scale-95 transition-transform whitespace-nowrap"
+              >
+                {isSubscribing ? 'Activation...' : 'Activer'}
+              </button>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2">
             {[
