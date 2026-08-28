@@ -1,0 +1,18 @@
+﻿{
+  "settings": {
+    "title": "Paramètres",
+    "appearance": "Apparence & Langue",
+    "language": "Langue de l'application",
+    "language_updated": "Langue mise à jour !",
+    "default_language": "Langue par défaut",
+    "benin_language": "Langue béninoise",
+    "english_language": "International",
+    "theme": "Thème sombre",
+    "notifications": "Notifications",
+    "account": "Mon Compte",
+    "security": "Sécurité",
+    "help": "Aide & Support",
+    "logout": "Se déconnecter",
+    "delete_account": "Supprimer mon compte"
+  }
+}

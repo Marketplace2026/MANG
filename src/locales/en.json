@@ -1,0 +1,18 @@
+﻿{
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance & Language",
+    "language": "Application Language",
+    "language_updated": "Language updated!",
+    "default_language": "Default language",
+    "benin_language": "Beninese language",
+    "english_language": "International",
+    "theme": "Dark Theme",
+    "notifications": "Notifications",
+    "account": "My Account",
+    "security": "Security",
+    "help": "Help & Support",
+    "logout": "Log out",
+    "delete_account": "Delete my account"
+  }
+}

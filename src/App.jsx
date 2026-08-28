@@ -85,12 +85,18 @@ function PublicRoute({ children }) {
 
 // ── App ───────────────────────────────────────────────────
 export default function App() {
-  const { initialize, loading } = useAuthStore()
+  const { initialize, loading, profile } = useAuthStore()
   const [splashDone, setSplashDone] = useState(false)
 
   useGoogleReferral() // Traite le parrainage après retour OAuth Google
 
   useEffect(() => { initialize() }, [])
+
+  useEffect(() => {
+    if (profile?.language) {
+      import('./i18n').then(m => m.default.changeLanguage(profile.language))
+    }
+  }, [profile?.language])
 
   // Montrer le splash au moins 2.5s avant de router
   useEffect(() => {

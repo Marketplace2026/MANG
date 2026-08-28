@@ -1,0 +1,18 @@
+﻿{
+  "settings": {
+    "title": "Tòtó",
+    "appearance": "Nukunmɛ kpodo Gbe",
+    "language": "App Gbe",
+    "language_updated": "Gbe diò !",
+    "default_language": "Gbe jɛnukɔn",
+    "benin_language": "Gbe bɛnin tɔn",
+    "english_language": "Tò gudo tɔn",
+    "theme": "Zinzin",
+    "notifications": "Gbeɖiɖe",
+    "account": "Kɔntu ce",
+    "security": "Ayiɖeji",
+    "help": "Alɔgɔ",
+    "logout": "Tóntón",
+    "delete_account": "Súnsún kɔntu ce"
+  }
+}
