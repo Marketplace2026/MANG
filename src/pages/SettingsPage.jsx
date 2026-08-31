@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Shield, Bell, MapPin, Globe, HelpCircle,
@@ -8,23 +8,23 @@ import {
   Package, MessageSquare, Tag, Check, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import i18n from '../i18n'
+import i18n from '@/i18n'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
 import { BottomSheet } from '@/components/ui'
 
-// â”€â”€â”€ Traductions i18n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Traductions i18n ─────────────────────────────────────────────────────────
 
 const TRANSLATIONS = {
   fr: {
-    settings: 'ParamÃ¨tres',
+    settings: 'Paramètres',
     myAccount: 'Mon Compte',
     editProfile: 'Modifier le profil',
     editProfileSub: 'Nom, photo, bio, localisation',
     email: 'Adresse e-mail',
-    phone: 'NumÃ©ro de tÃ©lÃ©phone',
-    phoneEmpty: 'Non renseignÃ©',
-    security: 'SÃ©curitÃ© & Mot de passe',
+    phone: 'Numéro de téléphone',
+    phoneEmpty: 'Non renseigné',
+    security: 'Sécurité & Mot de passe',
     securitySub: 'Modifiez votre mot de passe',
     notifications: 'Notifications',
     notifPush: 'Notifications push',
@@ -32,50 +32,50 @@ const TRANSLATIONS = {
     notifOrders: 'Nouvelles commandes',
     notifOrdersSub: 'Alertes pour vos ventes',
     notifMessages: 'Messages',
-    notifMessagesSub: 'Quand quelqu\'un vous Ã©crit',
+    notifMessagesSub: 'Quand quelqu\'un vous écrit',
     notifPromos: 'Promotions & offres',
-    notifPromosSub: 'Newsletter et actualitÃ©s MANG',
-    privacySecurity: 'ConfidentialitÃ© & SÃ©curitÃ©',
+    notifPromosSub: 'Newsletter et actualités MANG',
+    privacySecurity: 'Confidentialité & Sécurité',
     shareLocation: 'Partage de localisation',
-    shareLocationOn: 'Actif â€” les vendeurs proches vous voient',
-    shareLocationOff: 'DÃ©sactivÃ©',
+    shareLocationOn: 'Actif — les vendeurs proches vous voient',
+    shareLocationOff: 'Désactivé',
     publicProfile: 'Profil public',
     publicProfileOn: 'Visible par tous',
     publicProfileOff: 'Visible uniquement par vos contacts',
     twoFA: 'Authentification 2 facteurs',
-    twoFASub: 'ProtÃ©gez votre compte',
+    twoFASub: 'Protégez votre compte',
     deleteAccount: 'Supprimer mon compte',
-    deleteAccountSub: 'Action irrÃ©versible',
+    deleteAccountSub: 'Action irréversible',
     appearanceLanguage: 'Apparence & Langue',
     language: 'Langue de l\'application',
-    theme: 'ThÃ¨me',
+    theme: 'Thème',
     themeLight: 'Mode clair',
     themeDark: 'Mode sombre',
     helpSupport: 'Aide & Support',
     faq: 'Centre d\'aide & FAQ',
-    faqSub: 'Questions frÃ©quentes',
+    faqSub: 'Questions fréquentes',
     whatsapp: 'WhatsApp Support',
-    whatsappSub: 'RÃ©ponse en moins d\'1h',
+    whatsappSub: 'Réponse en moins d\'1h',
     rateApp: 'Noter l\'application',
-    rateAppSub: 'Aidez-nous Ã  nous amÃ©liorer',
-    reportProblem: 'Signaler un problÃ¨me',
+    rateAppSub: 'Aidez-nous à nous améliorer',
+    reportProblem: 'Signaler un problème',
     reportProblemSub: 'Bug ou comportement suspect',
-    legalInfo: 'Informations lÃ©gales',
-    cgu: 'Conditions gÃ©nÃ©rales d\'utilisation',
-    privacy: 'Politique de confidentialitÃ©',
-    about: 'Ã€ propos de MANG',
-    aboutSub: 'Version 1.0.0 Â· Â© 2026 MANG',
-    logout: 'Se dÃ©connecter',
-    logoutConfirm: 'Appuyez Ã  nouveau pour confirmer',
+    legalInfo: 'Informations légales',
+    cgu: 'Conditions générales d\'utilisation',
+    privacy: 'Politique de confidentialité',
+    about: 'À propos de MANG',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
+    logout: 'Se déconnecter',
+    logoutConfirm: 'Appuyez à nouveau pour confirmer',
     save: 'Enregistrer',
     cancel: 'Annuler',
-    update: 'Mettre Ã  jour',
+    update: 'Mettre à jour',
     currentPassword: 'Mot de passe actuel',
     newPassword: 'Nouveau mot de passe',
     confirmPassword: 'Confirmer le nouveau',
     deleteType: 'Tapez "supprimer" pour confirmer',
-    deleteBtn: 'Supprimer dÃ©finitivement',
-    twoFANotAvailable: 'Activez 2FA pour sÃ©curiser votre compte',
+    deleteBtn: 'Supprimer définitivement',
+    twoFANotAvailable: 'Activez 2FA pour sécuriser votre compte',
   },
   en: {
     settings: 'Settings',
@@ -98,7 +98,7 @@ const TRANSLATIONS = {
     notifPromosSub: 'MANG newsletter and news',
     privacySecurity: 'Privacy & Security',
     shareLocation: 'Location sharing',
-    shareLocationOn: 'Active â€” nearby sellers can see you',
+    shareLocationOn: 'Active — nearby sellers can see you',
     shareLocationOff: 'Disabled',
     publicProfile: 'Public profile',
     publicProfileOn: 'Visible to everyone',
@@ -125,7 +125,7 @@ const TRANSLATIONS = {
     cgu: 'Terms and conditions',
     privacy: 'Privacy policy',
     about: 'About MANG',
-    aboutSub: 'Version 1.0.0 Â· Â© 2026 MANG',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
     logout: 'Log out',
     logoutConfirm: 'Tap again to confirm',
     save: 'Save',
@@ -139,69 +139,69 @@ const TRANSLATIONS = {
     twoFANotAvailable: 'Enable 2FA to protect your account',
   },
   fon: {
-    settings: 'Æ‰Ã²wÃ¹nÃ¹',
-    myAccount: 'NÉ”ÌŒ compte',
-    editProfile: 'SÉ›Ìn profil',
-    editProfileSub: 'NyÄ­, fÉ”tÉ”, bÃ­o, fÃ­nÉ›Ì',
-    email: 'E-mail É–Ã©',
-    phone: 'AwÉ” fÃ³n',
-    phoneEmpty: 'Ã‰ É–Ã³ ÇŽ',
-    security: 'SÃ­sÃ­ & NÇ” É–Ã©',
-    securitySub: 'SÃ­n nÇ” É–Ã© towe',
-    notifications: 'NÃ¹É–iÉ–o',
-    notifPush: 'NÃ¹É–iÉ–o push',
-    notifPushSub: 'MÉ” nÃ¹É–iÉ–o lÉ›',
-    notifOrders: 'Commandes yÉ”yÉ”ÌŒ',
-    notifOrdersSub: 'NÃ¹É–iÉ–o vendre towe',
-    notifMessages: 'NÇ” gbÉ›wÉ›',
-    notifMessagesSub: 'MÉ› É–É” nÇ” nÃº we',
-    notifPromos: 'NÃ¹jÉ”nÇ” lÉ›',
+    settings: 'Ɖòwùnù',
+    myAccount: 'Nɔ̌ compte',
+    editProfile: 'Sɛ́n profil',
+    editProfileSub: 'Nyĭ, fɔtɔ, bío, fínɛ́',
+    email: 'E-mail ɖé',
+    phone: 'Awɔ fón',
+    phoneEmpty: 'É ɖó ǎ',
+    security: 'Sísí & Nǔ ɖé',
+    securitySub: 'Sín nǔ ɖé towe',
+    notifications: 'Nùɖiɖo',
+    notifPush: 'Nùɖiɖo push',
+    notifPushSub: 'Mɔ nùɖiɖo lɛ',
+    notifOrders: 'Commandes yɔyɔ̌',
+    notifOrdersSub: 'Nùɖiɖo vendre towe',
+    notifMessages: 'Nǔ gbɛwɛ',
+    notifMessagesSub: 'Mɛ ɖɔ nǔ nú we',
+    notifPromos: 'Nùjɔnǔ lɛ',
     notifPromosSub: 'MANG newsletter',
-    privacySecurity: 'Xwiyixwi & SÃ­sÃ­',
-    shareLocation: 'FÃ­nÉ›Ì É–Ã¨jÃ­',
-    shareLocationOn: 'Actu â€” vendeur lÉ› mÉ” we',
-    shareLocationOff: 'DesactivÃ©',
-    publicProfile: 'Profil nyikpÃ©',
-    publicProfileOn: 'MÉ› bÇ mÉ”',
-    publicProfileOff: 'Contact towe kÉ›ÌÉ› mÉ”',
-    twoFA: 'SÃ­sÃ­ 2 facteurs',
-    twoFASub: 'Compte towe sÃ­sÃ­',
-    deleteAccount: 'ZÃ¡n compte towe',
-    deleteAccountSub: 'NÇ” e na nyÃ­ gÃ¡n',
-    appearanceLanguage: 'HÉ›nnÉ› & GbÃ¨',
-    language: 'GbÃ¨ towe',
+    privacySecurity: 'Xwiyixwi & Sísí',
+    shareLocation: 'Fínɛ́ ɖèjí',
+    shareLocationOn: 'Actu — vendeur lɛ mɔ we',
+    shareLocationOff: 'Desactivé',
+    publicProfile: 'Profil nyikpé',
+    publicProfileOn: 'Mɛ bǐ mɔ',
+    publicProfileOff: 'Contact towe kɛ́ɛ mɔ',
+    twoFA: 'Sísí 2 facteurs',
+    twoFASub: 'Compte towe sísí',
+    deleteAccount: 'Zán compte towe',
+    deleteAccountSub: 'Nǔ e na nyí gán',
+    appearanceLanguage: 'Hɛnnɛ & Gbè',
+    language: 'Gbè towe',
     theme: 'Couleur',
     themeLight: 'Weziza',
-    themeDark: 'ZÇŽnzÇŽn',
-    helpSupport: 'ÃÉ”kpÉ” & SÃ­n nÇ”',
-    faq: 'FAQ & ÃÉ”kpÉ”',
-    faqSub: 'NÃ¹kanbyÉ” lÉ›',
+    themeDark: 'Zǎnzǎn',
+    helpSupport: 'Ðɔkpɔ & Sín nǔ',
+    faq: 'FAQ & Ðɔkpɔ',
+    faqSub: 'Nùkanbyɔ lɛ',
     whatsapp: 'WhatsApp Support',
-    whatsappSub: 'GbÉ› 1h mÉ›',
+    whatsappSub: 'Gbɛ 1h mɛ',
     rateApp: 'Note appli',
-    rateAppSub: 'SÃ­n nuzu',
-    reportProblem: 'Signal nÇ”vÉ”vÉ”',
-    reportProblemSub: 'Bug alÇ’ nÇ” vÉ”ÌvÉ”Ì',
-    legalInfo: 'NÇ”kanbyÉ” legal',
-    cgu: 'Conditions GÃ©nÃ©rales',
+    rateAppSub: 'Sín nuzu',
+    reportProblem: 'Signal nǔvɔvɔ',
+    reportProblemSub: 'Bug alǒ nǔ vɔ́vɔ́',
+    legalInfo: 'Nǔkanbyɔ legal',
+    cgu: 'Conditions Générales',
     privacy: 'Xwiyixwi policy',
-    about: 'MANG tÉ”n',
-    aboutSub: 'Version 1.0.0 Â· Â© 2026 MANG',
-    logout: 'YÃ¬',
-    logoutConfirm: 'Æ‰Ã³ lÉ›Ì vÉ” bo na jÉ›n',
-    save: 'Æ‰Ã³',
-    cancel: 'YÃ¬',
-    update: 'SÉ›Ìn',
-    currentPassword: 'NÇ” É–Ã© lÉ›lÉ›',
-    newPassword: 'NÇ” É–Ã© yÉ”yÉ”ÌŒ',
-    confirmPassword: 'ÃÉ” tÉ”n gbÉ”n',
-    deleteType: 'Æ‰Ã³ "supprimer" bo na jÉ›n',
-    deleteBtn: 'ZÃ¡n kpÃ© kpÃ©',
-    twoFANotAvailable: '2FA na wÃ¡',
+    about: 'MANG tɔn',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
+    logout: 'Yì',
+    logoutConfirm: 'Ɖó lɛ́ vɔ bo na jɛn',
+    save: 'Ɖó',
+    cancel: 'Yì',
+    update: 'Sɛ́n',
+    currentPassword: 'Nǔ ɖé lɛlɛ',
+    newPassword: 'Nǔ ɖé yɔyɔ̌',
+    confirmPassword: 'Ðɔ tɔn gbɔn',
+    deleteType: 'Ɖó "supprimer" bo na jɛn',
+    deleteBtn: 'Zán kpé kpé',
+    twoFANotAvailable: '2FA na wá',
   },
 }
 
-// Hook global pour le thÃ¨me
+// Hook global pour le thème
 function useTheme() {
   const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem('mang-theme')
@@ -223,7 +223,7 @@ function useTheme() {
   return [dark, setDark]
 }
 
-// â”€â”€â”€ Toggle Switch style iOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Toggle Switch style iOS ──────────────────────────────────────────────────
 
 function ToggleSwitch({ value, onChange, disabled }) {
   return (
@@ -243,7 +243,7 @@ function ToggleSwitch({ value, onChange, disabled }) {
   )
 }
 
-// â”€â”€â”€ Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Section ─────────────────────────────────────────────────────────────────
 
 function Section({ title, children }) {
   return (
@@ -258,7 +258,7 @@ function Section({ title, children }) {
   )
 }
 
-// â”€â”€â”€ Item cliquable â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Item cliquable ───────────────────────────────────────────────────────────
 
 function Item({ icon: Icon, iconBg, iconColor, label, sub, danger, onClick }) {
   return (
@@ -276,7 +276,7 @@ function Item({ icon: Icon, iconBg, iconColor, label, sub, danger, onClick }) {
   )
 }
 
-// â”€â”€â”€ Item Toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Item Toggle ──────────────────────────────────────────────────────────────
 
 function ItemToggle({ icon: Icon, iconBg, iconColor, label, sub, value, onChange, saving }) {
   return (
@@ -293,7 +293,7 @@ function ItemToggle({ icon: Icon, iconBg, iconColor, label, sub, value, onChange
   )
 }
 
-// â”€â”€â”€ Page principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { user, profile, signOut, refreshProfile } = useAuthStore()
@@ -325,10 +325,10 @@ export default function SettingsPage() {
   const [publicProfile, setPublicProfile] = useState(true)
   const [savingPrivacy, setSavingPrivacy] = useState(false)
 
-  // DÃ©connexion
+  // Déconnexion
   const [logoutConfirm, setLogoutConfirm] = useState(false)
 
-  // Charger prÃ©fÃ©rences
+  // Charger préférences
   useEffect(() => {
     if (!profile) return
     setNotifPush(profile.notif_push !== false)
@@ -364,10 +364,10 @@ export default function SettingsPage() {
   }
 
   const maskedEmail = user?.email
-    ? user.email.replace(/^(.{2})(.+)(@.+)$/, (_, a, b, c) => a + 'â€¢'.repeat(Math.min(b.length, 6)) + c)
-    : 'â€”'
+    ? user.email.replace(/^(.{2})(.+)(@.+)$/, (_, a, b, c) => a + '•'.repeat(Math.min(b.length, 6)) + c)
+    : '—'
   const maskedPhone = profile?.phone
-    ? profile.phone.slice(0, 4) + ' â€¢â€¢â€¢â€¢ ' + profile.phone.slice(-2)
+    ? profile.phone.slice(0, 4) + ' •••• ' + profile.phone.slice(-2)
     : null
 
   return (
@@ -387,7 +387,7 @@ export default function SettingsPage() {
 
       <div className="px-4 pt-4 pb-28 space-y-4">
 
-        {/* â•â• 1. MON COMPTE â•â• */}
+        {/* ══ 1. MON COMPTE ══ */}
         <Section title={t.myAccount}>
           <Item icon={User} iconBg="bg-green-50" iconColor="text-green-600"
             label={t.editProfile} sub={t.editProfileSub}
@@ -403,7 +403,7 @@ export default function SettingsPage() {
             onClick={() => setSecurityOpen(true)} />
         </Section>
 
-        {/* â•â• 2. NOTIFICATIONS â•â• */}
+        {/* ══ 2. NOTIFICATIONS ══ */}
         <Section title={t.notifications}>
           <ItemToggle icon={Bell} iconBg="bg-orange-50" iconColor="text-orange-500"
             label={t.notifPush} sub={t.notifPushSub}
@@ -423,7 +423,7 @@ export default function SettingsPage() {
             onChange={v => { setNotifPromos(v); saveNotif('notif_promos', v) }} />
         </Section>
 
-        {/* â•â• 3. CONFIDENTIALITÃ‰ â•â• */}
+        {/* ══ 3. CONFIDENTIALITÉ ══ */}
         <Section title={t.privacySecurity}>
           <ItemToggle icon={MapPin} iconBg="bg-emerald-50" iconColor="text-emerald-500"
             label={t.shareLocation}
@@ -443,13 +443,13 @@ export default function SettingsPage() {
             danger onClick={() => setDeleteOpen(true)} />
         </Section>
 
-        {/* â•â• 4. APPARENCE & LANGUE â•â• */}
+        {/* ══ 4. APPARENCE & LANGUE ══ */}
         <Section title={t.appearanceLanguage}>
           <Item icon={Globe} iconBg="bg-violet-50" iconColor="text-violet-600"
             label={t.language}
-            sub={lang === 'fr' ? 'ðŸ‡«ðŸ‡· FranÃ§ais' : lang === 'en' ? 'ðŸ‡¬ðŸ‡§ English' : 'ðŸ‡§ðŸ‡¯ Fon'}
+            sub={lang === 'fr' ? '🇫🇷 Français' : lang === 'en' ? '🇬🇧 English' : '🇧🇯 Fon'}
             onClick={() => setLanguageOpen(true)} />
-          {/* ThÃ¨me : toggle inline, pas de navigation */}
+          {/* Thème : toggle inline, pas de navigation */}
           <div className="flex items-center gap-3.5 px-5 py-3.5">
             <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
               {dark ? <Moon size={16} className="text-indigo-500" strokeWidth={2.2} />
@@ -463,7 +463,7 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        {/* â•â• 5. AIDE & SUPPORT â•â• */}
+        {/* ══ 5. AIDE & SUPPORT ══ */}
         <Section title={t.helpSupport}>
           <Item icon={HelpCircle} iconBg="bg-green-50" iconColor="text-green-600"
             label={t.faq} sub={t.faqSub}
@@ -476,7 +476,7 @@ export default function SettingsPage() {
             onClick={() => window.open('https://wa.me/2290197293196?text=Signalement%20bug%20MANG%20:', '_blank')} />
         </Section>
 
-        {/* â•â• 6. LÃ‰GAL â•â• */}
+        {/* ══ 6. LÉGAL ══ */}
         <Section title={t.legalInfo}>
           <Item icon={FileText} iconBg="bg-gray-100" iconColor="text-gray-500"
             label={t.cgu}
@@ -486,10 +486,10 @@ export default function SettingsPage() {
             onClick={() => window.open('https://mang.vercel.app/confidentialite', '_blank')} />
           <Item icon={Info} iconBg="bg-gray-100" iconColor="text-gray-500"
             label={t.about} sub={t.aboutSub}
-            onClick={() => toast('MANG v1.0.0 â€” MarchÃ© Agricole Nouvelle GÃ©nÃ©ration ðŸŒ±', { duration: 4000 })} />
+            onClick={() => toast('MANG v1.0.0 — Marché Agricole Nouvelle Génération 🌱', { duration: 4000 })} />
         </Section>
 
-        {/* Bouton DÃ©connexion */}
+        {/* Bouton Déconnexion */}
         <button onClick={handleSignOut}
           className="w-full flex items-center gap-3 p-4 rounded-2xl transition-all active:scale-[0.98]"
           style={{
@@ -502,12 +502,12 @@ export default function SettingsPage() {
           <span className="flex-1 text-left text-sm font-bold text-red-600">
             {logoutConfirm ? t.logoutConfirm : t.logout}
           </span>
-          {logoutConfirm && <span className="text-red-400 text-xs font-bold">âš ï¸</span>}
+          {logoutConfirm && <span className="text-red-400 text-xs font-bold">⚠️</span>}
         </button>
 
       </div>
 
-      {/* â•â• SOUS-FEUILLES â•â• */}
+      {/* ══ SOUS-FEUILLES ══ */}
       <EmailSheet    open={emailOpen}    onClose={() => setEmailOpen(false)}    user={user} t={t} />
       <PhoneSheet    open={phoneOpen}    onClose={() => setPhoneOpen(false)}    profile={profile} userId={user?.id} onUpdated={refreshProfile} t={t} />
       <SecuritySheet open={securityOpen} onClose={() => setSecurityOpen(false)} t={t} />
@@ -520,7 +520,7 @@ export default function SettingsPage() {
   )
 }
 
-// â”€â”€â”€ EmailSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── EmailSheet ───────────────────────────────────────────────────────────────
 
 function EmailSheet({ open, onClose, user, t }) {
   const [email,   setEmail]   = useState('')
@@ -536,14 +536,14 @@ function EmailSheet({ open, onClose, user, t }) {
     if (!email.includes('@')) { toast.error('Email invalide'); return }
     if (!pass)                { toast.error('Mot de passe requis'); return }
     setLoading(true)
-    // VÃ©rifier le mot de passe actuel
+    // Vérifier le mot de passe actuel
     const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email, password: pass })
     if (authErr) { toast.error('Mot de passe incorrect'); setLoading(false); return }
-    // Mettre Ã  jour l'email
+    // Mettre à jour l'email
     const { error } = await supabase.auth.updateUser({ email })
     setLoading(false)
     if (error) { toast.error(error.message); return }
-    toast.success('Email mis Ã  jour â€” vÃ©rifiez votre boÃ®te âœ‰ï¸', { duration: 5000 })
+    toast.success('Email mis à jour — vérifiez votre boîte ✉️', { duration: 5000 })
     onClose()
   }
 
@@ -561,7 +561,7 @@ function EmailSheet({ open, onClose, user, t }) {
             Confirmez avec votre mot de passe
           </label>
           <input value={pass} onChange={e => setPass(e.target.value)}
-            type={showPw ? 'text' : 'password'} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+            type={showPw ? 'text' : 'password'} placeholder="••••••••"
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 transition-colors pr-12" />
           <button onClick={() => setShowPw(p => !p)}
             className="absolute right-4 top-[38px] text-gray-400">
@@ -570,20 +570,20 @@ function EmailSheet({ open, onClose, user, t }) {
         </div>
         <div className="p-3 bg-blue-50 rounded-xl">
           <p className="text-xs text-blue-600 leading-relaxed">
-            ðŸ“§ Un lien de confirmation sera envoyÃ© Ã  votre nouvel email. L'ancien email reste actif jusqu'Ã  confirmation.
+            📧 Un lien de confirmation sera envoyé à votre nouvel email. L'ancien email reste actif jusqu'à confirmation.
           </p>
         </div>
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
           style={{ background: '#008000' }}>
-          {loading ? 'Mise Ã  jour...' : t.save}
+          {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
     </BottomSheet>
   )
 }
 
-// â”€â”€â”€ PhoneSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PhoneSheet ───────────────────────────────────────────────────────────────
 
 function PhoneSheet({ open, onClose, profile, userId, onUpdated, t }) {
   const [phone,   setPhone]   = useState('')
@@ -595,45 +595,45 @@ function PhoneSheet({ open, onClose, profile, userId, onUpdated, t }) {
 
   const handleSave = async () => {
     const cleaned = phone.replace(/\s/g, '')
-    if (cleaned && cleaned.length < 8) { toast.error('NumÃ©ro invalide'); return }
+    if (cleaned && cleaned.length < 8) { toast.error('Numéro invalide'); return }
     setLoading(true)
     const { error } = await supabase.from('profiles').update({ phone: cleaned || null }).eq('id', userId)
     setLoading(false)
-    if (error) { toast.error('Erreur lors de la mise Ã  jour'); return }
+    if (error) { toast.error('Erreur lors de la mise à jour'); return }
     await onUpdated()
-    toast.success('NumÃ©ro mis Ã  jour âœ…')
+    toast.success('Numéro mis à jour ✅')
     onClose()
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Modifier le tÃ©lÃ©phone">
+    <BottomSheet open={open} onClose={onClose} title="Modifier le téléphone">
       <div className="px-5 pt-4 pb-6 space-y-4">
         <div>
           <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-            NumÃ©ro de tÃ©lÃ©phone
+            Numéro de téléphone
           </label>
           <input value={phone} onChange={e => setPhone(e.target.value)}
             type="tel" placeholder="+229 01 23 45 67"
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 transition-colors" />
-          <p className="text-[11px] text-gray-400 mt-1.5">Format international recommandÃ© : +229 ...</p>
+          <p className="text-[11px] text-gray-400 mt-1.5">Format international recommandé : +229 ...</p>
         </div>
         {phone && (
           <button onClick={() => setPhone('')}
             className="flex items-center gap-1.5 text-red-400 text-xs font-semibold">
-            <Trash2 size={12} /> Supprimer le numÃ©ro
+            <Trash2 size={12} /> Supprimer le numéro
           </button>
         )}
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
           style={{ background: '#008000' }}>
-          {loading ? 'Mise Ã  jour...' : t.save}
+          {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
     </BottomSheet>
   )
 }
 
-// â”€â”€â”€ SecuritySheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SecuritySheet ────────────────────────────────────────────────────────────
 
 function SecuritySheet({ open, onClose, t }) {
   const [form,    setForm]    = useState({ current: '', next: '', confirm: '' })
@@ -656,7 +656,7 @@ function SecuritySheet({ open, onClose, t }) {
     const e = {}
     if (!form.current)              e.current = 'Requis'
     if (!form.next)                 e.next    = 'Requis'
-    else if (form.next.length < 6)  e.next    = '6 caractÃ¨res minimum'
+    else if (form.next.length < 6)  e.next    = '6 caractères minimum'
     if (form.next !== form.confirm) e.confirm = 'Les mots de passe ne correspondent pas'
     return e
   }
@@ -670,15 +670,15 @@ function SecuritySheet({ open, onClose, t }) {
     if (signInErr) { setLoading(false); setErrors({ current: 'Mot de passe actuel incorrect' }); return }
     const { error } = await supabase.auth.updateUser({ password: form.next })
     setLoading(false)
-    if (error) { toast.error('Erreur lors de la mise Ã  jour'); return }
-    toast.success('Mot de passe mis Ã  jour âœ…')
+    if (error) { toast.error('Erreur lors de la mise à jour'); return }
+    toast.success('Mot de passe mis à jour ✅')
     onClose()
   }
 
   const fields = [
-    { k: 'current', label: t.currentPassword, ph: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' },
-    { k: 'next',    label: t.newPassword,      ph: '6 caractÃ¨res minimum' },
-    { k: 'confirm', label: t.confirmPassword,  ph: 'RÃ©pÃ©tez le nouveau' },
+    { k: 'current', label: t.currentPassword, ph: '••••••••' },
+    { k: 'next',    label: t.newPassword,      ph: '6 caractères minimum' },
+    { k: 'confirm', label: t.confirmPassword,  ph: 'Répétez le nouveau' },
   ]
 
   return (
@@ -686,9 +686,9 @@ function SecuritySheet({ open, onClose, t }) {
       <div className="px-5 pt-4 pb-6 space-y-4">
         {isOAuth ? (
           <div className="p-4 bg-blue-50 rounded-2xl">
-            <p className="font-semibold text-blue-700 text-sm mb-1">ðŸ”‘ Compte Google</p>
+            <p className="font-semibold text-blue-700 text-sm mb-1">🔑 Compte Google</p>
             <p className="text-xs text-blue-600/80 leading-relaxed">
-              Votre compte est connectÃ© via Google. GÃ©rez votre mot de passe depuis votre compte Google.
+              Votre compte est connecté via Google. Gérez votre mot de passe depuis votre compte Google.
             </p>
           </div>
         ) : (
@@ -712,7 +712,7 @@ function SecuritySheet({ open, onClose, t }) {
             <button onClick={handleSave} disabled={loading}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
               style={{ background: '#008000' }}>
-              {loading ? 'Mise Ã  jour...' : t.update}
+              {loading ? 'Mise à jour...' : t.update}
             </button>
           </>
         )}
@@ -721,15 +721,15 @@ function SecuritySheet({ open, onClose, t }) {
   )
 }
 
-// â”€â”€â”€ LanguageSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── LanguageSheet ────────────────────────────────────────────────────────────
 
 function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
   const [saving, setSaving] = useState(false)
   const current = profile?.language || 'fr'
   const langs = [
-    { code: 'fr',  label: 'FranÃ§ais', flag: 'ðŸ‡«ðŸ‡·', sub: 'Langue par dÃ©faut' },
-    { code: 'en',  label: 'English',  flag: 'ðŸ‡¬ðŸ‡§', sub: 'International' },
-    { code: 'fon', label: 'Fon',      flag: 'ðŸ‡§ðŸ‡¯', sub: 'Langue bÃ©ninoise' },
+    { code: 'fr',  label: 'Français', flag: '🇫🇷', sub: 'Langue par défaut' },
+    { code: 'en',  label: 'English',  flag: '🇬🇧', sub: 'International' },
+    { code: 'fon', label: 'Fon',      flag: '🇧🇯', sub: 'Langue béninoise' },
   ]
 
   const select = async (code) => {
@@ -737,10 +737,10 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
     setSaving(true)
     await supabase.from('profiles').update({ language: code }).eq('id', userId)
     await onUpdated()
-      i18n.changeLanguage(code)
-      setSaving(false)
+    i18n.changeLanguage(code)
+    setSaving(false)
     onClose()
-    toast.success('Langue mise Ã  jour âœ…')
+    toast.success('Langue mise à jour ✅')
   }
 
   return (
@@ -766,14 +766,14 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
   )
 }
 
-// â”€â”€â”€ TwoFASheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── TwoFASheet ───────────────────────────────────────────────────────────────
 
 
 function TwoFASheet({ open, onClose, user, t }) {
   return (
     <BottomSheet open={open} onClose={onClose} title={t.twoFA}>
       <div className="px-5 pt-4 pb-6 space-y-4">
-        <p className="text-center text-gray-600">L'authentification Ã  deux facteurs n'est pas encore disponible.</p>
+        <p className="text-center text-gray-600">L'authentification à deux facteurs n'est pas encore disponible.</p>
         <button onClick={onClose} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{ background: '#008000' }}>
           {t.cancel}
         </button>
@@ -782,16 +782,16 @@ function TwoFASheet({ open, onClose, user, t }) {
   );
 }
 
-// â”€â”€â”€ HelpSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── HelpSheet ────────────────────────────────────────────────────────────────
 
 function HelpSheet({ open, onClose }) {
   const faqs = [
-    { q: 'Comment crÃ©er ma boutique ?',          a: 'Allez dans "Espace Vendeur" depuis la page profil, puis "CrÃ©er ma boutique". Renseignez les informations et soumettez pour vÃ©rification.' },
-    { q: 'Comment passer une commande ?',         a: 'Trouvez un produit, cliquez "Commander", choisissez votre adresse et validez. Le vendeur est notifiÃ© immÃ©diatement.' },
+    { q: 'Comment créer ma boutique ?',          a: 'Allez dans "Espace Vendeur" depuis la page profil, puis "Créer ma boutique". Renseignez les informations et soumettez pour vérification.' },
+    { q: 'Comment passer une commande ?',         a: 'Trouvez un produit, cliquez "Commander", choisissez votre adresse et validez. Le vendeur est notifié immédiatement.' },
     { q: 'Comment retirer mon argent ?',          a: 'Dans "Mon Portefeuille", cliquez "Retirer". Retraits via MTN/Moov Money ou virement bancaire.' },
-    { q: 'Mon paiement est bloquÃ© ?',             a: 'Si un paiement reste "En attente" plus de 48h, contactez le support WhatsApp. Traitement sous 24h.' },
-    { q: 'Comment signaler un vendeur ?',         a: 'Sur la page vendeur, cliquez les 3 points puis "Signaler". Notre Ã©quipe examine sous 24h.' },
-    { q: 'Comment modifier mes informations ?',   a: 'Dans ParamÃ¨tres â†’ Mon Compte, vous pouvez modifier email, tÃ©lÃ©phone et mot de passe.' },
+    { q: 'Mon paiement est bloqué ?',             a: 'Si un paiement reste "En attente" plus de 48h, contactez le support WhatsApp. Traitement sous 24h.' },
+    { q: 'Comment signaler un vendeur ?',         a: 'Sur la page vendeur, cliquez les 3 points puis "Signaler". Notre équipe examine sous 24h.' },
+    { q: 'Comment modifier mes informations ?',   a: 'Dans Paramètres → Mon Compte, vous pouvez modifier email, téléphone et mot de passe.' },
   ]
   const [expanded, setExpanded] = useState(null)
 
@@ -823,7 +823,7 @@ function HelpSheet({ open, onClose }) {
   )
 }
 
-// â”€â”€â”€ DeleteSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DeleteSheet ──────────────────────────────────────────────────────────────
 
 function DeleteSheet({ open, onClose, onConfirm, t }) {
   const [input,   setInput]   = useState('')
@@ -837,7 +837,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
     if (!valid) { toast.error(`Tapez "${keyword}" pour confirmer`); return }
     setLoading(true)
     try {
-      // Marquer le compte comme supprimÃ© dans profiles
+      // Marquer le compte comme supprimé dans profiles
       const { data: { user } } = await supabase.auth.getUser()
       await supabase.from('profiles').update({ deleted_at: new Date().toISOString() }).eq('id', user.id)
       await onConfirm()
@@ -851,10 +851,10 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
     <BottomSheet open={open} onClose={onClose} title={t.deleteAccount}>
       <div className="px-5 pt-4 pb-6 space-y-4">
         <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
-          <p className="text-sm font-bold text-red-700 mb-1">âš ï¸ Action irrÃ©versible</p>
+          <p className="text-sm font-bold text-red-700 mb-1">⚠️ Action irréversible</p>
           <ul className="text-xs text-red-600 leading-relaxed space-y-1 list-disc list-inside">
-            <li>Toutes vos donnÃ©es seront supprimÃ©es</li>
-            <li>Vos commandes et boutiques seront fermÃ©es</li>
+            <li>Toutes vos données seront supprimées</li>
+            <li>Vos commandes et boutiques seront fermées</li>
             <li>Votre solde MANG Wallet sera perdu</li>
           </ul>
         </div>
@@ -877,4 +877,3 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
     </BottomSheet>
   )
 }
-

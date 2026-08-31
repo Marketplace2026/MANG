@@ -94,7 +94,7 @@ export default function App() {
 
   useEffect(() => {
     if (profile?.language) {
-      import('./i18n').then(m => m.default.changeLanguage(profile.language))
+      import('@/i18n').then(m => m.default.changeLanguage(profile.language))
     }
   }, [profile?.language])
 
