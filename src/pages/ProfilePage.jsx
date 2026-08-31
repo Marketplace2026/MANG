@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
+import i18n from '@/i18n'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import {
@@ -1483,6 +1484,7 @@ function LanguageSheet({ open, onClose, profile, onUpdated }) {
     setSelected(code)
     await supabase.from('profiles').update({ language: code }).eq('id', profile.id)
     await onUpdated()
+    i18n.changeLanguage(code)
     toast.success(`Langue mise à jour : ${LANGUAGES.find(l => l.code === code)?.label}`)
     setTimeout(onClose, 400)
   }
