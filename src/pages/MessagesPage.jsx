@@ -247,7 +247,7 @@ function VoicePreviewPlayer({ url, duration = 0, onDelete, onSend, sending }) {
 // ══════════════════════════════════════════════════════════
 // BULLE DE MESSAGE
 // ══════════════════════════════════════════════════════════
-function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, onReply, onCopy, onZoom, replyMsg }) {
+function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, onReply, onCopy, onZoom, replyMsg, onFavorite, userId }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [reactionOpen, setReactionOpen] = useState(false)
   const longTimer = useRef(null)
@@ -386,7 +386,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
               {[
                 { icon: Reply,   label: 'Répondre',   action: () => { onReply(); setMenuOpen(false) } },
                 { icon: Copy,    label: 'Copier',      action: () => { onCopy(); setMenuOpen(false) } },
-                { icon: Star,    label: msg.is_starred ? 'Retirer favori' : 'Mettre en favori', action: () => setMenuOpen(false) },
+                { icon: Star,    label: (msg.favorited_by || []).includes(userId) ? 'Retirer favori' : 'Mettre en favori', action: () => { if(onFavorite) onFavorite(); setMenuOpen(false) } },
                 { icon: Forward, label: 'Transférer',  action: () => { setMenuOpen(false) } },
                 ...(isMe ? [{ icon: Trash2, label: 'Supprimer', action: () => { onDelete(); setMenuOpen(false) }, red: true }] : []),
               ].map(item => {
@@ -444,6 +444,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [pinned, setPinned]         = useState(null)
   const [searchMsg, setSearchMsg]   = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  const [showFavorites, setShowFavorites] = useState(false)
   const [uploading, setUploading]   = useState(false)
   const [contextProduct, setContextProduct] = useState(null)
   const [locked, setLocked]         = useState(false)
@@ -1178,9 +1179,17 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {[
-                { icon: Bell,    label: 'Notifications',       action: () => toast('Bientôt') },
-                { icon: Archive, label: 'Archiver conversation', action: () => toast('Bientôt') },
-                { icon: Star,    label: 'Messages favoris',    action: () => toast('Bientôt') },
+                { icon: Bell,    label: (conv.muted_by || []).includes(user?.id) ? 'Activer les notifications' : 'Rendre silencieux', action: async () => {
+                    const { supabase } = await import('@/lib/supabase');
+                    await supabase.rpc('toggle_mute_conversation', { p_conv_id: conv.id, p_user_id: user?.id });
+                    toast.success('Notifications modifiées');
+                  } },
+                { icon: Archive, label: (conv.archived_by || []).includes(user?.id) ? 'Désarchiver' : 'Archiver conversation', action: async () => {
+                    const { supabase } = await import('@/lib/supabase');
+                    await supabase.rpc('toggle_archive_conversation', { p_conv_id: conv.id, p_user_id: user?.id });
+                    toast.success('Conversation archivée');
+                  } },
+                { icon: Star,    label: showFavorites ? 'Afficher tous les messages' : 'Messages favoris',    action: () => { setShowFavorites(!showFavorites); setShowInfo(false) } },
                 { icon: Search,  label: 'Rechercher',          action: () => { setShowSearch(true); setShowInfo(false) } },
               ].map(item => {
                 const Icon = item.icon
@@ -1428,7 +1437,10 @@ export default function MessagesPage() {
   const filtered = convs.filter(c => {
     const other = c.buyer_id === user?.id ? c.seller : c.buyer
     const q = search.toLowerCase()
-    const matchSearch = !q || (other?.username || '').toLowerCase().includes(q) || (c.shop?.name || '').toLowerCase().includes(q) || (c.last_message || '').toLowerCase().includes(q)
+    const matchSearch = !q || (other?.username || '').toLowerCase().includes(q) || (c.shop?.name || '').toLowerCase().includes(q) || (c.last_message || '').toLowerCase().includes(q);
+      const isArchived = Array.isArray(c.archived_by) && c.archived_by.includes(user?.id);
+      if (tab === 'archive') return matchSearch && isArchived;
+      if (isArchived) return false;
     // Achat = l'utilisateur est le buyer (il a initié la conv)
     // Vente = l'utilisateur est le seller (l'autre a initié)
     const matchTab =
@@ -1496,6 +1508,7 @@ export default function MessagesPage() {
                 { key: 'achat',  label: '🛒 Achat', badge: unreadAchat },
                 { key: 'vente',  label: '🏪 Vente', badge: unreadVente },
                 { key: 'unread', label: 'Non lus',  badge: unreadTotal },
+                  { key: 'archive', label: '🗄️ Archivés' },
               ].map(t => (
                 <button key={t.key} onClick={() => setTab(t.key)}
                   className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
