@@ -108,12 +108,12 @@ export default function ShopPublicPage() {
       setShop(s => ({ ...s, followers_count: s.followers_count + 1 }))
       setFollowers(prev => [...prev, { user: { id: user.id, username: profile?.username, avatar_url: profile?.avatar_url } }])
       if (shop.owner_id !== user.id) {
-        await supabase.rpc('create_notification', {
+        const { error: notifErr } = await supabase.rpc('create_notification', {
           p_user_id: shop.owner_id, p_type: 'shop_follow',
           p_title: '🔔 Nouveau abonné',
           p_body: `@${profile?.username} suit votre boutique "${shop.name}"`,
-          p_reference_id: shop.id, p_reference_type: 'shop',
-        })
+          p_reference_id: shop.id, p_reference_type: 'shop', })
+          if (notifErr) { console.error(notifErr); alert('Erreur Notif: ' + notifErr.message); }
       }
       toast.success('Boutique suivie !')
     }
@@ -134,12 +134,12 @@ export default function ShopPublicPage() {
       setShop(s => ({ ...s, likes_count: s.likes_count + 1 }))
       setLikers(prev => [...prev, { user: { id: user.id, username: profile?.username, avatar_url: profile?.avatar_url } }])
       if (shop.owner_id !== user.id) {
-        await supabase.rpc('create_notification', {
+        const { error: notifErr } = await supabase.rpc('create_notification', {
           p_user_id: shop.owner_id, p_type: 'shop_like',
           p_title: '❤️ Nouveau like',
           p_body: `@${profile?.username} aime votre boutique "${shop.name}"`,
-          p_reference_id: shop.id, p_reference_type: 'shop',
-        })
+          p_reference_id: shop.id, p_reference_type: 'shop', })
+          if (notifErr) { console.error(notifErr); alert('Erreur Notif: ' + notifErr.message); }
       }
     }
   }
@@ -709,12 +709,12 @@ function CommentsSection({ shop, user, profile }) {
       content: text.trim(), parent_id: replyTo?.id || null,
     })
     if (shop.owner_id !== user.id && !replyTo) {
-      await supabase.rpc('create_notification', {
+      const { error: notifErr } = await supabase.rpc('create_notification', {
         p_user_id: shop.owner_id, p_type: 'shop_comment',
         p_title: '💬 Nouveau commentaire',
         p_body: `@${profile?.username} a commenté votre boutique "${shop.name}"`,
-        p_reference_id: shop.id, p_reference_type: 'shop',
-      })
+        p_reference_id: shop.id, p_reference_type: 'shop', })
+          if (notifErr) { console.error(notifErr); alert('Erreur Notif: ' + notifErr.message); }
     }
     setText(''); setReplyTo(null); setSending(false)
     loadComments()
