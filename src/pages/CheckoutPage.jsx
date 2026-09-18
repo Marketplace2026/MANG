@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCartStore, useAuthStore } from '@/store';
 import { toast } from 'react-hot-toast';
@@ -41,7 +42,8 @@ async function reverseGeocode(lat, lon) {
 }
 
 export default function CheckoutPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { items, checkoutWithWallet } = useCartStore();
   const { user, wallet, refreshWallet } = useAuthStore();
@@ -446,7 +448,7 @@ export default function CheckoutPage() {
               <span>{formatFCFA(total)}</span>
             </div>
             <div className="flex justify-between text-dark-600">
-              <span>Livraison</span>
+              <span>{t('checkout_delivery')}</span>
               <span className="text-emerald-600 font-bold">Gratuit</span>
             </div>
             <div className="flex justify-between items-baseline font-black text-base border-t border-surface-100 pt-3 text-dark-900">

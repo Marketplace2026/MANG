@@ -1,5 +1,6 @@
 // deploy: alibaba-pro-v2
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShoppingBag, Store, Star, ShieldCheck,
@@ -18,6 +19,7 @@ const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3}
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { user } = useAuthStore()
   const { items: cartItems, addItem } = useCartStore()
 

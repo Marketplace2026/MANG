@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   Camera, Edit3, MapPin, Phone, User, Mail,
@@ -48,6 +49,7 @@ export default function ProfilePage() {
   const { user, profile, wallet, pieces, signOut, refreshProfile } = useAuthStore()
   const { unreadCount, fetchNotifications } = useNotificationsStore()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [editOpen,       setEditOpen]       = useState(false)
   const [settingsOpen,   setSettingsOpen]   = useState(false)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
@@ -84,6 +85,7 @@ function AnimatedCount({ value }) {
 // ── Carte boutique favorite (2 colonnes) ──────────────────
 function ShopFavoriteCard({ item, onUnfollow, index }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const shop = item.shop
   const [removing, setRemoving] = useState(false)
 

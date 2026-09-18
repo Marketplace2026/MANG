@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Store, Plus, Package, Star, Trash2, Eye, Edit3,
   MapPin, Truck, Phone, ChevronDown, X, Check,
@@ -157,7 +158,7 @@ export default function VendorPage() {
       <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">Espace Vendeur</h1>
+            <h1 className="text-white text-2xl font-bold">{t('vendor_title')}</h1>
             <p className="text-white/80 text-sm">Gérez vos boutiques & produits</p>
           </div>
           <div className="flex gap-3">

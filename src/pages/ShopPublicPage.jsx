@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Heart, Users, MessageCircle, Share2,
@@ -30,6 +31,7 @@ const AVAIL_LABELS = {
 export default function ShopPublicPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
 
   const [shop, setShop] = useState(null)
@@ -307,7 +309,7 @@ export default function ShopPublicPage() {
             <span className="text-gray-200">|</span>
             <div className="flex items-center gap-1.5">
               <span className="font-black text-dark-900 text-base">{products.length}</span>
-              <span className="text-gray-400 text-xs">Produits</span>
+              <span className="text-gray-400 text-xs">{t('shop_products_tab')}</span>
             </div>
           </div>
 

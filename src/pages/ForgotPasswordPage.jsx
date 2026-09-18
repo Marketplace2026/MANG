@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -25,7 +26,7 @@ export default function ForgotPasswordPage() {
       <div className="text-5xl mb-4">📧</div>
       <h2 className="font-display text-xl text-white font-bold mb-2">Email envoyé !</h2>
       <p className="text-primary-300 text-sm mb-6">Vérifiez votre boîte mail pour réinitialiser votre mot de passe.</p>
-      <Link to="/connexion" className="btn-primary w-full block text-center">Retour à la connexion</Link>
+      <Link to="/connexion" className="btn-primary w-full block text-center">{t('forgot_back')}</Link>
     </div>
   )
 

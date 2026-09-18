@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -33,6 +34,7 @@ function getPasswordStrength(pwd) {
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [showPass, setShowPass] = useState(false)

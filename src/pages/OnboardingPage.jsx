@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { ShieldCheck, Truck, Percent, CheckCircle, ArrowRight, Store } from 'lucide-react'
@@ -20,6 +21,7 @@ const FEATURES = [
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [page, setPage] = useState(1) // 1 or 2
   const [tIdx, setTIdx] = useState(0)
   const [animating, setAnimating] = useState(false)
@@ -197,7 +199,7 @@ export default function OnboardingPage() {
                   <Percent className="w-5 h-5 text-yellow-300" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-sm">0% Commission, Zéro Intermédiaires</h3>
+                  <h3 className="text-white font-bold text-sm">{t('onboarding_commission')}</h3>
                   <p className="text-white/80 text-[10px] mt-0.5 leading-relaxed">
                     Les acheteurs bénéficient du juste prix de la ferme et les agriculteurs récoltent 100% de leur gain de vente sans aucun frais intermédiaire.
                   </p>
@@ -223,7 +225,7 @@ export default function OnboardingPage() {
                   <Truck className="w-5 h-5 text-yellow-300" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-sm">Réseau de Transporteurs Partenaires</h3>
+                  <h3 className="text-white font-bold text-sm">{t('onboarding_logistics')}</h3>
                   <p className="text-white/80 text-[10px] mt-0.5 leading-relaxed">
                     Une logistique optimisée et locale pour livrer vos sacs de maïs, paniers de tomates et fruits directement dans votre boutique ou chez vous.
                   </p>
@@ -273,7 +275,7 @@ export default function OnboardingPage() {
             className="bg-green-700 hover:bg-green-800 text-white font-bold rounded-[12px] flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
             style={{ height: '44px', width: '90%', fontSize: '16px' }}
           >
-            Continuer
+            { t('onboarding_continue') }
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
         ) : (
@@ -282,7 +284,7 @@ export default function OnboardingPage() {
             className="bg-green-700 hover:bg-green-800 text-white font-bold rounded-[12px] flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
             style={{ height: '44px', width: '90%', fontSize: '16px' }}
           >
-            Commencer
+            { t('onboarding_start') }
             <ArrowRight className="w-4 h-4 text-white" />
           </button>
         )}

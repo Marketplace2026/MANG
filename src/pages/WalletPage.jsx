@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Wallet, RefreshCw, Copy, Check, Eye, EyeOff,
   Shield, ChevronRight, X, Loader2, TrendingUp,

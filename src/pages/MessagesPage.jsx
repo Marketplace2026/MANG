@@ -1,5 +1,6 @@
 // split-screen layout version 2.0.0
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Send, ArrowLeft, Image, Mic, Paperclip, Smile,
@@ -1478,7 +1479,7 @@ export default function MessagesPage() {
           <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50 flex-shrink-0">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-white text-2xl font-bold">Messages</h1>
+                <h1 className="text-white text-2xl font-bold">{t('messages_title')}</h1>
                 <p className="text-white/80 text-sm">
                   {convs.length} conversation{convs.length !== 1 ? 's' : ''}
                   {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
