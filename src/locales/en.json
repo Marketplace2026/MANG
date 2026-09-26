@@ -276,5 +276,14 @@
   "referral_how_it_works": "How does it work?",
   "referral_step1": "Share your code",
   "referral_step2": "Your friend signs up",
-  "referral_step3": "Earn rewards"
+  "referral_step3": "Earn rewards",
+  "notifPromos": "Promotions",
+  "notifPromosSub": "Deals and discounts",
+  "privacySecurity": "Privacy & Security",
+  "shareLocation": "Share my location",
+  "shareLocationOn": "Location enabled",
+  "shareLocationOff": "Location disabled",
+  "publicProfile": "Public profile",
+  "publicProfileOn": "Visible to everyone",
+  "publicProfileOff": "Only visible to followers"
 }

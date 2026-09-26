@@ -276,5 +276,14 @@
   "referral_how_it_works": "Comment ça marche ?",
   "referral_step1": "Partagez votre code",
   "referral_step2": "Votre filleul s'inscrit",
-  "referral_step3": "Gagnez des récompenses"
+  "referral_step3": "Gagnez des récompenses",
+  "notifPromos": "Promotions",
+  "notifPromosSub": "Offres et réductions",
+  "privacySecurity": "Confidentialité & Sécurité",
+  "shareLocation": "Partager ma localisation",
+  "shareLocationOn": "Localisation activée",
+  "shareLocationOff": "Localisation désactivée",
+  "publicProfile": "Profil public",
+  "publicProfileOn": "Visible par tous",
+  "publicProfileOff": "Visible uniquement par vos abonnés"
 }
