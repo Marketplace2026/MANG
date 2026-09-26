@@ -10,8 +10,7 @@ const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3}
 
 // Empty cart view
 function PageVide() {
-  const navigate = useNavigate()
-  const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-surface-50">
       <div className="w-24 h-24 rounded-full bg-primary-50 flex items-center justify-center mb-6 animate-bounce">
@@ -29,6 +28,7 @@ function PageVide() {
 }
 
 export default function CartPage() {
+  const { t } = useTranslation()
   const { items, removeItem, updateQuantity } = useCartStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();

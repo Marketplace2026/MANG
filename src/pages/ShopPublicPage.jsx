@@ -29,9 +29,9 @@ const AVAIL_LABELS = {
 }
 
 export default function ShopPublicPage() {
+  const { t } = useTranslation()
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
 
   const [shop, setShop] = useState(null)

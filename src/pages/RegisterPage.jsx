@@ -33,8 +33,8 @@ function getPasswordStrength(pwd) {
 }
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [showPass, setShowPass] = useState(false)

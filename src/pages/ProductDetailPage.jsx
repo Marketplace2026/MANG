@@ -17,9 +17,9 @@ import TraceabilityTimeline from '@/components/marketplace/TraceabilityTimeline'
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
 export default function ProductDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const { user } = useAuthStore()
   const { items: cartItems, addItem } = useCartStore()
 

@@ -46,10 +46,10 @@ function getMemberLevel(totalOrders = 0) {
 // ─── Page principale ─────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { user, profile, wallet, pieces, signOut, refreshProfile } = useAuthStore()
   const { unreadCount, fetchNotifications } = useNotificationsStore()
   const navigate = useNavigate()
-  const { t } = useTranslation()
 
   const [editOpen,       setEditOpen]       = useState(false)
   const [settingsOpen,   setSettingsOpen]   = useState(false)

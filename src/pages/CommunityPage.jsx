@@ -51,6 +51,7 @@ const TABS = [
 // PAGE PRINCIPALE
 // ============================================================
 export default function CommunityPage() {
+  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
   const [tab, setTab] = useState('feed')
   const tabsRef = useRef()
@@ -203,7 +204,6 @@ function StoryViewer({
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
   const navigate = useNavigate()
-  const { t } = useTranslation()
 
   const group = groups[groupIdx]
   const story = group?.items?.[itemIdx]

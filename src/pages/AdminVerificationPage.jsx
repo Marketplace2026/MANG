@@ -40,8 +40,8 @@ const REJECT_REASONS = {
 }
 
 export default function AdminVerificationPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuthStore()
 
   // Tabs

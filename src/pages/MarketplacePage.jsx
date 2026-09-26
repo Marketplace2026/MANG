@@ -91,9 +91,9 @@ function distanceKm(lat1, lon1, lat2, lon2) {
 // PAGE PRINCIPALE
 // ============================================================
 export default function MarketplacePage() {
+  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const location = useLocation()
   const { unreadCount } = useNotificationsStore()
 

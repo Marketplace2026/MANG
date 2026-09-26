@@ -12,9 +12,9 @@ import { useAuthStore } from '@/store'
 import { Avatar } from '@/components/ui'
 
 export default function ReferralPage() {
+  const { t } = useTranslation()
   const { user, profile, pieces } = useAuthStore()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const [referrals, setReferrals] = useState([])
   const [loading, setLoading] = useState(true)
   const [codeCopied, setCodeCopied] = useState(false)

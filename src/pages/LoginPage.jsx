@@ -18,8 +18,8 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)

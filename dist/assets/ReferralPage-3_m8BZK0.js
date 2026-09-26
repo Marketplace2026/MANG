@@ -1,4 +1,4 @@
-import{a2 as M,ad as E,ag as H,ak as U,aa as l,ab as W,a8 as e,A as Z,g as z,m as C,w as A,a0 as m,Y as S,l as D,J,b as K,al as j}from"./index-DOlTrv6l.js";import{G as Y}from"./gift-gL6Rlw02.js";/**
+import{a2 as M,ak as E,ad as H,ag as U,aa as l,ab as W,a8 as e,A as Z,g as z,m as C,w as A,a0 as m,Y as S,l as D,J,b as K,al as j}from"./index-7Sf9MzNw.js";import{G as Y}from"./gift-CyRy0a6V.js";/**
  * @license lucide-react v0.436.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -8,7 +8,7 @@ import{a2 as M,ad as E,ag as H,ak as U,aa as l,ab as W,a8 as e,A as Z,g as z,m a
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const Q=M("Zap",[["path",{d:"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z",key:"1xq2db"}]]);function se(){const{user:u,profile:p,pieces:h}=E(),q=H(),{t:k}=U(),[b,P]=l.useState([]),[T,v]=l.useState(!0),[G,N]=l.useState(!1),[B,w]=l.useState(!1),[g,R]=l.useState({total:0,shops:0,pieces:0}),[i,V]=l.useState("Bronze"),[r,I]=l.useState(0),c=(p==null?void 0:p.referral_code)||"...",o=`${window.location.origin}/inscription?ref=${c}`;l.useEffect(()=>{u&&L()},[u]);const L=async()=>{v(!0);const{data:s}=await W.from("referrals").select(`
+ */const Q=M("Zap",[["path",{d:"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z",key:"1xq2db"}]]);function se(){const{t:k}=E(),{user:u,profile:p,pieces:h}=H(),q=U(),[b,P]=l.useState([]),[T,v]=l.useState(!0),[G,N]=l.useState(!1),[B,w]=l.useState(!1),[g,R]=l.useState({total:0,shops:0,pieces:0}),[i,V]=l.useState("Bronze"),[r,I]=l.useState(0),c=(p==null?void 0:p.referral_code)||"...",o=`${window.location.origin}/inscription?ref=${c}`;l.useEffect(()=>{u&&L()},[u]);const L=async()=>{v(!0);const{data:s}=await W.from("referrals").select(`
         *,
         referred:profiles!referrals_referred_id_fkey(id, username, avatar_url, created_at)
       `).eq("referrer_id",u.id).order("created_at",{ascending:!1}),t=s||[];P(t);const d=t.filter(a=>!a.suspicious).length;I(d);let n="Bronze";d>=15?n="Gold":d>=5&&(n="Silver"),V(n),R({total:t.length,shops:t.filter(a=>(a.status==="shop_created"||a.status==="rewarded")&&!a.suspicious).length,pieces:t.reduce((a,$)=>a+($.pieces_given||0),0)}),v(!1)},F=()=>{navigator.clipboard.writeText(c),N(!0),j.success(k("referral_copied")),setTimeout(()=>N(!1),2e3)},O=()=>{navigator.clipboard.writeText(o),w(!0),j.success("Lien copié !"),setTimeout(()=>w(!1),2e3)},f=async()=>{const s=`🌿 Rejoins-moi sur MANG — le marché agricole du Bénin !

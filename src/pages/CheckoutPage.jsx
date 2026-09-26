@@ -42,8 +42,8 @@ async function reverseGeocode(lat, lon) {
 }
 
 export default function CheckoutPage() {
-  const navigate = useNavigate()
-  const { t } = useTranslation();
+  const { t } = useTranslation()
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { items, checkoutWithWallet } = useCartStore();
   const { user, wallet, refreshWallet } = useAuthStore();

@@ -85,7 +85,6 @@ function AnimatedCount({ value }) {
 // ── Carte boutique favorite (2 colonnes) ──────────────────
 function ShopFavoriteCard({ item, onUnfollow, index }) {
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const shop = item.shop
   const [removing, setRemoving] = useState(false)
 
@@ -365,6 +364,7 @@ function applySortProducts(products, sort) {
 
 // ── PAGE PRINCIPALE ────────────────────────────────────────
 export default function FavoritesPage() {
+  const { t } = useTranslation()
   const { user } = useAuthStore()
   const [tab, setTab] = useState('shops')
   const [shops, setShops] = useState([])

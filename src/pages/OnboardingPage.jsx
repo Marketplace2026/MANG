@@ -20,8 +20,8 @@ const FEATURES = [
 ]
 
 export default function OnboardingPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1) // 1 or 2
   const [tIdx, setTIdx] = useState(0)
   const [animating, setAnimating] = useState(false)

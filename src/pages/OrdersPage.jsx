@@ -79,9 +79,9 @@ function PinInput({ value, onChange, error }) {
 // PAGE PRINCIPALE
 // ══════════════════════════════════════════════════════════════
 export default function OrdersPage() {
+  const { t } = useTranslation()
   const { user } = useAuthStore()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const [orders, setOrders]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState('all')

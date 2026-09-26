@@ -18,9 +18,9 @@ import { fr } from 'date-fns/locale'
 // PAGE PROFIL PUBLIC
 // ============================================================
 export default function PublicProfilePage() {
+  const { t } = useTranslation()
   const { username } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const { user, profile: myProfile } = useAuthStore()
 
   const cachedProfile = useCacheStore.getState().membersCache[username] || null
