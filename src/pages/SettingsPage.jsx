@@ -195,72 +195,72 @@ export default function SettingsPage() {
             className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center active:scale-90 transition-transform">
             <ArrowLeft size={18} className="text-gray-700" />
           </button>
-          <h1 className="font-black text-gray-900 text-[17px] tracking-tight">{t('settings')}</h1>
+          <h1 className="font-black text-gray-900 text-[17px] tracking-tight">{t.settings}</h1>
         </div>
       </div>
 
       <div className="px-4 pt-4 pb-28 space-y-4">
 
         {/* ══ 1. MON COMPTE ══ */}
-        <Section title={t('myAccount')}>
+        <Section title={t.myAccount}>
           <Item icon={User} iconBg="bg-green-50" iconColor="text-green-600"
-            label={t('editProfile')} sub={t('editProfileSub')}
+            label={t.editProfile} sub={t.editProfileSub}
             onClick={() => navigate('/profil')} />
           <Item icon={Mail} iconBg="bg-blue-50" iconColor="text-blue-600"
-            label={t('email')} sub={maskedEmail}
+            label={t.email} sub={maskedEmail}
             onClick={() => setEmailOpen(true)} />
           <Item icon={Phone} iconBg="bg-violet-50" iconColor="text-violet-600"
-            label={t('phone')} sub={maskedPhone || t('phoneEmpty')}
+            label={t.phone} sub={maskedPhone || t.phoneEmpty}
             onClick={() => setPhoneOpen(true)} />
           <Item icon={Shield} iconBg="bg-gray-100" iconColor="text-gray-600"
-            label={t('security')} sub={t('securitySub')}
+            label={t.security} sub={t.securitySub}
             onClick={() => setSecurityOpen(true)} />
         </Section>
 
         {/* ══ 2. NOTIFICATIONS ══ */}
-        <Section title={t('notifications')}>
+        <Section title={t.notifications}>
           <ItemToggle icon={Bell} iconBg="bg-orange-50" iconColor="text-orange-500"
-            label={t('notifPush')} sub={t('notifPushSub')}
+            label={t.notifPush} sub={t.notifPushSub}
             value={notifPush} saving={savingNotif}
             onChange={v => { setNotifPush(v); saveNotif('notif_push', v) }} />
           <ItemToggle icon={Package} iconBg="bg-blue-50" iconColor="text-blue-500"
-            label={t('notifOrders')} sub={t('notifOrdersSub')}
+            label={t.notifOrders} sub={t.notifOrdersSub}
             value={notifOrders} saving={savingNotif}
             onChange={v => { setNotifOrders(v); saveNotif('notif_orders', v) }} />
           <ItemToggle icon={MessageSquare} iconBg="bg-violet-50" iconColor="text-violet-500"
-            label={t('notifMessages')} sub={t('notifMessagesSub')}
+            label={t.notifMessages} sub={t.notifMessagesSub}
             value={notifMessages} saving={savingNotif}
             onChange={v => { setNotifMessages(v); saveNotif('notif_messages', v) }} />
           <ItemToggle icon={Tag} iconBg="bg-amber-50" iconColor="text-amber-500"
-            label={t('notifPromos')} sub={t('notifPromosSub')}
+            label={t.notifPromos} sub={t.notifPromosSub}
             value={notifPromos} saving={savingNotif}
             onChange={v => { setNotifPromos(v); saveNotif('notif_promos', v) }} />
         </Section>
 
         {/* ══ 3. CONFIDENTIALITÉ ══ */}
-        <Section title={t('privacySecurity')}>
+        <Section title={t.privacySecurity}>
           <ItemToggle icon={MapPin} iconBg="bg-emerald-50" iconColor="text-emerald-500"
-            label={t('shareLocation')}
-            sub={shareLocation ? t('shareLocationOn') : t('shareLocationOff')}
+            label={t.shareLocation}
+            sub={shareLocation ? t.shareLocationOn : t.shareLocationOff}
             value={shareLocation} saving={savingPrivacy}
             onChange={v => { setShareLocation(v); savePrivacy('location_sharing', v) }} />
           <ItemToggle icon={Eye} iconBg="bg-sky-50" iconColor="text-sky-500"
-            label={t('publicProfile')}
-            sub={publicProfile ? t('publicProfileOn') : t('publicProfileOff')}
+            label={t.publicProfile}
+            sub={publicProfile ? t.publicProfileOn : t.publicProfileOff}
             value={publicProfile} saving={savingPrivacy}
             onChange={v => { setPublicProfile(v); savePrivacy('is_public', v) }} />
           <Item icon={ShieldCheck} iconBg="bg-green-50" iconColor="text-green-600"
-            label={t('twoFA')} sub={t('twoFASub')}
+            label={t.twoFA} sub={t.twoFASub}
             onClick={() => setTwoFAOpen(true)} />
           <Item icon={Trash2} iconBg="bg-red-50" iconColor="text-red-500"
-            label={t('deleteAccount')} sub={t('deleteAccountSub')}
+            label={t.deleteAccount} sub={t.deleteAccountSub}
             danger onClick={() => setDeleteOpen(true)} />
         </Section>
 
         {/* ══ 4. APPARENCE & LANGUE ══ */}
-        <Section title={t('appearanceLanguage')}>
+        <Section title={t.appearanceLanguage}>
           <Item icon={Globe} iconBg="bg-violet-50" iconColor="text-violet-600"
-            label={t('language')}
+            label={t.language}
             sub={lang === 'fr' ? '🇫🇷 Français' : lang === 'en' ? '🇬🇧 English' : '🇧🇯 Fon'}
             onClick={() => setLanguageOpen(true)} />
           {/* Thème : toggle inline, pas de navigation */}
@@ -270,36 +270,36 @@ export default function SettingsPage() {
                     : <Sun  size={16} className="text-amber-500" strokeWidth={2.2} />}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-800">{t('theme')}</p>
-              <p className="text-[11px] text-gray-400">{dark ? t('themeDark') : t('themeLight')}</p>
+              <p className="text-sm font-semibold text-gray-800">{t.theme}</p>
+              <p className="text-[11px] text-gray-400">{dark ? t.themeDark : t.themeLight}</p>
             </div>
             <ToggleSwitch value={dark} onChange={setDark} />
           </div>
         </Section>
 
         {/* ══ 5. AIDE & SUPPORT ══ */}
-        <Section title={t('helpSupport')}>
+        <Section title={t.helpSupport}>
           <Item icon={HelpCircle} iconBg="bg-green-50" iconColor="text-green-600"
-            label={t('faq')} sub={t('faqSub')}
+            label={t.faq} sub={t.faqSub}
             onClick={() => setHelpOpen(true)} />
           <Item icon={MessageCircle} iconBg="bg-emerald-50" iconColor="text-emerald-600"
-            label={t('whatsapp')} sub={t('whatsappSub')}
+            label={t.whatsapp} sub={t.whatsappSub}
             onClick={() => window.open('https://wa.me/2290197293196?text=Bonjour%20MANG%20support', '_blank')} />
           <Item icon={AlertTriangle} iconBg="bg-orange-50" iconColor="text-orange-500"
-            label={t('reportProblem')} sub={t('reportProblemSub')}
+            label={t.reportProblem} sub={t.reportProblemSub}
             onClick={() => window.open('https://wa.me/2290197293196?text=Signalement%20bug%20MANG%20:', '_blank')} />
         </Section>
 
         {/* ══ 6. LÉGAL ══ */}
-        <Section title={t('legalInfo')}>
+        <Section title={t.legalInfo}>
           <Item icon={FileText} iconBg="bg-gray-100" iconColor="text-gray-500"
-            label={t('cgu')}
+            label={t.cgu}
             onClick={() => window.open('https://mang.vercel.app/cgu', '_blank')} />
           <Item icon={Lock} iconBg="bg-gray-100" iconColor="text-gray-500"
-            label={t('privacy')}
+            label={t.privacy}
             onClick={() => window.open('https://mang.vercel.app/confidentialite', '_blank')} />
           <Item icon={Info} iconBg="bg-gray-100" iconColor="text-gray-500"
-            label={t('about')} sub={t('aboutSub')}
+            label={t.about} sub={t.aboutSub}
             onClick={() => toast('MANG v1.0.0 — Marché Agricole Nouvelle Génération 🌱', { duration: 4000 })} />
         </Section>
 
@@ -314,7 +314,7 @@ export default function SettingsPage() {
             <LogOut size={16} className="text-red-500" />
           </div>
           <span className="flex-1 text-left text-sm font-bold text-red-600">
-            {logoutConfirm ? t('logoutConfirm') : t('logout')}
+            {logoutConfirm ? t.logoutConfirm : t.logout}
           </span>
           {logoutConfirm && <span className="text-red-400 text-xs font-bold">⚠️</span>}
         </button>
@@ -390,7 +390,7 @@ function EmailSheet({ open, onClose, user, t }) {
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
           style={{ background: '#008000' }}>
-          {loading ? 'Mise à jour...' : t('save')}
+          {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
     </BottomSheet>
@@ -440,7 +440,7 @@ function PhoneSheet({ open, onClose, profile, userId, onUpdated, t }) {
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
           style={{ background: '#008000' }}>
-          {loading ? 'Mise à jour...' : t('save')}
+          {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
     </BottomSheet>
@@ -490,13 +490,13 @@ function SecuritySheet({ open, onClose, t }) {
   }
 
   const fields = [
-    { k: 'current', label: t('currentPassword'), ph: '••••••••' },
-    { k: 'next',    label: t('newPassword'),      ph: '6 caractères minimum' },
-    { k: 'confirm', label: t('confirmPassword'),  ph: 'Répétez le nouveau' },
+    { k: 'current', label: t.currentPassword, ph: '••••••••' },
+    { k: 'next',    label: t.newPassword,      ph: '6 caractères minimum' },
+    { k: 'confirm', label: t.confirmPassword,  ph: 'Répétez le nouveau' },
   ]
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={t('security')}>
+    <BottomSheet open={open} onClose={onClose} title={t.security}>
       <div className="px-5 pt-4 pb-6 space-y-4">
         {isOAuth ? (
           <div className="p-4 bg-blue-50 rounded-2xl">
@@ -526,7 +526,7 @@ function SecuritySheet({ open, onClose, t }) {
             <button onClick={handleSave} disabled={loading}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
               style={{ background: '#008000' }}>
-              {loading ? 'Mise à jour...' : t('update')}
+              {loading ? 'Mise à jour...' : t.update}
             </button>
           </>
         )}
@@ -585,11 +585,11 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
 
 function TwoFASheet({ open, onClose, user, t }) {
   return (
-    <BottomSheet open={open} onClose={onClose} title={t('twoFA')}>
+    <BottomSheet open={open} onClose={onClose} title={t.twoFA}>
       <div className="px-5 pt-4 pb-6 space-y-4">
         <p className="text-center text-gray-600">L'authentification à deux facteurs n'est pas encore disponible.</p>
         <button onClick={onClose} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{ background: '#008000' }}>
-          {t('cancel')}
+          {t.cancel}
         </button>
       </div>
     </BottomSheet>
@@ -662,7 +662,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={t('deleteAccount')}>
+    <BottomSheet open={open} onClose={onClose} title={t.deleteAccount}>
       <div className="px-5 pt-4 pb-6 space-y-4">
         <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
           <p className="text-sm font-bold text-red-700 mb-1">⚠️ Action irréversible</p>
@@ -674,7 +674,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
-            {t('deleteType')}
+            {t.deleteType}
           </label>
           <input value={input} onChange={e => setInput(e.target.value)}
             placeholder={keyword}
@@ -685,7 +685,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
         <button onClick={handleDelete} disabled={loading || !valid}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-40 transition-opacity"
           style={{ background: '#EF4444' }}>
-          {loading ? 'Suppression...' : t('deleteBtn')}
+          {loading ? 'Suppression...' : t.deleteBtn}
         </button>
       </div>
     </BottomSheet>

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
@@ -91,7 +90,6 @@ function distanceKm(lat1, lon1, lat2, lon2) {
 // PAGE PRINCIPALE
 // ============================================================
 export default function MarketplacePage() {
-  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
@@ -739,7 +737,7 @@ export default function MarketplacePage() {
                 onChange={e => handleSearch(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onKeyDown={handleKeyDown}
-                placeholder={t('marketplace_search_placeholder')}
+                placeholder="Rechercher des produits, boutiques..."
                 className="w-full bg-transparent text-dark-800 text-sm font-semibold outline-none placeholder-dark-600/40"
               />
             </div>
@@ -1017,7 +1015,7 @@ export default function MarketplacePage() {
         <div className="px-3 mb-2.5 mt-2 flex items-center justify-between">
           <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">
             {search.trim() !== '' 
-              ? (searchTab === 'shops' ? t('marketplace_shops') : t('marketplace_products')) 
+              ? (searchTab === 'shops' ? 'Boutiques correspondantes' : 'Produits correspondants') 
               : 'Toutes les Boutiques'}
           </h2>
           <div className="flex items-center gap-3">

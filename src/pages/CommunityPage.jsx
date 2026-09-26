@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
   Heart, MessageCircle, Share2, Users, Search,
   UserPlus, UserCheck, MoreHorizontal, Trash2,
@@ -51,7 +50,6 @@ const TABS = [
 // PAGE PRINCIPALE
 // ============================================================
 export default function CommunityPage() {
-  const { t } = useTranslation()
   const { user, profile } = useAuthStore()
   const [tab, setTab] = useState('feed')
   const tabsRef = useRef()
@@ -62,7 +60,7 @@ export default function CommunityPage() {
       <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">{t('community_title')}</h1>
+            <h1 className="text-white text-2xl font-bold">Communauté</h1>
             <p className="text-white/80 text-sm">🌿 MANG — Ensemble, on grandit</p>
           </div>
           <div className="flex gap-3">
@@ -1964,7 +1962,7 @@ function PostCard({
 
         <button onClick={onComment} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold text-dark-600/60 dark:text-dark-300 hover:bg-surface-100 dark:hover:bg-dark-800 active:scale-95">
           <MessageCircle size={17} strokeWidth={1.8}/>
-          <span className="text-xs">{t('community_comment')}</span>
+          <span className="text-xs">Commenter</span>
         </button>
 
         <button 
@@ -2235,7 +2233,7 @@ function CommentItem({ comment, userId, isReply, onReply, onDelete, isLiked, onL
             <Heart size={11} className={clsx(isLiked && 'fill-current')}/>
             {comment.likes_count > 0 && <span>{comment.likes_count}</span>}
           </button>
-          <button onClick={onReply} className="text-primary-600 dark:text-primary-400 text-[10px] font-bold">{t('community_reply')}</button>
+          <button onClick={onReply} className="text-primary-600 dark:text-primary-400 text-[10px] font-bold">Répondre</button>
           {isOwner && (
             <button onClick={onDelete} className="text-red-500 text-[10px] font-bold">Supprimer</button>
           )}

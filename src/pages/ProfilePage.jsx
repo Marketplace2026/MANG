@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   Camera, Edit3, MapPin, Phone, User, Mail,
@@ -46,7 +45,6 @@ function getMemberLevel(totalOrders = 0) {
 // ─── Page principale ─────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { t } = useTranslation()
   const { user, profile, wallet, pieces, signOut, refreshProfile } = useAuthStore()
   const { unreadCount, fetchNotifications } = useNotificationsStore()
   const navigate = useNavigate()

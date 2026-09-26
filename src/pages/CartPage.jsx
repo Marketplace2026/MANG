@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft, Store, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useCartStore, useAuthStore } from '@/store';
@@ -16,7 +15,7 @@ function PageVide() {
       <div className="w-24 h-24 rounded-full bg-primary-50 flex items-center justify-center mb-6 animate-bounce">
         <ShoppingCart size={48} className="text-primary-600" />
       </div>
-      <h2 className="font-display font-black text-dark-800 text-xl mb-2">{t('cart_empty')}</h2>
+      <h2 className="font-display font-black text-dark-800 text-xl mb-2">Votre panier est vide</h2>
       <p className="text-dark-600/60 text-xs max-w-xs mb-6">
         Explorez la marketplace pour y ajouter de délicieux produits locaux.
       </p>
@@ -28,7 +27,6 @@ function PageVide() {
 }
 
 export default function CartPage() {
-  const { t } = useTranslation()
   const { items, removeItem, updateQuantity } = useCartStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();

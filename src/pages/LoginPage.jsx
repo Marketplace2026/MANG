@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -18,7 +17,6 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,7 +30,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) {
-      toast.error(t('login_error'))
+      toast.error('Email ou mot de passe incorrect')
     } else {
       navigate('/marketplace')
     }
@@ -45,7 +43,7 @@ export default function LoginPage() {
       options: { redirectTo: `${window.location.origin}/marketplace` }
     })
     if (error) {
-      toast.error(t('login_google_error'))
+      toast.error('Connexion Google impossible')
       setGoogleLoading(false)
     }
     // Pas de setLoading(false) ici — la page redirige
@@ -53,8 +51,8 @@ export default function LoginPage() {
 
   return (
     <div className="animate-fade-in">
-      <h2 className="font-display text-2xl text-white font-bold mb-1">{t('login_welcome')}</h2>
-      <p className="text-primary-300 text-sm mb-6">{t('login_subtitle')}</p>
+      <h2 className="font-display text-2xl text-white font-bold mb-1">Bon retour 👋</h2>
+      <p className="text-primary-300 text-sm mb-6">Connectez-vous à votre compte MANG</p>
 
       {/* Bouton Google */}
       <button
@@ -84,7 +82,7 @@ export default function LoginPage() {
           <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type="email"
-            placeholder={t('common_email_placeholder')}
+            placeholder="Adresse email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
@@ -97,7 +95,7 @@ export default function LoginPage() {
           <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type={showPass ? 'text' : 'password'}
-            placeholder={t('common_password_placeholder')}
+            placeholder="Mot de passe"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -117,13 +115,13 @@ export default function LoginPage() {
         <button type="submit" disabled={loading || googleLoading}
           className="w-full py-3.5 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-green mt-2 flex items-center justify-center gap-2">
           {loading && <Loader2 size={16} className="animate-spin"/>}
-          {loading ? t('login_loading') : t('login_btn')}
+          {loading ? 'Connexion...' : 'Se connecter'}
         </button>
 
         <button
           type="button"
           onClick={() => {
-            toast.success(t('login_guest_toast'))
+            toast.success("Mode invité activé (lecture seule)")
             navigate('/marketplace')
           }}
           className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/15 transition-all duration-200 active:scale-95 flex items-center justify-center mt-2"

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   Package, CheckCircle, XCircle, Clock, CreditCard,
@@ -18,9 +17,9 @@ const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3}
 
 // ── Config statuts ──────────────────────────────────────────
 const STATUS = {
-  pending:  { label: t('orders_status_pending'),  color: 'bg-orange-100 text-orange-700',  dot: 'bg-orange-500',  icon: Clock },
-  accepted: { label: t('orders_status_accepted'),   color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', icon: CheckCircle },
-  refused:  { label: t('orders_status_refused'),    color: 'bg-red-100 text-red-700',         dot: 'bg-red-500',     icon: XCircle },
+  pending:  { label: 'En attente',  color: 'bg-orange-100 text-orange-700',  dot: 'bg-orange-500',  icon: Clock },
+  accepted: { label: 'Acceptée',   color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', icon: CheckCircle },
+  refused:  { label: 'Refusée',    color: 'bg-red-100 text-red-700',         dot: 'bg-red-500',     icon: XCircle },
   paid:     { label: 'Payée',      color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500',    icon: CreditCard },
 }
 
@@ -79,7 +78,6 @@ function PinInput({ value, onChange, error }) {
 // PAGE PRINCIPALE
 // ══════════════════════════════════════════════════════════════
 export default function OrdersPage() {
-  const { t } = useTranslation()
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [orders, setOrders]         = useState([])
@@ -366,7 +364,7 @@ export default function OrdersPage() {
       doc.setFont(undefined, 'bold')
       doc.text('Statut Paye :', 35, 180)
       doc.setFont(undefined, 'normal')
-      doc.text(order.status === 'paid' ? 'Payé' : t('orders_status_pending'), 120, 180)
+      doc.text(order.status === 'paid' ? 'Payé' : 'En attente', 120, 180)
 
       doc.setFont(undefined, 'bold')
       doc.text('Boutique :', 320, 140)
@@ -557,7 +555,7 @@ export default function OrdersPage() {
           <div className="grid grid-cols-4 gap-2">
             {[
               { label: 'Total',     value: stats.total,    color: 'text-white' },
-              { label: t('orders_status_pending'), value: stats.pending,  color: 'text-orange-300' },
+              { label: 'En attente', value: stats.pending,  color: 'text-orange-300' },
               { label: 'Acceptées', value: stats.accepted, color: 'text-emerald-300' },
               { label: 'Payées',    value: stats.paid,     color: 'text-blue-300' },
             ].map((s,i) => (
@@ -700,8 +698,8 @@ export default function OrdersPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl shadow-card">
             <p className="text-5xl mb-3">📦</p>
-            <p className="font-display text-lg font-bold text-dark-800">{t('orders_empty')}</p>
-            <p className="text-dark-600/50 text-sm mt-1">{t('orders_empty_sub')}</p>
+            <p className="font-display text-lg font-bold text-dark-800">Aucune commande</p>
+            <p className="text-dark-600/50 text-sm mt-1">Vos commandes apparaîtront ici</p>
           </div>
         ) : (
           <div className="space-y-3">

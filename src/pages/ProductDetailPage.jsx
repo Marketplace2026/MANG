@@ -1,6 +1,5 @@
 // deploy: alibaba-pro-v2
 import { useState, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShoppingBag, Store, Star, ShieldCheck,
@@ -17,7 +16,6 @@ import TraceabilityTimeline from '@/components/marketplace/TraceabilityTimeline'
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
 export default function ProductDetailPage() {
-  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuthStore()

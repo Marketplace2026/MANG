@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
   Bell, Check, CheckCheck, Trash2, RefreshCw,
   Heart, MessageCircle, UserPlus, Package,
@@ -117,14 +116,14 @@ export default function NotificationsPage() {
   const handleMarkAll = async () => {
     if (!unreadCount) { toast('Toutes les notifications sont déjà lues'); return }
     await markAllAsRead(user.id)
-    toast.success(t('notif_marked'))
+    toast.success('Toutes marquées comme lues ✅')
   }
 
   const handleClearAll = async () => {
-    if (!confirm(t('notif_delete_all'))) return
+    if (!confirm('Supprimer toutes les notifications ?')) return
     await supabase.from('notifications').delete().eq('user_id', user.id)
     await fetchNotifications(user.id)
-    toast.success(t('notif_deleted'))
+    toast.success('Notifications supprimées')
   }
 
   // Grouper par date
@@ -136,9 +135,9 @@ export default function NotificationsPage() {
       <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">{t('notif_title')}</h1>
+            <h1 className="text-white text-2xl font-bold">Notifications</h1>
             <p className="text-white/80 text-sm">
-              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : t('notif_up_to_date')}
+              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✅'}
             </p>
           </div>
           <div className="flex gap-3">

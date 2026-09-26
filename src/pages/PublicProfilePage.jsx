@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, MapPin, UserPlus, UserCheck,
@@ -18,7 +17,6 @@ import { fr } from 'date-fns/locale'
 // PAGE PROFIL PUBLIC
 // ============================================================
 export default function PublicProfilePage() {
-  const { t } = useTranslation()
   const { username } = useParams()
   const navigate = useNavigate()
   const { user, profile: myProfile } = useAuthStore()

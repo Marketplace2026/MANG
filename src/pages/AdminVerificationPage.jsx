@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Check, X, Shield, Users, Store, Package,
@@ -40,7 +39,6 @@ const REJECT_REASONS = {
 }
 
 export default function AdminVerificationPage() {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
 

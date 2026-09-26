@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
   Copy, Check, Share2, Gift, Users, Trophy,
@@ -12,7 +11,6 @@ import { useAuthStore } from '@/store'
 import { Avatar } from '@/components/ui'
 
 export default function ReferralPage() {
-  const { t } = useTranslation()
   const { user, profile, pieces } = useAuthStore()
   const navigate = useNavigate()
   const [referrals, setReferrals] = useState([])
@@ -66,7 +64,7 @@ export default function ReferralPage() {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(referralCode)
     setCodeCopied(true)
-    toast.success(t('referral_copied'))
+    toast.success('Code copié !')
     setTimeout(() => setCodeCopied(false), 2000)
   }
 
@@ -110,7 +108,7 @@ export default function ReferralPage() {
             <ArrowLeft size={18} className="text-white"/>
           </button>
           <div>
-            <h1 className="font-display text-2xl text-white font-bold">{t('referral_title')}</h1>
+            <h1 className="font-display text-2xl text-white font-bold">Parrainage</h1>
             <p className="text-primary-300 text-sm">Invitez des amis et gagnez des pièces</p>
           </div>
         </div>

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store'
@@ -364,7 +363,6 @@ function applySortProducts(products, sort) {
 
 // ── PAGE PRINCIPALE ────────────────────────────────────────
 export default function FavoritesPage() {
-  const { t } = useTranslation()
   const { user } = useAuthStore()
   const [tab, setTab] = useState('shops')
   const [shops, setShops] = useState([])
