@@ -15,6 +15,192 @@ import { useAuthStore } from '@/store'
 import { BottomSheet } from '@/components/ui'
 
 // ─── Traductions i18n ─────────────────────────────────────────────────────────
+
+const TRANSLATIONS = {
+  fr: {
+    settings: 'Paramètres',
+    myAccount: 'Mon Compte',
+    editProfile: 'Modifier le profil',
+    editProfileSub: 'Nom, photo, bio, localisation',
+    email: 'Adresse e-mail',
+    phone: 'Numéro de téléphone',
+    phoneEmpty: 'Non renseigné',
+    security: 'Sécurité & Mot de passe',
+    securitySub: 'Modifiez votre mot de passe',
+    notifications: 'Notifications',
+    notifPush: 'Notifications push',
+    notifPushSub: "Recevoir des alertes sur l'appli",
+    notifOrders: 'Nouvelles commandes',
+    notifOrdersSub: 'Alertes pour vos ventes',
+    notifMessages: 'Messages',
+    notifMessagesSub: 'Quand quelqu\'un vous écrit',
+    notifPromos: 'Promotions & offres',
+    notifPromosSub: 'Newsletter et actualités MANG',
+    privacySecurity: 'Confidentialité & Sécurité',
+    shareLocation: 'Partage de localisation',
+    shareLocationOn: 'Actif — les vendeurs proches vous voient',
+    shareLocationOff: 'Désactivé',
+    publicProfile: 'Profil public',
+    publicProfileOn: 'Visible par tous',
+    publicProfileOff: 'Visible uniquement par vos contacts',
+    twoFA: 'Authentification 2 facteurs',
+    twoFASub: 'Protégez votre compte',
+    deleteAccount: 'Supprimer mon compte',
+    deleteAccountSub: 'Action irréversible',
+    appearanceLanguage: 'Apparence & Langue',
+    language: 'Langue de l\'application',
+    theme: 'Thème',
+    themeLight: 'Mode clair',
+    themeDark: 'Mode sombre',
+    helpSupport: 'Aide & Support',
+    faq: 'Centre d\'aide & FAQ',
+    faqSub: 'Questions fréquentes',
+    whatsapp: 'WhatsApp Support',
+    whatsappSub: 'Réponse en moins d\'1h',
+    rateApp: 'Noter l\'application',
+    rateAppSub: 'Aidez-nous à nous améliorer',
+    reportProblem: 'Signaler un problème',
+    reportProblemSub: 'Bug ou comportement suspect',
+    legalInfo: 'Informations légales',
+    cgu: 'Conditions générales d\'utilisation',
+    privacy: 'Politique de confidentialité',
+    about: 'À propos de MANG',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
+    logout: 'Se déconnecter',
+    logoutConfirm: 'Appuyez à nouveau pour confirmer',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    update: 'Mettre à jour',
+    currentPassword: 'Mot de passe actuel',
+    newPassword: 'Nouveau mot de passe',
+    confirmPassword: 'Confirmer le nouveau',
+    deleteType: 'Tapez "supprimer" pour confirmer',
+    deleteBtn: 'Supprimer définitivement',
+    twoFANotAvailable: 'Activez 2FA pour sécuriser votre compte',
+  },
+  en: {
+    settings: 'Settings',
+    myAccount: 'My Account',
+    editProfile: 'Edit profile',
+    editProfileSub: 'Name, photo, bio, location',
+    email: 'Email address',
+    phone: 'Phone number',
+    phoneEmpty: 'Not set',
+    security: 'Security & Password',
+    securitySub: 'Change your password',
+    notifications: 'Notifications',
+    notifPush: 'Push notifications',
+    notifPushSub: 'Receive app alerts',
+    notifOrders: 'New orders',
+    notifOrdersSub: 'Alerts for your sales',
+    notifMessages: 'Messages',
+    notifMessagesSub: 'When someone writes to you',
+    notifPromos: 'Promotions & offers',
+    notifPromosSub: 'MANG newsletter and news',
+    privacySecurity: 'Privacy & Security',
+    shareLocation: 'Location sharing',
+    shareLocationOn: 'Active — nearby sellers can see you',
+    shareLocationOff: 'Disabled',
+    publicProfile: 'Public profile',
+    publicProfileOn: 'Visible to everyone',
+    publicProfileOff: 'Visible only to your contacts',
+    twoFA: '2-Factor Authentication',
+    twoFASub: 'Secure your account',
+    deleteAccount: 'Delete my account',
+    deleteAccountSub: 'This action is irreversible',
+    appearanceLanguage: 'Appearance & Language',
+    language: 'App language',
+    theme: 'Theme',
+    themeLight: 'Light mode',
+    themeDark: 'Dark mode',
+    helpSupport: 'Help & Support',
+    faq: 'Help Center & FAQ',
+    faqSub: 'Frequently asked questions',
+    whatsapp: 'WhatsApp Support',
+    whatsappSub: 'Response within 1 hour',
+    rateApp: 'Rate the app',
+    rateAppSub: 'Help us improve',
+    reportProblem: 'Report a problem',
+    reportProblemSub: 'Bug or suspicious behavior',
+    legalInfo: 'Legal information',
+    cgu: 'Terms and conditions',
+    privacy: 'Privacy policy',
+    about: 'About MANG',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
+    logout: 'Log out',
+    logoutConfirm: 'Tap again to confirm',
+    save: 'Save',
+    cancel: 'Cancel',
+    update: 'Update',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm new password',
+    deleteType: 'Type "delete" to confirm',
+    deleteBtn: 'Permanently delete',
+    twoFANotAvailable: 'Enable 2FA to protect your account',
+  },
+  fon: {
+    settings: 'Ɖòwùnù',
+    myAccount: 'Nɔ̌ compte',
+    editProfile: 'Sɛ́n profil',
+    editProfileSub: 'Nyĭ, fɔtɔ, bío, fínɛ́',
+    email: 'E-mail ɖé',
+    phone: 'Awɔ fón',
+    phoneEmpty: 'É ɖó ǎ',
+    security: 'Sísí & Nǔ ɖé',
+    securitySub: 'Sín nǔ ɖé towe',
+    notifications: 'Nùɖiɖo',
+    notifPush: 'Nùɖiɖo push',
+    notifPushSub: 'Mɔ nùɖiɖo lɛ',
+    notifOrders: 'Commandes yɔyɔ̌',
+    notifOrdersSub: 'Nùɖiɖo vendre towe',
+    notifMessages: 'Nǔ gbɛwɛ',
+    notifMessagesSub: 'Mɛ ɖɔ nǔ nú we',
+    notifPromos: 'Nùjɔnǔ lɛ',
+    notifPromosSub: 'MANG newsletter',
+    privacySecurity: 'Xwiyixwi & Sísí',
+    shareLocation: 'Fínɛ́ ɖèjí',
+    shareLocationOn: 'Actu — vendeur lɛ mɔ we',
+    shareLocationOff: 'Desactivé',
+    publicProfile: 'Profil nyikpé',
+    publicProfileOn: 'Mɛ bǐ mɔ',
+    publicProfileOff: 'Contact towe kɛ́ɛ mɔ',
+    twoFA: 'Sísí 2 facteurs',
+    twoFASub: 'Compte towe sísí',
+    deleteAccount: 'Zán compte towe',
+    deleteAccountSub: 'Nǔ e na nyí gán',
+    appearanceLanguage: 'Hɛnnɛ & Gbè',
+    language: 'Gbè towe',
+    theme: 'Couleur',
+    themeLight: 'Weziza',
+    themeDark: 'Zǎnzǎn',
+    helpSupport: 'Ðɔkpɔ & Sín nǔ',
+    faq: 'FAQ & Ðɔkpɔ',
+    faqSub: 'Nùkanbyɔ lɛ',
+    whatsapp: 'WhatsApp Support',
+    whatsappSub: 'Gbɛ 1h mɛ',
+    rateApp: 'Note appli',
+    rateAppSub: 'Sín nuzu',
+    reportProblem: 'Signal nǔvɔvɔ',
+    reportProblemSub: 'Bug alǒ nǔ vɔ́vɔ́',
+    legalInfo: 'Nǔkanbyɔ legal',
+    cgu: 'Conditions Générales',
+    privacy: 'Xwiyixwi policy',
+    about: 'MANG tɔn',
+    aboutSub: 'Version 1.0.0 · © 2026 MANG',
+    logout: 'Yì',
+    logoutConfirm: 'Ɖó lɛ́ vɔ bo na jɛn',
+    save: 'Ɖó',
+    cancel: 'Yì',
+    update: 'Sɛ́n',
+    currentPassword: 'Nǔ ɖé lɛlɛ',
+    newPassword: 'Nǔ ɖé yɔyɔ̌',
+    confirmPassword: 'Ðɔ tɔn gbɔn',
+    deleteType: 'Ɖó "supprimer" bo na jɛn',
+    deleteBtn: 'Zán kpé kpé',
+    twoFANotAvailable: '2FA na wá',
+  },
+}
 // Hook global pour le thème
 function useTheme() {
   const [dark, setDark] = useState(() => {
@@ -114,9 +300,11 @@ export default function SettingsPage() {
   const navigate  = useNavigate()
   const [dark, setDark] = useTheme()
 
-    // Langue active via i18next
-    const { t, i18n } = useTranslation()
-    const lang = i18n.language
+      // Langue active synchronisee avec i18next et le profil
+  const { i18n } = useTranslation()
+  const currentLang = i18n?.language?.startsWith('en') ? 'en' : (i18n?.language?.startsWith('fon') ? 'fon' : (profile?.language || 'fr'))
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr
+  const lang = currentLang
 
   // Sous-feuilles
   const [securityOpen,  setSecurityOpen]  = useState(false)
@@ -538,8 +726,9 @@ function SecuritySheet({ open, onClose, t }) {
 // ─── LanguageSheet ────────────────────────────────────────────────────────────
 
 function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
+  const { i18n } = useTranslation()
   const [saving, setSaving] = useState(false)
-  const current = profile?.language || 'fr'
+  const current = (i18n?.language?.startsWith('en') ? 'en' : (i18n?.language?.startsWith('fon') ? 'fon' : (profile?.language || 'fr')))
   const langs = [
     { code: 'fr',  label: 'Français', flag: '🇫🇷', sub: 'Langue par défaut' },
     { code: 'en',  label: 'English',  flag: '🇬🇧', sub: 'International' },
@@ -549,12 +738,19 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
   const select = async (code) => {
     if (code === current) { onClose(); return }
     setSaving(true)
-    await supabase.from('profiles').update({ language: code }).eq('id', userId)
-    await onUpdated()
-    i18n.changeLanguage(code)
-    setSaving(false)
-    onClose()
-    toast.success('Langue mise à jour ✅')
+    try {
+      if (userId) {
+        await supabase.from('profiles').update({ language: code }).eq('id', userId)
+        if (onUpdated) await onUpdated()
+      }
+      await i18n.changeLanguage(code)
+      toast.success('Langue mise à jour ✅')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+      onClose()
+    }
   }
 
   return (
