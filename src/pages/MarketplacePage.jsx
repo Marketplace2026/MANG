@@ -1024,7 +1024,7 @@ export default function MarketplacePage() {
                 onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')}
                 className="text-[10px] font-black text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg tracking-wide uppercase hover:bg-primary-100 transition active:scale-95 flex items-center gap-1"
               >
-                viewMode === 'list' ? (
+                {viewMode === 'list' ? (
                   <>
                     <Map size={11} strokeWidth={2.2} />
                     <span>Vue Carte</span>
@@ -1034,7 +1034,7 @@ export default function MarketplacePage() {
                     <List size={11} strokeWidth={2.2} />
                     <span>Vue Liste</span>
                   </>
-                )
+                )}
               </button>
             )}
             {activeFiltersCount > 0 && (
