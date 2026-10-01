@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Check, X, Shield, Users, Store, Package,
-  TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle
+  TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle, FileText
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'

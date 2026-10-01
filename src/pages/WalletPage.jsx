@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Wallet, RefreshCw, Copy, Check, Eye, EyeOff,
   Shield, ChevronRight, X, Loader2, TrendingUp,
-  TrendingDown, Phone, Download, FileText
+  TrendingDown, Phone, Download, FileText, CheckCircle2, CreditCard
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'

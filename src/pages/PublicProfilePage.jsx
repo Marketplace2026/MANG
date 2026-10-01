@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, MapPin, UserPlus, UserCheck,
   Store, MessageCircle, Share2, Grid, BookOpen,
-  ChevronRight, Heart, Users
+  ChevronRight, Heart, Users, UserX
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'

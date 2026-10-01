@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { 
   ArrowLeft, ShieldCheck, Wallet, CheckCircle, 
   AlertTriangle, Phone, MapPin, User, ChevronRight, Store, Loader2,
-  ChevronDown, CheckCircle2, Navigation, Plus, Check, Trash2, X
+  ChevronDown, CheckCircle2, Navigation, Plus, Check, Trash2, X, ShoppingCart
 } from 'lucide-react';
 import { BottomSheet, Button } from '@/components/ui';
 import { supabase } from '@/lib/supabase';

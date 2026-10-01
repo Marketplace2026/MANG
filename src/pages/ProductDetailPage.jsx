@@ -4,7 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShoppingBag, Store, Star, ShieldCheck,
   ChevronRight, Truck, Info, Phone, Plus, Minus, Send,
-  Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle, MessageCircle
+  Share2, Heart, Award, ArrowRight, ShieldAlert, BadgeCheck, CheckCircle, MessageCircle,
+  Tag, Package, AlertTriangle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCartStore, useCacheStore } from '@/store'

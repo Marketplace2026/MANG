@@ -271,7 +271,10 @@ export function PremiumBadge({ level }) {
     2: { label: 'Argent', icon: Award, class: 'bg-slate-400/15 text-slate-600 border border-slate-400/30' },
     3: { label: 'Or',     icon: Crown, class: 'bg-gold-500/15 text-gold-700 border border-gold-500/30 animate-badge-glow' },
   }
-  const { label, icon: BadgeIcon, class: cls } = config[level]
+  const item = config[level] || config[Number(level)]
+  if (!item) return null
+  const { label, icon: BadgeIcon, class: cls } = item;
+  if (!BadgeIcon) return null;
   return (
     <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold', cls)}>
       <BadgeIcon size={12} strokeWidth={2.5} />

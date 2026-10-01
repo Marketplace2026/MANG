@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft, Store, ShieldCheck, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft, Store, ShieldCheck, ChevronRight, Package, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useCartStore, useAuthStore } from '@/store';
 import { Button } from '@/components/ui';
 import { toast } from 'react-hot-toast';

@@ -3,7 +3,8 @@ import {
   Store, Plus, Package, Star, Trash2, Eye, Edit3,
   MapPin, Truck, Phone, ChevronDown, X, Check,
   TrendingUp, Users, Heart, Coins, Crown, Zap,
-  BarChart3, Clock, Camera, Search, ChevronRight
+  BarChart3, Clock, Camera, Search, ChevronRight,
+  XCircle, Tag
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
