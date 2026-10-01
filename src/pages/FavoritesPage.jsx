@@ -108,7 +108,7 @@ function ShopFavoriteCard({ item, onUnfollow, index }) {
       <div className="relative aspect-square bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop?.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center text-4xl">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center"><Package size={24} className="text-dark-300" /></div>
         }
         {shop?.has_delivery && (
           <div className="absolute top-2 left-2 bg-primary-700/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full flex items-center gap-1">
@@ -225,7 +225,7 @@ function EmptyState({ tab }) {
       style={{ animation: 'fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both' }}
     >
       <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mb-5 shadow-inner">
-        <span className="text-5xl">{isShops ? '🏪' : isProducts ? '📦' : '💾'}</span>
+        {isShops ? <Store size={44} className="text-primary-600" /> : isProducts ? <Package size={44} className="text-primary-600" /> : <Bookmark size={44} className="text-primary-600" />}
       </div>
       <p className="font-bold text-dark-700 text-lg mb-2">
         {isShops ? 'Aucune boutique suivie' : isProducts ? 'Aucun produit favori' : 'Aucune publication enregistrée'}

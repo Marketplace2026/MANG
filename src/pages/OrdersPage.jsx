@@ -841,7 +841,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
         <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
           {order.product?.image_url
             ? <img src={order.product.image_url} className="w-full h-full object-cover"/>
-            : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30">🌿</div>}
+            : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30"><Package size={22} className="text-gray-300" /></div>}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -896,7 +896,7 @@ function OrderDetailSheet({
   const delivCfg = DELIVERY_STATUS[order.delivery_status] || DELIVERY_STATUS.pending
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="📦 Détails de la commande">
+    <BottomSheet open={open} onClose={onClose} title="Détails de la commande">
       <div className="px-4 pt-2 pb-8 space-y-4">
         {/* Produit */}
         <div className="flex gap-3 items-center p-3 bg-surface-50 rounded-2xl">

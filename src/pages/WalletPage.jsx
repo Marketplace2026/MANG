@@ -45,7 +45,7 @@ function getTxCfg(tx) {
   if (t.includes('transfer_in')  || (t.includes('transfer') && Number(tx.amount) > 0)) return TX_TYPES.transfer_in
   if (t.includes('order') && Number(tx.amount) < 0) return TX_TYPES.order_payment
   if (t.includes('order')) return TX_TYPES.order_received
-  return { label: 'Transaction', icon: '💳', color: 'text-gray-600', bg: 'bg-gray-50' }
+  return { label: 'Transaction', icon: CreditCard, color: 'text-gray-600', bg: 'bg-gray-50' }
 }
 
 // Montant déjà en FCFA dans la DB
@@ -851,24 +851,30 @@ function TxDetailSheet({ open, onClose, tx }) {
   const receiptNum = tx.receipt_number || 'N/A'
 
   return (
-    <Sheet open={open} onClose={onClose} title="📄 Détail transaction">
+    <Sheet open={open} onClose={onClose} title="Détail transaction">
       <div className="px-5 py-4 pb-10 space-y-4">
         <div className="text-center py-6 bg-gray-50 rounded-2xl">
-          <div className={clsx('w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3', cfg.bg)}>{cfg.icon}</div>
+          <div className={clsx('w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3', cfg.bg)}>
+            {typeof cfg.icon === 'function' ? (
+              <cfg.icon size={30} className={cfg.color} strokeWidth={2.2} />
+            ) : (
+              <span className="text-3xl">{cfg.icon}</span>
+            )}
+          </div>
           <p className={clsx('font-black text-4xl', isCredit ? 'text-emerald-600' : 'text-red-600')}>
             {isCredit?'+':'-'}{amtFCFA.toLocaleString('fr-FR')} FCFA
           </p>
           <p className="text-gray-500 text-sm mt-1">{cfg.label}</p>
         </div>
-        <div className="bg-emerald-100 text-emerald-700 text-sm font-bold text-center py-2 rounded-xl">✅ Transaction validée</div>
+        <div className="bg-emerald-100 text-emerald-700 text-sm font-bold text-center py-2 rounded-xl flex items-center justify-center gap-1.5"><CheckCircle2 size={16} /> Transaction validée</div>
         <div className="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-100">
           {[
-            ['🧾 Reçu N°', receiptNum],
-            ['📅 Date', new Date(tx.created_at).toLocaleString('fr-FR')],
-            ['🏷️ Type', cfg.label],
-            ['💵 Montant', `${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`],
-            tx.balance_after !== undefined && ['💰 Solde après', `${Number(tx.balance_after).toLocaleString('fr-FR')} FCFA`],
-            tx.description && ['📌 Note', tx.description],
+            ['Reçu N°', receiptNum],
+            ['Date', new Date(tx.created_at).toLocaleString('fr-FR')],
+            ['Type', cfg.label],
+            ['Montant', `${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`],
+            tx.balance_after !== undefined && ['Solde après', `${Number(tx.balance_after).toLocaleString('fr-FR')} FCFA`],
+            tx.description && ['Note', tx.description],
           ].filter(Boolean).map(([lbl, val]) => (
             <div key={lbl} className="flex items-start justify-between px-4 py-3 gap-3">
               <span className="text-gray-500 text-sm flex-shrink-0">{lbl}</span>

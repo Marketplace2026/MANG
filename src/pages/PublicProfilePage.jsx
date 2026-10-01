@@ -146,7 +146,7 @@ export default function PublicProfilePage() {
 
   if (!profile) return (
     <div className="min-h-screen bg-surface-50 flex flex-col items-center justify-center gap-4">
-      <p className="text-5xl">🕵️</p>
+      <UserX size={48} className="text-dark-300 mx-auto mb-3" />
       <p className="font-bold text-dark-800 text-lg">Profil introuvable</p>
       <button onClick={() => navigate(-1)}
         className="px-5 py-2.5 rounded-2xl bg-primary-600 text-white font-bold text-sm">

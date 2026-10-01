@@ -61,7 +61,7 @@ export default function CommunityPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-white text-2xl font-bold">Communauté</h1>
-            <p className="text-white/80 text-sm">🌿 MANG — Ensemble, on grandit</p>
+            <p className="text-white/80 text-sm">MANG — Ensemble, on grandit</p>
           </div>
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">

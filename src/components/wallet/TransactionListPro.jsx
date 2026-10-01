@@ -70,23 +70,27 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
       {/* Onglets Filtres Rapides */}
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {[
-          { id: 'all', label: 'Toutes' },
-          { id: 'in', label: '📥 Entrées' },
-          { id: 'out', label: '📤 Sorties' },
-          { id: 'orders', label: '🛒 Commandes' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === tab.id
-                ? 'bg-[#004D00] text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+          { id: 'all',    label: 'Toutes',    icon: RefreshCw },
+          { id: 'in',     label: 'Entrées',   icon: ArrowDownLeft },
+          { id: 'out',    label: 'Sorties',   icon: ArrowUpRight },
+          { id: 'orders', label: 'Commandes', icon: ShoppingBag },
+        ].map((tab) => {
+          const TabIcon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === tab.id
+                  ? 'bg-[#004D00] text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <TabIcon size={13} strokeWidth={2.2} />
+              <span>{tab.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Liste des Transactions */}

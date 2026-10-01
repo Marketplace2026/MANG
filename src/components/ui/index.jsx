@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Award, Crown, Shield } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 import { getOptimizedImageUrl } from '@/utils/image'
@@ -267,14 +267,15 @@ export function SkeletonText({ lines = 1, className = '' }) {
 export function PremiumBadge({ level }) {
   if (!level || level === 0) return null
   const config = {
-    1: { label: 'Bronze', emoji: '🥉', class: 'bg-amber-700/15 text-amber-700 border border-amber-700/30' },
-    2: { label: 'Argent', emoji: '🥈', class: 'bg-slate-400/15 text-slate-600 border border-slate-400/30' },
-    3: { label: 'Or',     emoji: '🥇', class: 'bg-gold-500/15 text-gold-700 border border-gold-500/30 animate-badge-glow' },
+    1: { label: 'Bronze', icon: Award, class: 'bg-amber-700/15 text-amber-700 border border-amber-700/30' },
+    2: { label: 'Argent', icon: Award, class: 'bg-slate-400/15 text-slate-600 border border-slate-400/30' },
+    3: { label: 'Or',     icon: Crown, class: 'bg-gold-500/15 text-gold-700 border border-gold-500/30 animate-badge-glow' },
   }
-  const { label, emoji, class: cls } = config[level]
+  const { label, icon: BadgeIcon, class: cls } = config[level]
   return (
     <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold', cls)}>
-      {emoji} {label}
+      <BadgeIcon size={12} strokeWidth={2.5} />
+      <span>{label}</span>
     </span>
   )
 }

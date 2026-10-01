@@ -493,7 +493,7 @@ export default function CheckoutPage() {
           ) : (
             <>
               <ShieldCheck size={14} />
-              CONFIRMER ET PAYER (🔒)
+              CONFIRMER ET PAYER
             </>
           )}
         </button>

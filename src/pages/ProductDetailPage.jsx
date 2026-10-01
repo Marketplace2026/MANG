@@ -461,7 +461,7 @@ export default function ProductDetailPage() {
           {product.wholesale_tiers?.length > 0 && (
             <div className="p-4 bg-gold-500/10 border border-gold-300/30 rounded-2xl space-y-2 text-xs">
               <p className="font-black text-gold-700 uppercase tracking-wider text-[9px] flex items-center gap-1.5">
-                🏷️ Prix de gros dégressif applicable
+                <span className="inline-flex items-center gap-1.5"><Tag size={13} className="text-amber-600" /> Prix de gros dégressif applicable</span>
               </p>
               <div className="space-y-1">
                 {product.wholesale_tiers.map((t, idx) => (
@@ -495,7 +495,7 @@ export default function ProductDetailPage() {
           {/* Bouton Tertiaire - Devis B2B */}
           <button onClick={() => setQuoteOpen(true)}
             className="w-full mt-2 py-3 rounded-2xl border-2 border-primary-600/20 hover:border-primary-600 text-primary-700 hover:bg-primary-50/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
-            🏷️ Demander un devis de gros (B2B)
+            <span className="inline-flex items-center gap-2"><Tag size={15} /> Demander un devis de gros (B2B)</span>
           </button>
         </div>
 
@@ -550,7 +550,7 @@ export default function ProductDetailPage() {
                     {sim.image_url ? (
                       <img src={sim.image_url} className="w-full h-full object-cover"/>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl">🌾</div>
+                      <div className="w-full h-full flex items-center justify-center"><Package size={22} className="text-dark-300" /></div>
                     )}
                   </div>
                   <div className="min-w-0">
@@ -648,10 +648,10 @@ export default function ProductDetailPage() {
       )}
 
       {/* SHEET DEMANDE DE DEVIS */}
-      <BottomSheet open={quoteOpen} onClose={() => setQuoteOpen(false)} title="🏷️ Demande de devis grossiste">
+      <BottomSheet open={quoteOpen} onClose={() => setQuoteOpen(false)} title="Demande de devis grossiste">
         <div className="px-4 pt-2 pb-8 space-y-4">
           <div className="p-3.5 bg-gold-500/10 border border-gold-300/30 rounded-2xl text-gold-700 text-xs">
-            ⚠️ <strong>Demande B2B.</strong> Envoyez vos besoins spécifiques au vendeur pour négocier un tarif préférentiel.
+            <AlertTriangle size={15} className="inline mr-1 text-amber-600" /> <strong>Demande B2B.</strong> Envoyez vos besoins spécifiques au vendeur pour négocier un tarif préférentiel.
           </div>
 
           <div className="space-y-1.5">

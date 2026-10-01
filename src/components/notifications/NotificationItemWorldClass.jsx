@@ -100,8 +100,8 @@ export default function NotificationItemWorldClass({
         {sender ? (
           <UserLink user={sender} size="md" showName={false} showAvatar={true} />
         ) : (
-          <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black flex items-center justify-center text-lg shadow-xs">
-            🌿
+          <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black flex items-center justify-center shadow-xs">
+            <Sprout size={20} strokeWidth={2} />
           </div>
         )}
 

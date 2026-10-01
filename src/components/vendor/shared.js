@@ -11,31 +11,31 @@ export const CATEGORIES = [
 ]
 
 export const AVAILABILITY_OPTIONS = [
-  { value: 'now',  label: '✅ Disponible maintenant' },
-  { value: '1w',   label: '⏳ Dans 1 semaine' },
-  { value: '2w',   label: '⏳ Dans 2 semaines' },
-  { value: '1m',   label: '📅 Dans 1 mois' },
-  { value: '2m',   label: '📅 Dans 2 mois' },
-  { value: '3m',   label: '📅 Dans 3 mois' },
-  { value: '6m',   label: '📅 Dans 6 mois' },
-  { value: '1y',   label: '📆 Dans 1 an' },
+  { value: 'now',  label: 'Disponible maintenant' },
+  { value: '1w',   label: 'Dans 1 semaine' },
+  { value: '2w',   label: 'Dans 2 semaines' },
+  { value: '1m',   label: 'Dans 1 mois' },
+  { value: '2m',   label: 'Dans 2 mois' },
+  { value: '3m',   label: 'Dans 3 mois' },
+  { value: '6m',   label: 'Dans 6 mois' },
+  { value: '1y',   label: 'Dans 1 an' },
 ]
 
 export const PRODUCT_LIMITS = { 0: 10, 1: 20, 2: 30, 3: Infinity }
 
 export const PREMIUM_PLANS = [
   {
-    level: 1, name: 'Bronze', emoji: '🥉', price: 1000, stars: '★',
+    level: 1, name: 'Bronze', price: 1000, stars: '★',
     color: 'from-amber-700 to-amber-800',
     perks: ['Jusqu\'à 20 produits', 'Boutique affichée plus haut', 'Badge Bronze visible'],
   },
   {
-    level: 2, name: 'Argent', emoji: '🥈', price: 2000, stars: '★★',
+    level: 2, name: 'Argent', price: 2000, stars: '★★',
     color: 'from-slate-500 to-slate-600',
     perks: ['Jusqu\'à 30 produits', 'Priorité dans les résultats', 'Badge Argent animé', 'Stats avancées'],
   },
   {
-    level: 3, name: 'Or', emoji: '🥇', price: 3000, stars: '★★★',
+    level: 3, name: 'Or', price: 3000, stars: '★★★',
     color: 'from-gold-500 to-gold-600',
     perks: ['Produits illimités', 'Toujours en tête de liste', 'Badge Or brillant', 'Support prioritaire', 'Analyse des ventes'],
     popular: true,

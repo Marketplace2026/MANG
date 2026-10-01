@@ -406,7 +406,7 @@ export default function VendorPage() {
       />
 
       {/* Confirm delete shop */}
-      <Modal open={!!deleteShopModal} onClose={() => setDeleteShopModal(null)} title="⚠️ Supprimer la boutique">
+      <Modal open={!!deleteShopModal} onClose={() => setDeleteShopModal(null)} title="Supprimer la boutique">
         <div className="p-5 space-y-4">
           <p className="text-dark-600 text-sm">
             Supprimer <span className="font-bold text-dark-800">"{deleteShopModal?.name}"</span> ? Cette action est irréversible. Tous les produits seront supprimés.
@@ -559,7 +559,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
   const limit = PRODUCT_LIMITS[premiumLevel]
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={`🏪 ${shop.name}`}>
+    <BottomSheet open={open} onClose={onClose} title={shop.name}>
       <div className="px-4 pt-2 pb-6">
         {/* Stats rapides */}
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -588,7 +588,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-4xl mb-2">📦</p>
+            <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Package size={28} /></div>
             <p className="font-bold text-dark-800">Aucun produit</p>
             <p className="text-sm text-dark-600/50 mt-1">Ajoutez votre premier produit</p>
           </div>
@@ -976,9 +976,9 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
   }
 
   const PROFILE_TYPES = [
-    { key: 'producteur', label: '🌱 Producteur', desc: 'Agriculteur, éleveur, pêcheur...' },
-    { key: 'commercant', label: '🏪 Commerçant', desc: 'Machines, intrants, produits finis...' },
-    { key: 'service', label: '🎓 Prestataire', desc: 'Formation, conseil, transport...' },
+    { key: 'producteur', label: 'Producteur', desc: 'Agriculteur, éleveur, pêcheur...' },
+    { key: 'commercant', label: 'Commerçant', desc: 'Machines, intrants, produits finis...' },
+    { key: 'service', label: 'Prestataire', desc: 'Formation, conseil, transport...' },
   ]
 
   const ACTIVITY_TYPES = {
@@ -1048,7 +1048,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
   if (showSelector) {
     const unverifiedShops = shops.filter(s => !s.is_verified)
     return (
-      <BottomSheet open={open} onClose={onClose} title="🏪 Quelle boutique vérifier ?">
+      <BottomSheet open={open} onClose={onClose} title="Quelle boutique vérifier ?">
         <div className="px-4 pt-2 pb-8 space-y-3">
           <p className="text-gray-500 text-sm">Sélectionnez la boutique à vérifier.</p>
           {unverifiedShops.map(s => {
@@ -1078,7 +1078,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
   if (!shop) return null
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="✅ Demande de vérification">
+    <BottomSheet open={open} onClose={onClose} title="Demande de vérification">
       <div style={{ maxHeight: '88vh', overflowY: 'auto' }}>
         <div className="px-4 pt-2 pb-8 space-y-5">
 
@@ -1103,7 +1103,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
 
           {isRejected && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-              <p className="font-bold text-red-700 text-sm mb-1">❌ Demande refusée</p>
+              <p className="font-bold text-red-700 text-sm mb-1 flex items-center gap-1.5"><XCircle size={15} /> Demande refusée</p>
               {existingRequest?.admin_note && <p className="text-red-600 text-xs">{existingRequest.admin_note}</p>}
               <p className="text-red-500 text-xs mt-1">Vous pouvez soumettre une nouvelle demande.</p>
             </div>
@@ -1130,7 +1130,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
               {/* ═══ ÉTAPE 1 — Identité + Photos ═══ */}
               {step === 1 && (
                 <div className="space-y-4">
-                  <p className="font-black text-dark-900 text-base">👤 Votre identité</p>
+                  <p className="font-black text-dark-900 text-base flex items-center gap-1.5"><Users size={16} /> Votre identité</p>
 
                   <div>
                     <label className="text-sm font-bold text-dark-700 block mb-1.5">Nom complet *</label>
@@ -1219,7 +1219,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
               {/* ═══ ÉTAPE 2 — Type d'activité ═══ */}
               {step === 2 && (
                 <div className="space-y-4">
-                  <p className="font-black text-dark-900 text-base">🏪 Votre profil</p>
+                  <p className="font-black text-dark-900 text-base flex items-center gap-1.5"><Store size={16} /> Votre profil</p>
 
                   {/* Profil type */}
                   <div>
@@ -1550,15 +1550,15 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
               </div>
 
               <div className="text-xs text-dark-600/70 p-2.5 bg-surface-50 rounded-xl space-y-1">
-                <p>📍 <strong>Lieu :</strong> {order.delivery_address}</p>
-                <p>📞 <strong>Tel :</strong> {order.delivery_phone}</p>
+                <p className="flex items-center gap-1.5"><MapPin size={13} className="text-dark-400" /> <strong>Lieu :</strong> {order.delivery_address}</p>
+                <p className="flex items-center gap-1.5"><Phone size={13} className="text-dark-400" /> <strong>Tel :</strong> {order.delivery_phone}</p>
                 {order.note && <p>💬 <strong>Note :</strong> {order.note}</p>}
               </div>
 
               {/* Actions de livraison */}
               {order.status === 'paid' && (
                 <div className="pt-1 flex items-center justify-between border-t border-surface-50 text-xs">
-                  <span className="font-bold text-dark-600/70">🚚 Livraison :</span>
+                  <span className="font-bold text-dark-600/70 flex items-center gap-1"><Truck size={13} /> Livraison :</span>
                   <div className="flex gap-1">
                     {order.delivery_status === 'pending' && (
                       <button
@@ -1695,7 +1695,7 @@ function QuotesTab({ quotes, loading, onRefresh }) {
         </div>
       ) : quotes.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 text-center shadow-card">
-          <p className="text-4xl mb-2">🏷️</p>
+          <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Tag size={28} /></div>
           <p className="font-bold text-dark-800">Aucun devis reçu</p>
           <p className="text-xs text-dark-600/40 mt-1">Les demandes des grossistes apparaîtront ici.</p>
         </div>

@@ -106,7 +106,7 @@ export default function CartPage() {
                       {item.image_url ? (
                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">🌾</div>
+                        <div className="w-full h-full flex items-center justify-center"><Package size={22} className="text-dark-300" /></div>
                       )}
                     </div>
 
@@ -195,11 +195,11 @@ export default function CartPage() {
             </div>
             {(user.wallet.balance_available || 0) >= subTotal ? (
               <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 font-black text-[9px] uppercase tracking-wider border border-emerald-200">
-                Solde suffisant ✅
+                <span className="flex items-center gap-1">Solde suffisant <CheckCircle2 size={12} className="inline text-emerald-600" /></span>
               </span>
             ) : (
               <span className="px-3 py-1 rounded-xl bg-red-50 text-red-700 font-black text-[9px] uppercase tracking-wider border border-red-200 animate-pulse">
-                Solde insuffisant ⚠️
+                <span className="flex items-center gap-1">Solde insuffisant <AlertTriangle size={12} className="inline text-red-600" /></span>
               </span>
             )}
           </div>

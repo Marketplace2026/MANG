@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) return (
     <div className="text-center animate-fade-in">
-      <div className="text-5xl mb-4">📧</div>
+      <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner"><Mail size={32} className="text-gold-400" /></div>
       <h2 className="font-display text-xl text-white font-bold mb-2">Email envoyé !</h2>
       <p className="text-primary-300 text-sm mb-6">Vérifiez votre boîte mail pour réinitialiser votre mot de passe.</p>
       <Link to="/connexion" className="btn-primary w-full block text-center">Retour à la connexion</Link>

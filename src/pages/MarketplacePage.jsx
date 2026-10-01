@@ -832,7 +832,7 @@ export default function MarketplacePage() {
                       >
                         {s.type === 'product' ? (
                           <>
-                            <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center text-xs flex-shrink-0">🌾</div>
+                            <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0"><Package size={14} className="text-primary-600" /></div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-dark-800 truncate">{highlightMatch(s.name, search)}</p>
                               <p className="text-[10px] text-dark-600/50 truncate font-semibold">
@@ -842,10 +842,10 @@ export default function MarketplacePage() {
                           </>
                         ) : (
                           <>
-                            <div className="w-7 h-7 rounded-lg bg-gold-50 flex items-center justify-center text-xs flex-shrink-0">🏪</div>
+                            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0"><Store size={14} className="text-amber-600" /></div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-dark-800 truncate">{highlightMatch(s.name, search)}</p>
-                              <p className="text-[10px] text-dark-600/50 truncate font-semibold">Boutique • 📍 {s.city || 'Bénin'}</p>
+                              <p className="text-[10px] text-dark-600/50 truncate font-semibold">Boutique • {s.city || 'Bénin'}</p>
                             </div>
                           </>
                         )}
@@ -988,7 +988,7 @@ export default function MarketplacePage() {
           <div className="mb-6 pt-3">
             <div className="flex items-center justify-between px-3 mb-2.5">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm">🔥</span>
+                <Flame size={16} className="text-amber-500" strokeWidth={2.5} />
                 <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">Top 5 Boutiques MANG</h2>
               </div>
               <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">VIP Partners</span>
@@ -1024,7 +1024,17 @@ export default function MarketplacePage() {
                 onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')}
                 className="text-[10px] font-black text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg tracking-wide uppercase hover:bg-primary-100 transition active:scale-95 flex items-center gap-1"
               >
-                {viewMode === 'list' ? '🗺️ Vue Carte' : '📱 Vue Liste'}
+                viewMode === 'list' ? (
+                  <>
+                    <Map size={11} strokeWidth={2.2} />
+                    <span>Vue Carte</span>
+                  </>
+                ) : (
+                  <>
+                    <List size={11} strokeWidth={2.2} />
+                    <span>Vue Liste</span>
+                  </>
+                )
               </button>
             )}
             {activeFiltersCount > 0 && (
@@ -1525,7 +1535,9 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-md" />
                   )}
-                  <span className="text-xl">{g.icon}</span>
+                  <div className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center mb-0.5 text-primary-700">
+                    <g.icon size={16} strokeWidth={2.2} />
+                  </div>
                   <span className="text-[10px] font-bold leading-tight">{g.label}</span>
                 </button>
               )

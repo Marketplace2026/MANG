@@ -161,8 +161,8 @@ export default function AdminVerificationPage() {
       await supabase.rpc('create_notification', {
         p_user_id: req.user_id,
         p_type: 'shop_follow',
-        p_title: '✅ Boutique vérifiée !',
-        p_body: `Félicitations ! Votre boutique "${req.shop?.name}" a été vérifiée. Le badge ✅ est maintenant visible.`,
+        p_title: 'Boutique vérifiée !',
+        p_body: `Félicitations ! Votre boutique "${req.shop?.name}" a été vérifiée. Le badge vérifié est maintenant visible.`,
         p_reference_id: req.shop_id,
         p_reference_type: 'shop',
       })
@@ -189,7 +189,7 @@ export default function AdminVerificationPage() {
       await supabase.rpc('create_notification', {
         p_user_id: req.user_id,
         p_type: 'shop_follow',
-        p_title: '❌ Demande de vérification refusée',
+        p_title: 'Demande de vérification refusée',
         p_body: `Votre demande pour "${req.shop?.name}" a été refusée. Raisons : ${adminNote}`,
         p_reference_id: req.shop_id,
         p_reference_type: 'shop',
@@ -319,7 +319,7 @@ export default function AdminVerificationPage() {
               </div>
             ) : requests.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
-                <p className="text-4xl mb-2">📋</p>
+                <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><FileText size={28} /></div>
                 <p className="font-bold">Aucune demande</p>
                 <p className="text-xs text-dark-600/40 mt-1">Aucune demande trouvée avec ce statut.</p>
               </div>
@@ -413,7 +413,7 @@ export default function AdminVerificationPage() {
               </div>
             ) : disputes.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
-                <p className="text-4xl mb-2">⚖️</p>
+                <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Scale size={28} /></div>
                 <p className="font-bold">Aucun litige</p>
                 <p className="text-xs text-dark-600/40 mt-1">Aucune réclamation ouverte sur la plateforme.</p>
               </div>
@@ -518,7 +518,7 @@ export default function AdminVerificationPage() {
 
       {/* DETAIL DEMANDE DE VERIFICATION SHEET */}
       {selectedRequest && (
-        <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="📋 Détail de la demande">
+        <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="Détail de la demande">
           <div className="px-4 pt-2 pb-8 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="p-4 bg-surface-50 rounded-2xl space-y-3 text-xs">
               <p>👤 <strong>Nom complet :</strong> {selectedRequest.full_name}</p>
@@ -569,7 +569,7 @@ export default function AdminVerificationPage() {
 
       {/* REJECT SHEET */}
       {selectedRequest && rejectOpen && (
-        <BottomSheet open={rejectOpen} onClose={() => setRejectOpen(false)} title="❌ Motif du rejet">
+        <BottomSheet open={rejectOpen} onClose={() => setRejectOpen(false)} title="Motif du rejet">
           <div className="px-4 pt-2 pb-8 space-y-4 max-h-[85vh] overflow-y-auto">
             {Object.entries(REJECT_REASONS).map(([category, reasons]) => (
               <div key={category} className="space-y-2">
@@ -607,7 +607,7 @@ export default function AdminVerificationPage() {
 
       {/* ARBITRAGE LITIGE SHEET */}
       {resolvingDispute && (
-        <BottomSheet open={!!resolvingDispute} onClose={() => setResolvingDispute(null)} title="⚖️ Arbitrage de litige">
+        <BottomSheet open={!!resolvingDispute} onClose={() => setResolvingDispute(null)} title="Arbitrage de litige">
           <div className="px-4 pt-2 pb-8 space-y-4">
             <div className="p-3.5 bg-red-500/10 border border-red-300/30 rounded-2xl text-red-800 text-xs leading-normal">
               ⚠️ <strong>Action d'arbitrage.</strong> Vous devez décider si vous remboursez l'acheteur ou si vous libérez les fonds au vendeur. Cette action est irréversible.
