@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   return (
     <div className="animate-fade-in">
-      <h2 className="font-display text-2xl text-white font-bold mb-1">Bon retour 👋</h2>
+      <h2 className="font-display text-2xl text-white font-bold mb-1">Bon retour</h2>
       <p className="text-primary-300 text-sm mb-6">Connectez-vous à votre compte MANG</p>
 
       {/* Bouton Google */}

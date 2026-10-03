@@ -119,9 +119,7 @@ export default function App() {
           <Route path="/" element={<RootRoute />} />
 
           {/* Onboarding — non connecté seulement */}
-          <Route path="/accueil" element={
-            <PublicRoute><OnboardingPage /></PublicRoute>
-          } />
+          <Route path="/accueil" element={<OnboardingPage />} />
 
           {/* Boutique publique (sans auth) */}
           <Route path="/boutique/:slug" element={<ShopPublicPage />} />
