@@ -5,7 +5,7 @@ import {
   LogOut, ChevronRight, Shield, Bell, HelpCircle,
   Wallet, Coins, Copy, Check, Settings, Star,
   Lock, Eye, EyeOff, Globe, ChevronDown, ChevronUp,
-  AlertCircle, CheckCircle2, XCircle,
+  AlertCircle, CheckCircle2, XCircle, Award, Crown, ShieldCheck,
   Navigation, X, MessageCircle, Gift, Store, Package, Heart,
   Truck, Clock, CheckCircle, ArrowUpRight,
   Plus, Trash2, TrendingUp, ZoomIn, Maximize2, RotateCcw, Move

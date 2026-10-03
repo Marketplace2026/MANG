@@ -5,7 +5,7 @@ import {
   MapPin, Truck, Phone, ChevronRight,
   Send, Trash2, Edit3, CornerDownRight, Copy,
   Check, X, ZoomIn, ShoppingCart, Package,
-  MoreHorizontal, ChevronDown, Bell, BellOff, Star
+  MoreHorizontal, ChevronDown, Bell, BellOff, Star, Search, Store
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
