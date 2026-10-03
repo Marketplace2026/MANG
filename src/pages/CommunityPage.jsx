@@ -40,10 +40,10 @@ function markStorySeen(storyId) {
 }
 
 const TABS = [
-  { key: 'feed',    label: '🌍 Pour toi'     },
-  { key: 'following', label: '👥 Abonnements' },
-  { key: 'trending',  label: '🔥 Tendances'   },
-  { key: 'members',   label: '🌿 Membres'     },
+  { key: 'feed',    label: 'Pour toi'     },
+  { key: 'following', label: 'Abonnements' },
+  { key: 'trending',  label: 'Tendances'   },
+  { key: 'members',   label: 'Membres'     },
 ]
 
 // ============================================================
@@ -422,7 +422,7 @@ function StoryViewersSheet({ open, onClose, storyId }) {
   }, [open, storyId])
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={`👁 Vu par ${viewers.length > 0 ? `(${viewers.length})` : ''}`}>
+    <BottomSheet open={open} onClose={onClose} title={`Vu par ${viewers.length > 0 ? `(${viewers.length})` : ''}`}>
       <div className="px-4 pt-2 pb-8">
         {loading ? (
           <div className="space-y-3">
@@ -743,7 +743,7 @@ function PostsTab({ user, profile, mode }) {
 
       if (insertErr) throw insertErr
 
-      toast.success('Story ajoutée ! 🌟', { id: toastId })
+      toast.success('Story ajoutée !', { id: toastId })
       handleCancelStoryComposer()
       loadStories()
     } catch (err) {
@@ -967,7 +967,7 @@ function PostsTab({ user, profile, mode }) {
           console.error('Error reporting post:', error)
         }
       } else {
-        toast.success('Publication signalée et masquée ! 🛡️')
+        toast.success('Publication signalée et masquée !')
       }
     } catch (err) {
       console.error(err)
@@ -1000,7 +1000,7 @@ function PostsTab({ user, profile, mode }) {
           .from('post_bookmarks')
           .insert({ post_id: postId, user_id: user.id })
         if (error) throw error
-        toast.success('Ajouté aux favoris ! 💾')
+        toast.success('Ajouté aux favoris !')
       }
     } catch (err) {
       console.error(err)
@@ -1083,7 +1083,7 @@ function PostsTab({ user, profile, mode }) {
             className="w-full flex items-center gap-3">
             <Avatar src={profile?.avatar_url} name={profile?.username} size="md" className="flex-shrink-0"/>
             <div className="flex-1 text-left bg-surface-100 dark:bg-dark-800 rounded-2xl px-4 py-2.5">
-              <span className="text-dark-600/40 dark:text-white/40 text-sm font-medium">Exprimer quelque chose ou lancer un sondage... 🌿</span>
+              <span className="text-dark-600/40 dark:text-white/40 text-sm font-medium">Exprimer quelque chose ou lancer un sondage...</span>
             </div>
           </button>
           {/* Boutons raccourcis */}
@@ -1111,7 +1111,7 @@ function PostsTab({ user, profile, mode }) {
         </div>
       ) : displayedPosts.length === 0 ? (
         <div className="text-center py-16 px-6">
-          <p className="text-5xl mb-3">{mode === 'following' ? '👥' : '🌿'}</p>
+          <div className="w-16 h-16 rounded-2xl bg-surface-100 dark:bg-dark-800 flex items-center justify-center mx-auto mb-3 text-dark-400"><Users size={32} /></div>
           <p className="font-display text-xl font-bold text-dark-800 dark:text-white">
             {mode === 'following' ? 'Aucune publication' : 'Soyez le premier !'}
           </p>
@@ -1339,7 +1339,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
 
     setPosting(false)
     if (error) { toast.error('Erreur publication'); return }
-    toast.success('Publié ! 🌿')
+    toast.success('Publié !')
     onPosted(post)
     reset()
   }
@@ -1347,7 +1347,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
   const canPublish = (content.trim() || imageFile || selectedShop || isPollMode) && !posting
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title="✍️ Nouvelle publication">
+    <BottomSheet open={open} onClose={handleClose} title="Nouvelle publication">
       <div className="px-4 pt-2 pb-4 flex flex-col gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
 
         {/* Auteur */}
@@ -1361,7 +1361,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
 
         {/* Texte / Question du sondage */}
         <textarea
-          placeholder={isPollMode ? "Posez votre question pour le sondage... 🗳️" : "Quoi de neuf dans ton champ ? 🌿"}
+          placeholder={isPollMode ? "Posez votre question pour le sondage..." : "Quoi de neuf dans ton champ ?"}
           value={content}
           onChange={e => setContent(e.target.value)}
           rows={3}
@@ -1416,7 +1416,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100 dark:bg-primary-900/40">
               {selectedShop.cover_url
                 ? <img src={getOptimizedImageUrl(selectedShop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover"/>
-                : <div className="w-full h-full flex items-center justify-center text-xl">🏪</div>
+                : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={20} /></div>
               }
             </div>
             <div className="flex-1 min-w-0">
@@ -1515,7 +1515,7 @@ function ShopPicker({ open, onClose, onSelect }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="🏪 Mentionner une boutique">
+    <BottomSheet open={open} onClose={onClose} title="Mentionner une boutique">
       <div className="flex flex-col" style={{ height: '65vh' }}>
         {/* Recherche */}
         <div className="px-4 py-3 border-b border-surface-100">
@@ -1548,7 +1548,7 @@ function ShopPicker({ open, onClose, onSelect }) {
             </div>
           ) : shops.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-4xl mb-2">🏪</p>
+              <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Store size={28} /></div>
               <p className="text-dark-600/50 text-sm">Aucune boutique trouvée</p>
             </div>
           ) : (
@@ -1559,13 +1559,13 @@ function ShopPicker({ open, onClose, onSelect }) {
                   <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100">
                     {shop.cover_url
                       ? <img src={shop.cover_url} className="w-full h-full object-cover" alt={shop.name}/>
-                      : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>
+                      : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={20} /></div>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-dark-800 text-sm truncate">{shop.name}</p>
                     <p className="text-dark-600/40 text-xs">@{shop.owner?.username}</p>
-                    {shop.city && <p className="text-dark-600/30 text-[10px]">📍 {shop.city}</p>}
+                    {shop.city && <p className="text-dark-600/30 text-[10px] flex items-center gap-0.5"><MapPin size={9} />{shop.city}</p>}
                   </div>
                   <ChevronRight size={16} className="text-dark-600/30 flex-shrink-0"/>
                 </button>
@@ -1678,7 +1678,7 @@ function PostCard({
     if (error) {
       toast.error('Erreur lors du vote')
     } else {
-      toast.success('Vote enregistré ! 🗳️')
+      toast.success('Vote enregistré !')
     }
   }
 
@@ -1806,7 +1806,7 @@ function PostCard({
                         style={{ width: `${percent}%` }}
                       />
                       <span className="relative z-10 flex items-center gap-1.5 truncate">
-                        {opt} {hasVotedThis && '✅'}
+                        {opt} {hasVotedThis && '✓'}
                       </span>
                       <span className="relative z-10 font-bold ml-2">{percent}% ({voters.length})</span>
                     </div>
@@ -1826,7 +1826,7 @@ function PostCard({
           </div>
 
           <div className="text-[10px] text-dark-600/50 dark:text-dark-400 font-semibold flex items-center justify-between pt-1">
-            <span>🗳️ {totalVotes} vote{totalVotes > 1 ? 's' : ''} au total</span>
+            <span>{totalVotes} vote{totalVotes > 1 ? 's' : ''} au total</span>
             {hasVotedAny && <span className="text-violet-600 dark:text-violet-400">Vous avez voté</span>}
           </div>
         </div>
@@ -1852,7 +1852,7 @@ function PostCard({
           </div>
           <p className="text-dark-700 dark:text-dark-200 text-xs leading-relaxed">
             {post.parent_post.content?.startsWith('{"is_poll"') 
-              ? '📊 Sondage de la communauté' 
+              ? 'Sondage de la communauté' 
               : renderContentWithHashtags(post.parent_post.content)}
           </p>
           {post.parent_post.image_url && (
@@ -1886,7 +1886,7 @@ function PostCard({
           <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-200 dark:bg-primary-800">
             {post.shop.cover_url
               ? <img src={getOptimizedImageUrl(post.shop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover" alt={post.shop.name}/>
-              : <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
+              : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
             }
           </div>
           <div className="flex-1 min-w-0">
@@ -1896,8 +1896,8 @@ function PostCard({
             </div>
             <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{post.shop.name}</p>
             <p className="text-dark-600/50 dark:text-dark-300 text-xs">@{post.shop.owner?.username}
-              {post.shop.city && <span> · 📍 {post.shop.city}</span>}
-              {post.shop.has_delivery && <span className="text-primary-600 dark:text-primary-400"> · 🚚 Livraison</span>}
+              {post.shop.city && <span> · {post.shop.city}</span>}
+              {post.shop.has_delivery && <span className="text-primary-600 dark:text-primary-400"> · Livraison</span>}
             </p>
           </div>
           <ChevronRight size={16} className="text-primary-400 dark:text-primary-600 flex-shrink-0"/>
@@ -1984,7 +1984,7 @@ function PostCard({
                 }}
                 className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-surface-50 dark:hover:bg-dark-700 flex items-center gap-2"
               >
-                <span>🔗 Copier le lien</span>
+                <span>Copier le lien</span>
               </button>
               <button
                 onClick={() => {
@@ -1993,7 +1993,7 @@ function PostCard({
                 }}
                 className="w-full text-left px-4 py-2.5 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-surface-50 dark:hover:bg-dark-700 flex items-center gap-2 border-t border-surface-100 dark:border-dark-700"
               >
-                <span>🔄 Republier (Quote Post)</span>
+                <span>Republier (Quote Post)</span>
               </button>
             </div>
           </>
@@ -2108,13 +2108,13 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="💬 Commentaires">
+    <BottomSheet open={open} onClose={onClose} title="Commentaires">
       <div className="flex flex-col" style={{ height: '72vh' }}>
         {/* Post résumé */}
         <div className="px-4 py-2 bg-surface-50 dark:bg-dark-800 border-b border-surface-100 dark:border-dark-700">
           <div className="flex gap-2 items-center">
             <Avatar src={post.user?.avatar_url} name={post.user?.username} size="sm"/>
-            <p className="text-dark-800 dark:text-white text-xs line-clamp-2 flex-1 font-medium">{post.content?.startsWith('{"is_poll"') ? '📊 Sondage' : post.content || '📷 Photo'}</p>
+            <p className="text-dark-800 dark:text-white text-xs line-clamp-2 flex-1 font-medium">{post.content?.startsWith('{"is_poll"') ? 'Sondage' : post.content || 'Photo'}</p>
           </div>
         </div>
 
@@ -2126,7 +2126,7 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
             </div>
           ) : comments.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-4xl mb-2">💬</p>
+              <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><MessageCircle size={28} /></div>
               <p className="text-dark-600/50 dark:text-dark-400 text-sm">Soyez le premier à commenter</p>
             </div>
           ) : (
@@ -2260,7 +2260,7 @@ function LikersSheet({ open, onClose, post }) {
   }, [open, post.id])
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="❤️ Personnes qui ont aimé">
+    <BottomSheet open={open} onClose={onClose} title="Personnes qui ont aimé">
       <div className="px-4 pt-2 pb-8">
         {loading ? (
           <div className="space-y-3">
@@ -2377,7 +2377,7 @@ function MembersTab({ user, profile }) {
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-4xl mb-2">👥</p>
+          <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Users size={28} /></div>
           <p className="font-bold text-dark-800 dark:text-white">{search ? 'Aucun résultat' : 'Aucun membre'}</p>
         </div>
       ) : (
@@ -2396,7 +2396,7 @@ function MembersTab({ user, profile }) {
                     <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{member.full_name || member.username}</p>
                     <p className="text-dark-600/50 dark:text-dark-400 text-xs">@{member.username}</p>
                   </button>
-                  {member.city && <p className="text-dark-600/40 dark:text-dark-500 text-[10px] mt-0.5">📍 {member.city}</p>}
+                  {member.city && <p className="text-dark-600/40 dark:text-dark-500 text-[10px] mt-0.5 flex items-center gap-0.5"><MapPin size={9} />{member.city}</p>}
                 </div>
                 <button onClick={() => toggleFollow(member.id)}
                   className={clsx(
@@ -2441,17 +2441,17 @@ function PostSkeleton() {
 // MODAL SIGNALEMENT (TÂCHE D)
 // ============================================================
 const REPORT_REASONS = [
-  { key: 'spam', label: 'Spam 🚫', desc: 'Publicités abusives, posts répétés ou frauduleux' },
-  { key: 'prix_abusif', label: 'Prix Abusif 💸', desc: 'Prix anormalement élevé ou mensonger' },
-  { key: 'harcelement', label: 'Harcèlement ⚠️', desc: 'Contenu agressif, haineux ou insultes' },
-  { key: 'hors_sujet', label: 'Hors-sujet 📯', desc: 'N\'a aucun rapport avec l\'agriculture ou MANG' }
+  { key: 'spam', label: 'Spam', desc: 'Publicités abusives, posts répétés ou frauduleux' },
+  { key: 'prix_abusif', label: 'Prix Abusif', desc: 'Prix anormalement élevé ou mensonger' },
+  { key: 'harcelement', label: 'Harcèlement', desc: 'Contenu agressif, haineux ou insultes' },
+  { key: 'hors_sujet', label: 'Hors-sujet', desc: 'N\'a aucun rapport avec l\'agriculture ou MANG' }
 ]
 
 function ReportSheet({ open, onClose, onReportConfirmed }) {
   const [selected, setSelected] = useState('')
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="🛡️ Signaler cette publication">
+    <BottomSheet open={open} onClose={onClose} title="Signaler cette publication">
       <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
         <p className="text-xs font-semibold text-dark-600/70 dark:text-dark-300">
           Pourquoi souhaitez-vous signaler cette publication ? Votre signalement sera examiné par l'équipe de modération.
@@ -2526,7 +2526,7 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
 
       if (error) throw error
       
-      toast.success('Republié avec succès ! 🔄')
+      toast.success('Republié avec succès !')
       onPosted(data)
       handleClose()
     } catch (err) {
@@ -2540,7 +2540,7 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
   if (!postToQuote) return null
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title="🔄 Republier la publication">
+    <BottomSheet open={open} onClose={handleClose} title="Republier la publication">
       <div className="px-4 pt-2 pb-6 flex flex-col gap-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
         
         {/* Auteur du Repost */}
@@ -2568,7 +2568,7 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
             <p className="font-bold text-dark-800 text-xs">@{postToQuote.user?.username}</p>
           </div>
           <p className="text-dark-700 text-xs line-clamp-3 leading-relaxed">
-            {postToQuote.content?.startsWith('{"is_poll"') ? '📊 Sondage communauté' : postToQuote.content}
+            {postToQuote.content?.startsWith('{"is_poll"') ? 'Sondage communauté' : postToQuote.content}
           </p>
           {postToQuote.image_url && (
             <img src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />

@@ -410,26 +410,26 @@ export function Divider({ label, className = '' }) {
 // ============================================================
 export function NotificationToast({ notification, onClose }) {
   const icons = {
-    shop_follow:    '👥',
-    product_favorite: '❤️',
-    new_message:    '💬',
-    order_new:      '📦',
-    order_accepted: '✅',
-    order_refused:  '❌',
-    order_paid:     '💰',
-    wallet_credit:  '💵',
-    wallet_debit:   '💸',
-    post_like:      '❤️',
-    shop_like:      '❤️',
-    shop_comment:   '💬',
-    comment_reply:  '↩️',
-    user_follow:    '👤',
+    shop_follow:    'Notification',
+    product_favorite: 'Notification',
+    new_message:    'Notification',
+    order_new:      'Notification',
+    order_accepted: 'Notification',
+    order_refused:  'Notification',
+    order_paid:     'Notification',
+    wallet_credit:  'Notification',
+    wallet_debit:   'Notification',
+    post_like:      'Notification',
+    shop_like:      'Notification',
+    shop_comment:   'Notification',
+    comment_reply:  'Notification',
+    user_follow:    'Notification',
   }
 
   return (
     <div className="flex items-start gap-3 p-4 bg-dark-800 rounded-2xl shadow-modal animate-toast-in max-w-sm">
       <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center flex-shrink-0 text-xl">
-        {icons[notification.type] || '🔔'}
+        {'Notification'}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-sm leading-tight">{notification.title}</p>

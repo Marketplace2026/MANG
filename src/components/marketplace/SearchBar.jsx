@@ -161,7 +161,7 @@ function FilterSheet({ open, onClose, filters, onFilter, groups }) {
                 !localFilters.category ? 'border-primary-500 bg-primary-50' : 'border-surface-200'
               )}
             >
-              <span className="text-lg">🌾</span>
+              <span className="text-lg"></span>
               <span className={clsx('text-sm font-semibold', !localFilters.category ? 'text-primary-700' : 'text-dark-800')}>
                 Toutes les catégories
               </span>

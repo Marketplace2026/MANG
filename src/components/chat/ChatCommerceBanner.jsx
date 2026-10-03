@@ -19,7 +19,7 @@ export default function ChatCommerceBanner({ product, shop, onClose }) {
           />
         ) : (
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black text-xl flex-shrink-0">
-            🛍️
+            ️
           </div>
         )}
 

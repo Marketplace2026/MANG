@@ -63,9 +63,9 @@ export default function PWAInstallBanner() {
       updateBannerOffset(false)
       setDeferredPrompt(null)
       localStorage.removeItem('mang_pwa_dismissed_until')
-      toast.success('MANG a été installé avec succès sur votre appareil ! 🌿', {
+      toast.success('MANG a été installé avec succès sur votre appareil ! ', {
         duration: 10000,
-        icon: '📲',
+        icon: '',
       })
     }
 
@@ -227,7 +227,7 @@ export default function PWAInstallBanner() {
                       3
                     </div>
                     <div>
-                      Appuyez sur <strong>Ajouter</strong> en haut à droite. C'est fait ! ✨
+                      Appuyez sur <strong>Ajouter</strong> en haut à droite. C'est fait ! 
                     </div>
                   </div>
                 </>
@@ -256,7 +256,7 @@ export default function PWAInstallBanner() {
                       3
                     </div>
                     <div>
-                      Validez pour installer MANG instantanément sur votre appareil ! 🌿
+                      Validez pour installer MANG instantanément sur votre appareil ! 
                     </div>
                   </div>
                 </>

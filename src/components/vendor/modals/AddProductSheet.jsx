@@ -95,7 +95,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
         .update({ balance: currentBalance2 - 5 })
         .eq('user_id', user.id)
 
-      toast.success('Produit ajouté ! 📦')
+      toast.success('Produit ajouté ! ')
       reset()
       if (refreshWallet) await refreshWallet()
       onAdded()
@@ -107,7 +107,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
   if (!shop) return null
 
   return (
-    <BottomSheet open={open} onClose={() => { reset(); onClose() }} title={`➕ Ajouter un produit`}>
+    <BottomSheet open={open} onClose={() => { reset(); onClose() }} title={` Ajouter un produit`}>
       <div className="px-4 pt-2 pb-8 space-y-4">
         {/* Boutique info */}
         <div className="flex items-center gap-3 p-3 rounded-2xl bg-primary-50">
@@ -172,7 +172,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
               {variants.map((v, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-white border border-surface-150 p-2 rounded-xl text-xs">
                   <p className="font-semibold text-dark-800">{v.name} - {v.price} F {v.stock !== null ? `(${v.stock} en stock)` : ''}</p>
-                  <button onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5">✕</button>
+                  <button onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5"></button>
                 </div>
               ))}
             </div>
@@ -196,7 +196,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
               {wholesaleTiers.map((t, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-white border border-surface-150 p-2 rounded-xl text-xs">
                   <p className="font-semibold text-dark-800">Dès {t.min_qty} unités : {t.price} F / unité</p>
-                  <button onClick={() => setWholesaleTiers(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5">✕</button>
+                  <button onClick={() => setWholesaleTiers(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5"></button>
                 </div>
               ))}
             </div>

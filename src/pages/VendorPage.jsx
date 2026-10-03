@@ -164,7 +164,7 @@ export default function VendorPage() {
           <div className="flex gap-3">
             <button onClick={() => setCoinsOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gold-500/20 border border-gold-400/30 active:scale-95 transition-transform">
-              <span className="text-xl">🪙</span>
+              <Coins size={20} className="text-gold-500" />
               <div className="text-left">
                 <p className="text-gold-300 text-[10px] font-medium">Pièces</p>
                 <p className="text-white font-bold text-sm">{pieces?.balance || 0}</p>
@@ -188,7 +188,7 @@ export default function VendorPage() {
                 <Crown size={20} className="text-gold-300"/>
               </div>
               <div className="flex-1">
-                <p className="text-white font-bold text-sm">Premium actif ✨</p>
+                <p className="text-white font-bold text-sm">Premium actif</p>
                 <p className="text-gold-300 text-xs">{daysLeft} jour(s) restant(s)</p>
               </div>
               <button onClick={() => setPremiumOpen(true)}
@@ -227,7 +227,7 @@ export default function VendorPage() {
             </div>
             <div className="text-center">
               <p className="font-bold text-dark-800 text-sm">Créer boutique</p>
-              <p className="text-dark-600/50 text-xs">Coût : 10 🪙</p>
+              <p className="text-dark-600/50 text-xs">Coût : 10 pièces</p>
             </div>
           </button>
 
@@ -252,7 +252,7 @@ export default function VendorPage() {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-blue-800 text-sm">Obtenez le badge Vérifié ✅</p>
+              <p className="font-bold text-blue-800 text-sm">Obtenez le badge Vérifié</p>
               <p className="text-blue-600 text-xs">Gagnez la confiance des acheteurs</p>
             </div>
             <button onClick={() => setVerifyOpen('select')}
@@ -270,7 +270,7 @@ export default function VendorPage() {
               activeTab === 'shops' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
             )}
           >
-            🏪 Boutiques
+            Boutiques
           </button>
           <button
             onClick={() => { setActiveTab('orders'); loadReceivedOrders() }}
@@ -278,7 +278,7 @@ export default function VendorPage() {
               activeTab === 'orders' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
             )}
           >
-            📦 Commandes
+            Commandes
           </button>
           <button
             onClick={() => { setActiveTab('quotes'); loadQuotes() }}
@@ -286,7 +286,7 @@ export default function VendorPage() {
               activeTab === 'quotes' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
             )}
           >
-            🏷️ Devis Grossistes
+            Devis Grossistes
           </button>
         </div>
 
@@ -439,7 +439,7 @@ function ShopCard({ shop, premiumStatus, verifyRequest, onOpen, onEdit, onDelete
       <div className="relative h-28 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">🌿</div>}
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={32} /></div>}
 
         {premiumLevel > 0 && (
           <div className="absolute top-2 right-2"><PremiumBadge level={premiumLevel}/></div>
@@ -567,7 +567,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
           {[
             { label: 'Produits', value: `${products.length}/${limit === Infinity ? '∞' : limit}`, color: 'bg-primary-50 text-primary-700' },
             { label: 'Abonnés',  value: shop.followers_count || 0, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Mes pièces', value: `🪙 ${pieces?.balance || 0}`, color: 'bg-gold-50 text-gold-700' },
+            { label: 'Mes pièces', value: `${pieces?.balance || 0} pièces`, color: 'bg-gold-50 text-gold-700' },
           ].map((s, i) => (
             <div key={i} className={clsx('rounded-xl p-2 text-center text-xs font-bold', s.color)}>
               <p className="font-display text-base">{s.value}</p>
@@ -579,7 +579,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
         {/* Bouton ajouter */}
         <button onClick={onAddProduct}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary-600 text-white font-bold text-sm shadow-green active:scale-95 transition-transform mb-4">
-          <Plus size={16}/> Ajouter un produit (5 🪙)
+          <Plus size={16}/> Ajouter un produit (5 pièces)
         </button>
 
         {/* Liste produits */}
@@ -610,14 +610,14 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
 // ============================================================
 function ProductItem({ product, onDelete, onToggle }) {
   const AVAIL_LABELS = {
-    now:'✅ Dispo','1w':'⏳ 1 sem','2w':'⏳ 2 sem','1m':'📅 1 mois','2m':'📅 2 mois','3m':'📅 3 mois','6m':'📅 6 mois','1y':'📆 1 an'
+    now:'Dispo','1w':'1 sem','2w':'2 sem','1m':'1 mois','2m':'2 mois','3m':'3 mois','6m':'6 mois','1y':'1 an'
   }
   return (
     <div className="flex gap-3 p-3 bg-white rounded-2xl shadow-card">
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30">🌿</div>}
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Package size={24} /></div>}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -636,7 +636,7 @@ function ProductItem({ product, onDelete, onToggle }) {
         <p className="text-xs text-dark-600/50 mt-0.5 line-clamp-1">{product.description}</p>
         <div className="flex items-center gap-2 mt-1.5">
           <span className="font-display font-bold text-primary-700 text-sm">{formatFCFA(product.price)}</span>
-          <span className="text-[10px] text-dark-600/40">{AVAIL_LABELS[product.availability] || '✅ Dispo'}</span>
+          <span className="text-[10px] text-dark-600/40">{AVAIL_LABELS[product.availability] || 'Dispo'}</span>
         </div>
         <FarmerCycleManager productId={product.id} shopId={product.shop_id} productName={product.name} />
       </div>
@@ -682,7 +682,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
         await supabase.from('shops').update({ premium_level: plan.level, premium_expires_at: expiresAt.toISOString() }).eq('owner_id', user.id)
       }
 
-      toast.success(`🎉 Premium ${plan.name} activé pour 30 jours !`)
+      toast.success(`Premium ${plan.name} activé pour 30 jours !`)
       onPurchased()
     } catch { toast.error('Erreur lors du paiement') }
     finally { setLoading(null) }
@@ -697,7 +697,7 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
         <div className="flex items-center justify-between p-3.5 rounded-2xl bg-dark-800">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary-600/20 flex items-center justify-center">
-              <span className="text-sm">💳</span>
+              <CreditCard size={14} className="text-primary-600" />
             </div>
             <span className="text-white/60 text-sm font-medium">Solde wallet</span>
           </div>
@@ -799,7 +799,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
         description: `Achat de ${pack.coins} pièces 🪙`,
       })
 
-      toast.success(`🪙 ${pack.coins} pièces achetées !`)
+      toast.success(`pièces ${pack.coins} pièces achetées !`)
       onPurchased()
       onClose()
     } catch { toast.error('Erreur lors de l\'achat') }
@@ -810,7 +810,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
   const currentPieces = pieces?.balance || 0
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="🪙 Recharger des pièces">
+    <BottomSheet open={open} onClose={onClose} title="Recharger des pièces">
       <div className="px-4 pt-2 pb-8 space-y-4">
         {/* Infos */}
         <div className="grid grid-cols-2 gap-3">
@@ -820,13 +820,13 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
           </div>
           <div className="p-3 rounded-2xl bg-gold-50 border border-gold-200 text-center">
             <p className="text-gold-600 text-xs">Pièces actuelles</p>
-            <p className="font-display font-bold text-gold-700 text-base">🪙 {currentPieces}</p>
+            <p className="font-display font-bold text-gold-700 text-base flex items-center justify-center gap-1"><Coins size={16} /> {currentPieces} pièces</p>
           </div>
         </div>
 
         <div className="p-3 rounded-2xl bg-primary-50 border border-primary-100">
           <p className="text-primary-700 text-xs font-semibold text-center">
-            💡 Créer une boutique = 10 🪙 &nbsp;•&nbsp; Ajouter un produit = 5 🪙
+            Créer une boutique = 10 pièces • Ajouter un produit = 5 pièces
           </p>
         </div>
 
@@ -840,7 +840,7 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 </div>
               )}
-              <span className="text-3xl">🪙</span>
+              <Coins size={36} className="text-gold-500 mx-auto" />
               <p className="font-display font-black text-2xl">{pack.coins}</p>
               <p className="text-white/80 text-xs font-semibold">pièces</p>
               <div className="w-full mt-1 py-1.5 rounded-xl bg-black/20">
@@ -1030,13 +1030,13 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
       await supabase.rpc('create_notification', {
         p_user_id: 'd9f97369-ae78-4da2-844c-1c9c97b12445',
         p_type: 'verification_request',
-        p_title: '🔔 Nouvelle demande de vérification',
+        p_title: 'Nouvelle demande de vérification',
         p_body: `@${profile?.username} (${fullName}) — ${profileType} — ${activityType} — "${shop.name}"`,
         p_reference_id: shop.id, p_reference_type: 'shop',
       })
 
       setSending(false)
-      toast.success('Demande envoyée ! Réponse sous 24-48h ✅')
+      toast.success('Demande envoyée ! Réponse sous 24-48h ')
       onSubmitted()
     } catch (err) {
       console.log('Submit error:', err)
@@ -1059,7 +1059,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                 className={clsx('w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all',
                   req?.status === 'pending' ? 'border-yellow-200 bg-yellow-50 opacity-70' : 'border-gray-100 bg-white active:scale-[0.98]')}>
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-primary-100 flex-shrink-0">
-                  {s.cover_url ? <img src={s.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>}
+                  {s.cover_url ? <img src={s.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-dark-800 text-sm truncate">{s.name}</p>
@@ -1086,7 +1086,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
           {/* Boutique */}
           <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-100 flex-shrink-0">
-              {shop.cover_url ? <img src={shop.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center">🌿</div>}
+              {shop.cover_url ? <img src={shop.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-blue-800 text-sm truncate">{shop.name}</p>
@@ -1204,7 +1204,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                     ) : (
                       <button onClick={() => selfieRef.current?.click()}
                         className="w-full h-20 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center gap-2 active:scale-[0.98]">
-                        <span className="text-gray-400 text-xs">📸 Selfie avec la pièce (recommandé)</span>
+                        <span className="text-gray-400 text-xs">Selfie avec la pièce (recommandé)</span>
                       </button>
                     )}
                   </div>
@@ -1213,7 +1213,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                     className="w-full py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98]">
                     Suivant →
                   </button>
-                  {!idPhoto && <p className="text-center text-red-400 text-xs">⚠️ La photo de votre {idType} est obligatoire</p>}
+                  {!idPhoto && <p className="text-center text-red-400 text-xs">La photo de votre {idType} est obligatoire</p>}
                 </div>
               )}
 
@@ -1291,7 +1291,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
               {step === 3 && (
                 <div className="space-y-4">
                   <p className="font-black text-dark-900 text-base">
-                    {profileType === 'producteur' ? '🌱 Production' : profileType === 'commercant' ? '📦 Commerce' : '🎓 Prestation'}
+                    {profileType === 'producteur' ? 'Production' : profileType === 'commercant' ? 'Commerce' : 'Prestation'}
                   </p>
 
                   {/* PRODUCTEUR */}
@@ -1312,7 +1312,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                       <div>
                         <label className="text-sm font-bold text-dark-700 block mb-1.5">Pesticides / engrais chimiques ?</label>
                         <div className="flex gap-2">
-                          {[{v:false,l:'Non ✅'},{v:true,l:'Oui'},{v:'parfois',l:'Parfois'}].map(opt => (
+                          {[{v:false,l:'Non'},{v:true,l:'Oui'},{v:'parfois',l:'Parfois'}].map(opt => (
                             <button key={String(opt.v)} onClick={() => setUsePesticides(opt.v)}
                               className={clsx('flex-1 py-2.5 rounded-2xl border-2 text-xs font-bold transition-all active:scale-95',
                                 usePesticides === opt.v ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500')}>
@@ -1404,7 +1404,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                     <button onClick={() => setStep(2)} className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-sm active:scale-95">← Retour</button>
                     <button onClick={submit} disabled={!canSubmit || sending}
                       className="flex-[2] py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-md active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2">
-                      {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '✅ Envoyer la demande'}
+                      {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Envoyer la demande'}
                     </button>
                   </div>
                   <p className="text-center text-gray-400 text-xs">Réponse sous 24-48h après examen</p>
@@ -1430,7 +1430,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
       const { data, error } = await supabase.rpc('accept_order', { p_order_id: orderId })
       if (error) throw error
       if (data?.success) {
-        toast.success('Commande acceptée ! 📦')
+        toast.success('Commande acceptée ! ')
         onRefresh()
       } else {
         throw new Error(data?.error || 'Erreur lors de la validation')
@@ -1473,7 +1473,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
       })
       if (error) throw error
       if (data?.success) {
-        toast.success('Statut de livraison mis à jour ! 🚚')
+        toast.success('Statut de livraison mis à jour ! ')
         onRefresh()
       } else {
         throw new Error(data?.error || 'Erreur')
@@ -1509,7 +1509,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
         </div>
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 text-center shadow-card">
-          <p className="text-4xl mb-2">📦</p>
+          <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Package size={28} /></div>
           <p className="font-bold text-dark-800">Aucune commande reçue</p>
           <p className="text-xs text-dark-600/40 mt-1">Les commandes des clients apparaîtront ici.</p>
         </div>
@@ -1553,7 +1553,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
               <div className="text-xs text-dark-600/70 p-2.5 bg-surface-50 rounded-xl space-y-1">
                 <p className="flex items-center gap-1.5"><MapPin size={13} className="text-dark-400" /> <strong>Lieu :</strong> {order.delivery_address}</p>
                 <p className="flex items-center gap-1.5"><Phone size={13} className="text-dark-400" /> <strong>Tel :</strong> {order.delivery_phone}</p>
-                {order.note && <p>💬 <strong>Note :</strong> {order.note}</p>}
+                {order.note && <p><strong>Note :</strong> {order.note}</p>}
               </div>
 
               {/* Actions de livraison */}
@@ -1589,7 +1589,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
                       </button>
                     )}
                     {order.delivery_status === 'delivered' && (
-                      <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-black">Livré ✓</span>
+                      <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-black">Livré</span>
                     )}
                     <span className="ml-1 uppercase tracking-wider font-bold text-[9px] bg-surface-100 px-2 py-1 rounded-lg text-dark-600">
                       {order.delivery_status === 'pending' && 'En attente'}
@@ -1651,7 +1651,7 @@ function QuotesTab({ quotes, loading, onRefresh }) {
       })
       if (error) throw error
       if (data?.success) {
-        toast.success('Proposition envoyée avec succès ! 🏷️')
+        toast.success('Proposition envoyée avec succès ! ')
         onRefresh()
       } else {
         throw new Error(data?.error || 'Erreur')
@@ -1725,7 +1725,7 @@ function QuotesTab({ quotes, loading, onRefresh }) {
                 <p className="text-xs text-dark-700 mt-2 font-bold">Quantité demandée : {quote.quantity} unités</p>
                 {quote.description && (
                   <p className="text-xs text-dark-600 bg-surface-50 p-2.5 rounded-xl border border-surface-100 mt-2 font-medium">
-                    💬 {quote.description}
+                    {quote.description}
                   </p>
                 )}
               </div>
@@ -1763,19 +1763,19 @@ function QuotesTab({ quotes, loading, onRefresh }) {
 
               {quote.status === 'responded' && (
                 <p className="text-xs text-primary-700 font-bold bg-primary-50 p-2 rounded-xl text-center">
-                  🏷️ Tarif proposé : {formatFCFA(quote.proposed_price)} / u
+                  Tarif proposé : {formatFCFA(quote.proposed_price)} / u
                 </p>
               )}
 
               {quote.status === 'accepted' && (
                 <p className="text-xs text-emerald-700 font-bold bg-emerald-50 p-2 rounded-xl text-center">
-                  ✅ Offre acceptée ! Tarif validé : {formatFCFA(quote.proposed_price)} / u
+                  Offre acceptée ! Tarif validé : {formatFCFA(quote.proposed_price)} / u
                 </p>
               )}
 
               {quote.status === 'rejected' && (
                 <p className="text-xs text-red-500 font-bold bg-red-50 p-2 rounded-xl text-center">
-                  ❌ Vous avez décliné cette demande
+                  Vous avez décliné cette demande
                 </p>
               )}
             </div>

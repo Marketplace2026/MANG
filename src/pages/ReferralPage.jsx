@@ -76,7 +76,7 @@ export default function ReferralPage() {
   }
 
   const handleShare = async () => {
-    const text = `🌿 Rejoins-moi sur MANG — le marché agricole du Bénin !\n\nUtilise mon code de parrainage : *${referralCode}*\n\nTu reçois 10 pièces 🪙 à l'inscription !\n\n👉 ${referralLink}`
+    const text = ` Rejoins-moi sur MANG — le marché agricole du Bénin !\n\nUtilise mon code de parrainage : *${referralCode}*\n\nTu reçois 10 pièces 🪙 à l'inscription !\n\n ${referralLink}`
     if (navigator.share) {
       await navigator.share({ title: 'MANG — Parrainage', text })
     } else {
@@ -86,11 +86,11 @@ export default function ReferralPage() {
   }
 
   const STATUS_CONFIG = {
-    registered:   { label: 'Inscrit',         color: 'bg-blue-100 text-blue-700',       icon: '👤' },
-    shop_created: { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '🏪' },
-    rewarded:     { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '🏪' },
-    suspicious:   { label: 'Suspect / Gelé',  color: 'bg-red-100 text-red-700 dark:bg-red-950/40', icon: '🛑' },
-    cash_paid:    { label: 'Acheteur Actif',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40', icon: '💰' },
+    registered:   { label: 'Inscrit',         color: 'bg-blue-100 text-blue-700',       icon: '' },
+    shop_created: { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '' },
+    rewarded:     { label: 'Boutique créée',  color: 'bg-emerald-100 text-emerald-700', icon: '' },
+    suspicious:   { label: 'Suspect / Gelé',  color: 'bg-red-100 text-red-700 dark:bg-red-950/40', icon: '' },
+    cash_paid:    { label: 'Acheteur Actif',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40', icon: '' },
   }
 
   return (
@@ -116,9 +116,9 @@ export default function ReferralPage() {
         {/* Récompenses */}
         <div className="relative grid grid-cols-3 gap-2">
           {[
-            { icon: '🎁', amount: '+10 🪙', label: 'Filleul inscrit',  sub: 'Pour votre ami' },
-            { icon: '💎', amount: '+20 🪙', label: 'Vous recevez',     sub: 'Par inscription' },
-            { icon: '🏪', amount: '+50 🪙', label: 'Boutique créée',   sub: 'Bonus extra' },
+            { icon: '', amount: '+10 🪙', label: 'Filleul inscrit',  sub: 'Pour votre ami' },
+            { icon: '', amount: '+20 🪙', label: 'Vous recevez',     sub: 'Par inscription' },
+            { icon: '', amount: '+50 🪙', label: 'Boutique créée',   sub: 'Bonus extra' },
           ].map((r, i) => (
             <div key={i} className="bg-white/10 border border-white/20 rounded-2xl p-3 text-center">
               <div className="text-2xl mb-1">{r.icon}</div>
@@ -176,14 +176,14 @@ export default function ReferralPage() {
               tier === 'Silver' ? 'bg-slate-200 dark:bg-dark-700 text-slate-700 dark:text-slate-300' :
               'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
             )}>
-              👑 Palier {tier === 'Gold' ? 'Or' : tier === 'Silver' ? 'Argent' : 'Bronze'}
+               Palier {tier === 'Gold' ? 'Or' : tier === 'Silver' ? 'Argent' : 'Bronze'}
             </span>
           </div>
 
           <div className="space-y-2.5">
             <div className="flex justify-between items-center text-xs font-bold text-dark-600/60 dark:text-white/40">
               <span>{activeCount} filleul{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}</span>
-              <span>{tier === 'Gold' ? 'Palier Max 🚀' : `Prochain palier : ${activeCount < 5 ? '5' : '15'} filleuls`}</span>
+              <span>{tier === 'Gold' ? 'Palier Max ' : `Prochain palier : ${activeCount < 5 ? '5' : '15'} filleuls`}</span>
             </div>
             
             {/* Barre de progression */}
@@ -198,15 +198,15 @@ export default function ReferralPage() {
             <div className="p-3 bg-surface-50 dark:bg-dark-950 rounded-2xl text-xs font-semibold text-dark-700 dark:text-dark-350 leading-relaxed border border-surface-100 dark:border-dark-850">
               {tier === 'Gold' ? (
                 <p className="text-gold-600 dark:text-gold-400">
-                  ✨ <strong>Privilège Or</strong> actif : Vous gagnez +50 🪙 par inscription, +100 🪙 par boutique et <strong>10% du 1er achat filleul</strong> en argent réel ! 💰
+                   <strong>Privilège Or</strong> actif : Vous gagnez +50 🪙 par inscription, +100 🪙 par boutique et <strong>10% du 1er achat filleul</strong> en argent réel ! 
                 </p>
               ) : tier === 'Silver' ? (
                 <p>
-                  ⚡ Avantages <strong>Argent</strong> : Vous gagnez +30 🪙 par inscription et +75 🪙 par boutique de filleul. Invitez encore {15 - activeCount} filleuls pour devenir <strong>Or</strong> !
+                   Avantages <strong>Argent</strong> : Vous gagnez +30 🪙 par inscription et +75 🪙 par boutique de filleul. Invitez encore {15 - activeCount} filleuls pour devenir <strong>Or</strong> !
                 </p>
               ) : (
                 <p>
-                  🌱 Avantages <strong>Bronze</strong> : Vous gagnez +20 🪙 par inscription et +50 🪙 par boutique de filleul. Invitez encore {5 - activeCount} filleuls pour devenir <strong>Argent</strong> !
+                   Avantages <strong>Bronze</strong> : Vous gagnez +20 🪙 par inscription et +50 🪙 par boutique de filleul. Invitez encore {5 - activeCount} filleuls pour devenir <strong>Argent</strong> !
                 </p>
               )}
             </div>
@@ -252,7 +252,7 @@ export default function ReferralPage() {
               { step: '2', text: 'Votre ami s\'inscrit avec votre code → il reçoit 10 🪙 (20 🪙 si vous êtes Or)', color: 'bg-emerald-600' },
               { step: '3', text: 'Vous recevez automatiquement 20 🪙 pièces (jusqu\'à 50 🪙 en palier Or)', color: 'bg-primary-600' },
               { step: '4', text: 'Si votre ami crée une boutique → vous recevez jusqu\'à +100 🪙 de bonus !', color: 'bg-gold-500' },
-              { step: '5', text: 'Premier achat filleul (min 5 000 FCFA) → bonus cash versé aux deux ! 💰', color: 'bg-violet-600' },
+              { step: '5', text: 'Premier achat filleul (min 5 000 FCFA) → bonus cash versé aux deux ! ', color: 'bg-violet-600' },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className={clsx('w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0 mt-0.5', item.color)}>
@@ -277,7 +277,7 @@ export default function ReferralPage() {
             </div>
           ) : referrals.length === 0 ? (
             <div className="text-center py-10 bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-2xl shadow-card">
-              <p className="text-4xl mb-2">👥</p>
+              <p className="text-4xl mb-2"></p>
               <p className="font-bold text-dark-800 dark:text-white">Aucun filleul pour l'instant</p>
               <p className="text-dark-600/50 dark:text-white/40 text-sm mt-1">Partagez votre code pour commencer !</p>
               <button onClick={handleShare}
@@ -322,12 +322,12 @@ export default function ReferralPage() {
 
         {/* MESSAGE WHATSAPP PRÊT */}
         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4">
-          <p className="font-bold text-emerald-800 dark:text-emerald-400 text-sm mb-2">💬 Message prêt à envoyer</p>
+          <p className="font-bold text-emerald-800 dark:text-emerald-400 text-sm mb-2"> Message prêt à envoyer</p>
           <p className="text-emerald-700 dark:text-emerald-300 text-xs leading-relaxed bg-white dark:bg-dark-900 rounded-xl p-3 font-mono border border-emerald-100 dark:border-emerald-950">
-            🌿 Rejoins-moi sur MANG — le marché agricole du Bénin !{'\n\n'}
+             Rejoins-moi sur MANG — le marché agricole du Bénin !{'\n\n'}
             Utilise mon code : <strong>{referralCode}</strong>{'\n\n'}
             Tu reçois 10 pièces 🪙 à l'inscription !{'\n'}
-            👉 {referralLink}
+             {referralLink}
           </p>
           <button onClick={handleShare}
             className="w-full mt-3 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-emerald">

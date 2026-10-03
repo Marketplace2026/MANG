@@ -4,18 +4,18 @@ import { clsx } from 'clsx'
 import { ShieldCheck, Truck, Percent, CheckCircle, ArrowRight, Store } from 'lucide-react'
 
 const TESTIMONIALS = [
-  { text: 'Grâce à MANG, j\'ai vendu toute ma récolte de maïs en 3 jours. Je gagne 40% de plus !', name: 'Kouassi Mensah', role: 'Producteur · Parakou', avatar: '👨‍🌾', stars: 5 },
-  { text: 'Je trouve tous les légumes frais directement des fermiers. Qualité incroyable, prix imbattables.', name: 'Aïcha Dossou', role: 'Restauratrice · Cotonou', avatar: '👩‍🍳', stars: 5 },
-  { text: 'MANG a transformé mon business. Ma boutique attire des clients de tout le Bénin !', name: 'Théodore Gbèdo', role: 'Éleveur · Abomey', avatar: '🧑‍🌾', stars: 5 },
+  { text: 'Grâce à MANG, j\'ai vendu toute ma récolte de maïs en 3 jours. Je gagne 40% de plus !', name: 'Kouassi Mensah', role: 'Producteur · Parakou', avatar: '‍', stars: 5 },
+  { text: 'Je trouve tous les légumes frais directement des fermiers. Qualité incroyable, prix imbattables.', name: 'Aïcha Dossou', role: 'Restauratrice · Cotonou', avatar: '‍', stars: 5 },
+  { text: 'MANG a transformé mon business. Ma boutique attire des clients de tout le Bénin !', name: 'Théodore Gbèdo', role: 'Éleveur · Abomey', avatar: '‍', stars: 5 },
 ]
 
 const FEATURES = [
-  { icon: '🏪', title: 'Boutique gratuite', desc: 'Créez votre vitrine en 2 min' },
-  { icon: '💰', title: 'MANG Wallet', desc: 'Mobile Money intégré' },
-  { icon: '💬', title: 'Chat temps réel', desc: 'Avec acheteurs et vendeurs' },
-  { icon: '🛡️', title: 'Escrow sécurisé', desc: 'Argent protégé jusqu\'à livraison' },
-  { icon: '📊', title: 'Dashboard vendeur', desc: 'Suivez vos ventes en direct' },
-  { icon: '🚚', title: 'Livraison intégrée', desc: 'Option livraison à domicile' },
+  { icon: '', title: 'Boutique gratuite', desc: 'Créez votre vitrine en 2 min' },
+  { icon: '', title: 'MANG Wallet', desc: 'Mobile Money intégré' },
+  { icon: '', title: 'Chat temps réel', desc: 'Avec acheteurs et vendeurs' },
+  { icon: '️', title: 'Escrow sécurisé', desc: 'Argent protégé jusqu\'à livraison' },
+  { icon: '', title: 'Dashboard vendeur', desc: 'Suivez vos ventes en direct' },
+  { icon: '', title: 'Livraison intégrée', desc: 'Option livraison à domicile' },
 ]
 
 export default function OnboardingPage() {
@@ -71,7 +71,7 @@ export default function OnboardingPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-2"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }}>
                 <div className="w-2 h-2 rounded-full bg-white animate-pulse"/>
-                <span className="text-white text-xs font-bold tracking-widest uppercase">🌍 Marketplace Agricole Bénin</span>
+                <span className="text-white text-xs font-bold tracking-widest uppercase"> Marketplace Agricole Bénin</span>
               </div>
 
               {/* Logo panier carré parfait 220px x 220px, centré, 40px en haut et 40px en bas */}
@@ -103,10 +103,10 @@ export default function OnboardingPage() {
             <div className="px-5 mb-6">
               <div className="grid grid-cols-4 gap-2">
                 {[
-                  { v: '10K+', l: 'Producteurs', e: '👨‍🌾' },
-                  { v: '50K+', l: 'Produits',    e: '🌽'   },
-                  { v: '24/7', l: 'Disponible',  e: '⚡'   },
-                  { v: '100%', l: 'Sécurisé',    e: '🔒'   },
+                  { v: '10K+', l: 'Producteurs', e: '‍' },
+                  { v: '50K+', l: 'Produits',    e: ''   },
+                  { v: '24/7', l: 'Disponible',  e: ''   },
+                  { v: '100%', l: 'Sécurisé',    e: ''   },
                 ].map((s, i) => (
                   <div key={i} className="flex flex-col items-center py-3.5 rounded-2xl"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>

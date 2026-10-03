@@ -166,7 +166,7 @@ export default function AdminVerificationPage() {
         p_reference_id: req.shop_id,
         p_reference_type: 'shop',
       })
-      toast.success(`✅ "${req.shop?.name}" vérifiée !`)
+      toast.success(`"${req.shop?.name}" vérifiée !`)
       setSelectedRequest(null)
       loadRequests()
     } finally { setProcessing(false) }
@@ -217,7 +217,7 @@ export default function AdminVerificationPage() {
       })
       if (error) throw error
       if (data?.success) {
-        toast.success('Litige résolu avec succès ! ⚖️')
+        toast.success('Litige résolu avec succès !')
         setResolvingDispute(null)
         setResNote('')
         setResDecision('')
@@ -431,11 +431,11 @@ export default function AdminVerificationPage() {
                     </div>
 
                     <div className="text-xs space-y-1">
-                      <p>📦 <strong>Produit :</strong> {dispute.order?.product?.name}</p>
-                      <p>👤 <strong>Acheteur :</strong> @{dispute.order?.buyer?.username}</p>
-                      <p>🏪 <strong>Vendeur :</strong> @{dispute.order?.seller?.username}</p>
+                      <p><strong>Produit :</strong> {dispute.order?.product?.name}</p>
+                      <p><strong>Acheteur :</strong> @{dispute.order?.buyer?.username}</p>
+                      <p><strong>Vendeur :</strong> @{dispute.order?.seller?.username}</p>
                       <p className="text-red-700 bg-red-50 p-2.5 rounded-xl font-medium mt-1">
-                        ⚠️ <strong>Raison :</strong> {dispute.reason} — {dispute.description}
+                        <strong>Raison :</strong> {dispute.reason} — {dispute.description}
                       </p>
                     </div>
 
@@ -448,7 +448,7 @@ export default function AdminVerificationPage() {
 
                     {dispute.status === 'resolved' && (
                       <p className="text-xs text-dark-500 font-semibold bg-surface-50 p-2 rounded-xl text-center">
-                        ⚖️ Résolution : {dispute.resolution_note}
+                        Résolution : {dispute.resolution_note}
                       </p>
                     )}
                   </div>
@@ -474,7 +474,7 @@ export default function AdminVerificationPage() {
                     {catalogShops.map(sh => (
                       <div key={sh.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-base">{sh.is_verified ? '✅' : '🏪'}</span>
+                          <span className="text-base">{sh.is_verified ? 'Vérifié' : 'Boutique'}</span>
                           <div>
                             <p className="font-bold text-xs text-dark-800">{sh.name}</p>
                             <p className="text-dark-600/35 text-[9px]">Par @{sh.owner?.username}</p>
@@ -496,7 +496,7 @@ export default function AdminVerificationPage() {
                       <div key={prod.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded bg-surface-100 overflow-hidden flex-shrink-0">
-                            {prod.image_url ? <img src={prod.image_url} className="w-full h-full object-cover"/> : '🌾'}
+                            {prod.image_url ? <img src={prod.image_url} className="w-full h-full object-cover"/> : ''}
                           </div>
                           <div>
                             <p className="font-bold text-xs text-dark-800 truncate max-w-[120px]">{prod.name}</p>
@@ -521,14 +521,14 @@ export default function AdminVerificationPage() {
         <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="Détail de la demande">
           <div className="px-4 pt-2 pb-8 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="p-4 bg-surface-50 rounded-2xl space-y-3 text-xs">
-              <p>👤 <strong>Nom complet :</strong> {selectedRequest.full_name}</p>
-              <p>📞 <strong>Téléphone :</strong> {selectedRequest.phone}</p>
-              <p>📍 <strong>Localisation :</strong> {selectedRequest.location}</p>
-              <p>🌾 <strong>Type de profil :</strong> {selectedRequest.profile_type} ({selectedRequest.activity_type})</p>
-              <p>💼 <strong>Expérience :</strong> {selectedRequest.years_experience} ans</p>
-              <p>🚚 <strong>Portée livraison :</strong> {selectedRequest.delivery_scope}</p>
-              {selectedRequest.production_method && <p>🚜 <strong>Méthode prod. :</strong> {selectedRequest.production_method}</p>}
-              {selectedRequest.additional_info && <p>💬 <strong>Exigences/Notes :</strong> {selectedRequest.additional_info}</p>}
+              <p><strong>Nom complet :</strong> {selectedRequest.full_name}</p>
+              <p><strong>Téléphone :</strong> {selectedRequest.phone}</p>
+              <p><strong>Localisation :</strong> {selectedRequest.location}</p>
+              <p><strong>Type de profil :</strong> {selectedRequest.profile_type} ({selectedRequest.activity_type})</p>
+              <p><strong>Expérience :</strong> {selectedRequest.years_experience} ans</p>
+              <p><strong>Portée livraison :</strong> {selectedRequest.delivery_scope}</p>
+              {selectedRequest.production_method && <p><strong>Méthode prod. :</strong> {selectedRequest.production_method}</p>}
+              {selectedRequest.additional_info && <p><strong>Exigences/Notes :</strong> {selectedRequest.additional_info}</p>}
             </div>
 
             {/* Photos ID */}
@@ -599,7 +599,7 @@ export default function AdminVerificationPage() {
             </div>
 
             <Button onClick={() => reject(selectedRequest)} disabled={processing} variant="danger" className="w-full py-3.5 text-sm font-bold shadow-md">
-              {processing ? 'Traitement...' : '❌ Confirmer le rejet'}
+              {processing ? 'Traitement...' : 'Confirmer le rejet'}
             </Button>
           </div>
         </BottomSheet>
@@ -610,7 +610,7 @@ export default function AdminVerificationPage() {
         <BottomSheet open={!!resolvingDispute} onClose={() => setResolvingDispute(null)} title="Arbitrage de litige">
           <div className="px-4 pt-2 pb-8 space-y-4">
             <div className="p-3.5 bg-red-500/10 border border-red-300/30 rounded-2xl text-red-800 text-xs leading-normal">
-              ⚠️ <strong>Action d'arbitrage.</strong> Vous devez décider si vous remboursez l'acheteur ou si vous libérez les fonds au vendeur. Cette action est irréversible.
+              <strong>Action d'arbitrage.</strong> Vous devez décider si vous remboursez l'acheteur ou si vous libérez les fonds au vendeur. Cette action est irréversible.
             </div>
 
             <div className="space-y-1.5">

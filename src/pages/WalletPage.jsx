@@ -18,22 +18,22 @@ import EscrowBreakdownModal from '@/components/wallet/EscrowBreakdownModal'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 const OPERATORS = [
-  { id: 'MTN',    label: 'MTN Mobile Money', emoji: '🟡' },
-  { id: 'Moov',   label: 'Moov Money',       emoji: '🔵' },
-  { id: 'Celtis', label: 'Celtis Cash',      emoji: '🟢' },
+  { id: 'MTN',    label: 'MTN Mobile Money', emoji: '' },
+  { id: 'Moov',   label: 'Moov Money',       emoji: '' },
+  { id: 'Celtis', label: 'Celtis Cash',      emoji: '' },
 ]
 
 const TX_TYPES = {
-  deposit:         { label: 'Rechargement',     icon: '💰', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  recharge:        { label: 'Rechargement',     icon: '💰', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  withdraw:        { label: 'Retrait',          icon: '💸', color: 'text-red-600',     bg: 'bg-red-50'     },
-  transfer_out:    { label: 'Transfert envoyé', icon: '📤', color: 'text-red-600',     bg: 'bg-red-50'     },
-  transfer_in:     { label: 'Transfert reçu',   icon: '📥', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  order_payment:   { label: 'Paiement commande',icon: '🛒', color: 'text-red-600',     bg: 'bg-red-50'     },
-  order_received:  { label: 'Vente reçue',      icon: '💵', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  deposit:         { label: 'Rechargement',     icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  recharge:        { label: 'Rechargement',     icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  withdraw:        { label: 'Retrait',          icon: ArrowDownLeft, color: 'text-red-600',     bg: 'bg-red-50'     },
+  transfer_out:    { label: 'Transfert envoyé', icon: ArrowUpRight, color: 'text-red-600',     bg: 'bg-red-50'     },
+  transfer_in:     { label: 'Transfert reçu',   icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  order_payment:   { label: 'Paiement commande',icon: ShoppingCart, color: 'text-red-600',     bg: 'bg-red-50'     },
+  order_received:  { label: 'Vente reçue',      icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   order_refund:    { label: 'Remboursement',    icon: '↩️', color: 'text-emerald-600', bg: 'bg-emerald-50' },
   subscription:    { label: 'Abonnement',       icon: '⭐', color: 'text-red-600',     bg: 'bg-red-50'     },
-  pieces_purchase: { label: 'Achat pièces',     icon: '🪙', color: 'text-red-600',     bg: 'bg-red-50'     },
+  pieces_purchase: { label: 'Achat pièces',     icon: Coins, color: 'text-red-600',     bg: 'bg-red-50'     },
 }
 
 function getTxCfg(tx) {
@@ -118,7 +118,7 @@ function PinInput({ value, onChange, error, label }) {
           />
         ))}
       </div>
-      {error && <p className="text-red-500 text-xs font-semibold mt-2">❌ PIN incorrect</p>}
+      {error && <p className="text-red-500 text-xs font-semibold mt-2">PIN incorrect</p>}
     </div>
   )
 }
@@ -133,10 +133,10 @@ async function recordTx({ walletId, userId, type, amountCents: amount, balanceAf
     description, receipt_number: receiptNum,
   })
   const notifMap = {
-    deposit:      ['wallet_credit', '💰 Rechargement réussi !',  `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA crédités.`],
-    withdraw:     ['wallet_debit',  '💸 Retrait effectué !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA retirés.`],
-    transfer_out: ['wallet_debit',  '📤 Transfert envoyé !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA transférés.`],
-    transfer_in:  ['wallet_credit', '📥 Transfert reçu !',       `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA reçus.`],
+    deposit:      ['wallet_credit', 'Rechargement réussi !',  `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA crédités.`],
+    withdraw:     ['wallet_debit',  'Retrait effectué !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA retirés.`],
+    transfer_out: ['wallet_debit',  'Transfert envoyé !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA transférés.`],
+    transfer_in:  ['wallet_credit', 'Transfert reçu !',       `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA reçus.`],
   }
   const n = notifMap[type]
   if (n) await supabase.from('notifications').insert({ user_id: userId, type: n[0], title: n[1], body: n[2] })
@@ -195,7 +195,7 @@ function DepositSheet({ open, onClose, user, wallet, onSuccess }) {
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="💰 Recharger mon portefeuille">
+    <Sheet open={open} onClose={onClose} title="Recharger mon portefeuille">
       <div className="px-5 py-4 space-y-5 pb-10">
         <div>
           <p className="text-sm font-bold text-gray-700 mb-3">Opérateur Mobile Money</p>
@@ -248,9 +248,9 @@ function DepositSheet({ open, onClose, user, wallet, onSuccess }) {
         )}
         <button onClick={handleDeposit} disabled={loading || !operator || !phone || !amount}
           className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-2">
-          {loading ? <Loader2 size={20} className="animate-spin"/> : '💳 Payer maintenant'}
+          {loading ? <Loader2 size={20} className="animate-spin"/> : 'Payer maintenant'}
         </button>
-        <p className="text-center text-xs text-gray-400">🔒 Paiement sécurisé via FedaPay</p>
+        <p className="text-center text-xs text-gray-400">Paiement sécurisé via FedaPay</p>
       </div>
     </Sheet>
   )
@@ -338,7 +338,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
         description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${OPERATORS.find(o=>o.id===operator)?.label} → ${phone}`,
       })
 
-      toast.success(`✅ Retrait de ${amt.toLocaleString('fr-FR')} FCFA initié !`)
+      toast.success(`Retrait de ${amt.toLocaleString('fr-FR')} FCFA initié !`)
       onSuccess(); onClose(); reset()
     } catch (err) {
       console.error('Withdraw error:', err)
@@ -347,7 +347,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
   }
 
   return (
-    <Sheet open={open} onClose={() => { onClose(); reset() }} title="💸 Retrait Mobile Money">
+    <Sheet open={open} onClose={() => { onClose(); reset() }} title="Retrait Mobile Money">
       <div className="px-5 py-4 space-y-4 pb-10">
         {step === 1 ? (
           <>
@@ -507,7 +507,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
       if (error) throw new Error(error.message || 'Erreur transfert')
       if (data?.error) throw new Error(data.error)
 
-      toast.success(`✅ ${amt.toLocaleString('fr-FR')} FCFA envoyés à @${receiver.username} !`)
+      toast.success(`${amt.toLocaleString('fr-FR')} FCFA envoyés à @${receiver.username} !`)
       onSuccess(); onClose(); reset()
     } catch (err) {
       const msg = err.message || ''
@@ -517,7 +517,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
   }
 
   return (
-    <Sheet open={open} onClose={() => { onClose(); reset() }} title="🔄 Transfert d'argent">
+    <Sheet open={open} onClose={() => { onClose(); reset() }} title="Transfert d'argent">
       <div className="px-5 py-4 space-y-4 pb-10">
         {step === 1 ? (
           <>
@@ -537,10 +537,10 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
                 </p>
               )}
               {notFound && !lookingUp && receiverNum.length >= 7 && (
-                <p className="text-xs text-red-500 mt-1.5 pl-1">❌ Aucun wallet trouvé pour ce numéro</p>
+                <p className="text-xs text-red-500 mt-1.5 pl-1">Aucun wallet trouvé pour ce numéro</p>
               )}
               <p className="text-xs text-gray-400 mt-1.5 pl-1">
-                💡 Demandez le numéro wallet (10 chiffres) au destinataire dans son profil Wallet
+                Demandez le numéro wallet (10 chiffres) au destinataire dans son profil Wallet
               </p>
             </div>
 
@@ -625,7 +625,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
               <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-1">
                 <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
                   <Shield size={16} className="text-amber-600" />
-                  <span>⚠️ ALERTE DE SÉCURITÉ — TRANSFERT ÉLEVÉ</span>
+                  <span>ALERTE DE SÉCURITÉ — TRANSFERT ÉLEVÉ</span>
                 </div>
                 <p className="text-amber-900 text-xs font-medium">
                   Vous vous préparez à envoyer <span className="font-bold text-amber-950">{parseInt(amount).toLocaleString('fr-FR')} FCFA</span> à <span className="font-bold text-amber-950">{receiver?.full_name || receiver?.username}</span>. Veuillez revérifier le destinataire avant d'entrer votre PIN.
@@ -692,14 +692,14 @@ function PinSetupSheet({ open, onClose, user }) {
     try {
       const hash = await sha256(newPin)
       await supabase.from('wallets').update({ pin_hash: hash, pin_set: true }).eq('user_id', user.id)
-      toast.success('🔐 PIN configuré !')
+      toast.success('PIN configuré !')
       reset(); onClose()
     } catch { toast.error('Erreur') }
     finally { setLoading(false) }
   }
 
   return (
-    <Sheet open={open} onClose={() => { reset(); onClose() }} title="🔐 Code PIN Wallet">
+    <Sheet open={open} onClose={() => { reset(); onClose() }} title="Code PIN Wallet">
       <div className="px-5 py-6 space-y-5 pb-10">
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
           <Shield size={20} className="text-green-600 flex-shrink-0"/>
@@ -792,7 +792,7 @@ async function downloadPDF(tx) {
       ['Date', new Date(tx.created_at).toLocaleString('fr-FR')],
       ['Type', cfg.label],
       ['Montant', `${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`],
-      ['Statut', '✅ Validé'],
+      ['Statut', 'Validé'],
       tx.description && ['Description', tx.description],
     ].filter(Boolean)
 
@@ -812,7 +812,7 @@ async function downloadPDF(tx) {
     doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 210, 564, { align:'center' })
 
     doc.save(`${receiptNum}.pdf`)
-    toast.success('✅ Reçu PDF téléchargé !')
+    toast.success('Reçu PDF téléchargé !')
   } catch (err) {
     console.error(err)
     toast.error('Erreur PDF. Assurez-vous que jspdf est installé.')
@@ -825,13 +825,13 @@ function copyReceipt(tx) {
   const isCredit = Number(tx.amount) > 0
   const receiptNum = tx.receipt_number || 'N/A'
   const text = `
-🌿 MANG WALLET — REÇU OFFICIEL
+MANG WALLET — REÇU OFFICIEL
 ================================
 Reçu N°   : ${receiptNum}
 Date      : ${new Date(tx.created_at).toLocaleString('fr-FR')}
 Type      : ${cfg.label}
 Montant   : ${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA
-Statut    : ✅ Validé
+Statut    : Validé
 ${tx.description ? 'Note      : ' + tx.description : ''}
 ================================
 MANG — mang-pbgk.vercel.app
@@ -961,7 +961,7 @@ export default function WalletPage() {
     const params = new URLSearchParams(window.location.search)
     if (params.get('recharged')) {
       const amt = parseInt(params.get('recharged'))
-      toast.success(`✅ ${amt.toLocaleString('fr-FR')} FCFA rechargés !`)
+      toast.success(`${amt.toLocaleString('fr-FR')} FCFA rechargés !`)
       window.history.replaceState({}, '', window.location.pathname)
       // Enregistrer transaction dépôt après retour FedaPay
       setTimeout(async () => {

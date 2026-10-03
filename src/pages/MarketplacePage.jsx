@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
-  Package, Map, List
+  Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -32,13 +32,13 @@ const AVAIL = {
 
 // CATÉGORIES (identiques à votre ancien fichier)
 const CATEGORIES = [
-  { name: 'Production végétale', icon: '🌱', items: ['Céréales & grains','Légumes','Fruits','Racines & tubercules','Plantes industrielles','Plantes aromatiques & médicinales'] },
-  { name: 'Production animale', icon: '🐄', items: ['Bovins','Ovins & caprins','Porcins','Aviculture','Apiculture','Pisciculture & aquaculture'] },
-  { name: 'Transformation agricole', icon: '🍯', items: ['Produits céréaliers transformés','Produits fruitiers transformés','Produits tubercules transformés','Produits animaux transformés'] },
-  { name: 'Machines & équipements', icon: '🚜', items: ['Machines lourdes','Équipements motorisés','Outils agricoles','Irrigation & énergie','Pièces & maintenance'] },
-  { name: 'Intrants agricoles', icon: '🌿', items: ['Semences & plants','Engrais organiques','Engrais chimiques','Amendements du sol','Produits phytosanitaires'] },
-  { name: 'Espaces verts', icon: '🌳', items: ['Plantes ornementales','Arbres & arbustes','Gazon & pelouses','Fleurs & pépinières','Aménagement paysager','Entretien des espaces verts','Matériel de jardinage'] },
-  { name: 'Services agricoles', icon: '🛠️', items: ['Labour & préparation du sol','Récolte & battage','Transport & logistique','Stockage & conservation','Formation & conseil','Commercialisation & export'] },
+  { name: 'Production végétale', items: ['Céréales & grains','Légumes','Fruits','Racines & tubercules','Plantes industrielles','Plantes aromatiques & médicinales'] },
+  { name: 'Production animale', items: ['Bovins','Ovins & caprins','Porcins','Aviculture','Apiculture','Pisciculture & aquaculture'] },
+  { name: 'Transformation agricole', items: ['Produits céréaliers transformés','Produits fruitiers transformés','Produits tubercules transformés','Produits animaux transformés'] },
+  { name: 'Machines & équipements', items: ['Machines lourdes','Équipements motorisés','Outils agricoles','Irrigation & énergie','Pièces & maintenance'] },
+  { name: 'Intrants agricoles', items: ['Semences & plants','Engrais organiques','Engrais chimiques','Amendements du sol','Produits phytosanitaires'] },
+  { name: 'Espaces verts', items: ['Plantes ornementales','Arbres & arbustes','Gazon & pelouses','Fleurs & pépinières','Aménagement paysager','Entretien des espaces verts','Matériel de jardinage'] },
+  { name: 'Services agricoles', items: ['Labour & préparation du sol','Récolte & battage','Transport & logistique','Stockage & conservation','Formation & conseil','Commercialisation & export'] },
 ]
 
 const BANNERS = [
@@ -47,24 +47,9 @@ const BANNERS = [
   { id: 3, title: 'Vendeurs Vérifiés', desc: 'Des professionnels de confiance', image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=500&auto=format&fit=crop' }
 ]
 
-const QUICK_CATS = [
-  { icon: '🌱', label: 'Céréales', name: 'Céréales & Légumineuses' },
-  { icon: '🥔', label: 'Tubercules', name: 'Tubercules & Racines' },
-  { icon: '🍎', label: 'Fruits', name: 'Fruits & Légumes' },
-  { icon: '🥩', label: 'Élevage', name: 'Produits Animaux' }
-]
+const QUICK_CATS = []
 
-const GRID_CATEGORIES = [
-  { name: 'Céréales', icon: '🌽' },
-  { name: 'Tubercules', icon: '🥔' },
-  { name: 'Fruits', icon: '🍎' },
-  { name: 'Légumes', icon: '🍅' },
-  { name: 'Élevage', icon: '🐄' },
-  { name: 'Produits Transformés', icon: '🍯' },
-  { name: 'Intrants', icon: '🌿' },
-  { name: 'Pêche', icon: '🐟' },
-  { name: 'Artisanat', icon: '🏺' },
-]
+const GRID_CATEGORIES = []
 
 function normalize(text) {
   return (text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -492,7 +477,7 @@ export default function MarketplacePage() {
       setSearch(detectedProduct)
       addToHistory(detectedProduct)
       applySearch(allShops, allProducts, detectedProduct)
-      toast.success(`📷 Produit détecté : ${detectedProduct} ! 🍅`, { duration: 4000 })
+      toast.success(`Produit détecté : ${detectedProduct}`, { duration: 4000 })
     }, 2000)
   }
 
@@ -504,7 +489,7 @@ export default function MarketplacePage() {
         toast.success('Retiré des favoris !')
       } else {
         next.add(prodId)
-        toast.success('Ajouté aux favoris ! ❤️')
+        toast.success('Ajouté aux favoris !')
       }
       return next
     })
@@ -709,7 +694,7 @@ export default function MarketplacePage() {
 
           {/* Texte Déroulant (défilement classique de droite à gauche, passant derrière la localisation) */}
           <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm pl-[180px]">
-            🌾 MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION 🛒 | VENDEURS DE PRODUITS AGRICOLES 🥭 | LIVRAISON VRAIMENT MOBILE 🚚 | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR 📱
+            MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION | VENDEURS DE PRODUITS AGRICOLES | LIVRAISON VRAIMENT MOBILE | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR
           </div>
 
           {/* Filtres Actifs Fixes à droite */}
@@ -920,19 +905,20 @@ export default function MarketplacePage() {
         {/* BARRE DES FILTRES RAPIDES */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
           {[
-            { label: '🔥 Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
-            { label: '✅ Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
-            { label: '🚚 Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
-            { label: '📍 Proches', action: handleNearby, active: filters.nearby },
+            { icon: Flame, color: 'text-amber-500', label: 'Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
+            { icon: ShieldCheck, color: 'text-emerald-600', label: 'Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
+            { icon: Truck, color: 'text-blue-600', label: 'Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
+            { icon: MapPin, color: 'text-rose-500', label: 'Proches', action: handleNearby, active: filters.nearby },
           ].map((btn, i) => (
             <button key={i} onClick={btn.action}
               className={clsx(
-                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1',
+                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1.5',
                 btn.active
                   ? 'bg-primary-600 text-white border-primary-600 shadow-green'
                   : 'bg-white text-dark-700 border-surface-200/50 shadow-card'
               )}>
-              {btn.label}
+              <btn.icon size={13} strokeWidth={2.2} className={btn.active ? 'text-white' : btn.color} />
+              <span>{btn.label}</span>
             </button>
           ))}
         </div>
@@ -969,7 +955,7 @@ export default function MarketplacePage() {
           <div className="px-3 pb-1 mt-2.5 animate-fade-in flex items-center justify-between">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-100">
               <span className="text-primary-700 text-xs font-black">
-                {selectedGroup ? `📂 ${selectedGroup}` : `🌱 ${filters.categoryName}`}
+                {selectedGroup ? <><FolderOpen size={12} strokeWidth={2.2} className="inline mr-1" />{selectedGroup}</> : <><Sprout size={12} strokeWidth={2.2} className="inline mr-1" />{filters.categoryName}</>}
               </span>
               <button onClick={() => {
                 if (selectedGroup) {
@@ -1054,7 +1040,7 @@ export default function MarketplacePage() {
         ) : search.trim() !== '' && searchTab === 'products' ? (
           filteredProducts.length === 0 ? (
             <div className="text-center py-16 px-4">
-              <p className="text-4xl mb-2">🌾</p>
+              <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Store size={28} /></div>
               <p className="text-dark-600 font-bold text-sm">Aucun produit correspondant</p>
             </div>
           ) : (
@@ -1073,7 +1059,7 @@ export default function MarketplacePage() {
           )
         ) : shops.length === 0 ? (
           <div className="text-center py-16 px-4">
-            <p className="text-4xl mb-2">🫙</p>
+            <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Package size={28} /></div>
             <p className="text-dark-600 font-bold text-sm">Aucune boutique correspondante</p>
             <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary-600 text-white font-bold rounded-xl text-xs active:scale-95 shadow-sm">
               Tout afficher
@@ -1149,7 +1135,7 @@ export default function MarketplacePage() {
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center max-w-[480px] mx-auto">
           <div className="relative w-48 h-48 border-4 border-primary-500 rounded-3xl flex items-center justify-center overflow-hidden bg-black/40 shadow-2xl">
             <div className="absolute top-0 left-0 right-0 h-1 bg-primary-400 shadow-[0_0_15px_#004D00] animate-scan-laser" />
-            <span className="text-6xl animate-pulse">📸</span>
+            <Camera size={56} className="text-primary-500 animate-pulse mx-auto" strokeWidth={1.5} />
           </div>
           <p className="text-white font-bold mt-6 text-sm tracking-wider animate-pulse uppercase">Analyse MANG AI en cours...</p>
         </div>
@@ -1229,7 +1215,7 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
       <div className="relative h-20 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
         }
       </div>
 
@@ -1306,7 +1292,7 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
       <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={32} /></div>
         }
 
         {/* Badge premium */}
@@ -1327,7 +1313,7 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
         {/* Distance si mode proche */}
         {isNearby && shop.distance != null && (
           <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/50 backdrop-blur-sm">
-            <span className="text-white text-[10px] font-bold">📍 {shop.distance < 1 ? (shop.distance*1000).toFixed(0)+'m' : shop.distance.toFixed(1)+'km'}</span>
+            <span className="text-white text-[10px] font-bold flex items-center gap-1"><MapPin size={10} /> {shop.distance < 1 ? (shop.distance*1000).toFixed(0)+'m' : shop.distance.toFixed(1)+'km'}</span>
           </div>
         )}
       </div>
@@ -1443,7 +1429,7 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
       <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
         }
       </div>
 
@@ -1451,7 +1437,7 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
       <div className="flex-1 min-w-0">
         <p className="font-bold text-dark-800 text-sm truncate">{shop.name}</p>
         {premiumStars && <p className="text-gold-500 text-xs font-semibold">{premiumStars}</p>}
-        <p className="text-dark-600/50 text-xs">🔔 {shop.followers_count || 0} abonnés</p>
+        <p className="text-dark-600/50 text-xs flex items-center gap-1"><Users size={11} /> {shop.followers_count || 0} abonnés</p>
 
         <div className="flex gap-2 mt-2">
           <button onClick={onFollow}
@@ -1484,13 +1470,13 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
 
   // Groupes prédéfinis avec leurs labels et icônes
   const GROUPS = [
-    { name: 'Céréales & Légumineuses', label: 'Céréales', icon: '🌽' },
-    { name: 'Tubercules & Racines', label: 'Tubercules', icon: '🥔' },
-    { name: 'Fruits & Légumes', label: 'Fruits & Légumes', icon: '🍎' },
-    { name: 'Produits Animaux', label: 'Élevage', icon: '🥩' },
-    { name: 'Produits Transformés', label: 'Transformés', icon: '🍯' },
-    { name: 'Épices & Condiments', label: 'Épices', icon: '🌶️' },
-    { name: 'Intrants Agricoles', label: 'Intrants', icon: '🌿' },
+    { name: 'Céréales & Légumineuses', label: 'Céréales', icon: Sprout },
+    { name: 'Tubercules & Racines', label: 'Tubercules', icon: Package },
+    { name: 'Fruits & Légumes', label: 'Fruits & Légumes', icon: Apple },
+    { name: 'Produits Animaux', label: 'Élevage', icon: Beef },
+    { name: 'Produits Transformés', label: 'Transformés', icon: FlaskConical },
+    { name: 'Épices & Condiments', label: 'Épices', icon: Flame },
+    { name: 'Intrants Agricoles', label: 'Intrants', icon: Leaf },
   ]
 
   // Récupérer les sous-catégories associées au groupe actif
@@ -1564,7 +1550,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
 
             {subCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <span className="text-3xl opacity-30">🫙</span>
+                <div className="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center mx-auto mb-1 text-dark-400"><Package size={20} /></div>
                 <span className="text-[10px] font-bold text-dark-600/50 mt-1">Aucune sous-catégorie disponible</span>
               </div>
             ) : (
@@ -1581,7 +1567,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
                       className="flex items-center justify-between p-2.5 rounded-xl border border-surface-200 hover:border-primary-400 hover:bg-primary-50/10 active:scale-95 transition text-left"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-base flex-shrink-0">{cat.icon || '🌱'}</span>
+                        <span className="w-5 h-5 rounded-md bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0"><Sprout size={12} strokeWidth={2.2} /></span>
                         <span className="text-[10px] font-black text-dark-800 leading-tight truncate">
                           {cat.name}
                         </span>
@@ -1638,14 +1624,14 @@ function ShopSkeleton() {
 // ============================================================
 function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setMinRating, verifiedOnly, setVerifiedOnly, onReset }) {
   const SORT_OPTIONS = [
-    { key: 'recent',    label: '🕐 Plus récentes' },
+    { key: 'recent',    label: 'Plus récentes' },
     { key: 'rating',    label: '⭐ Meilleures notes' },
-    { key: 'followers', label: '👥 Plus suivies' },
-    { key: 'likes',     label: '❤️ Plus aimées' },
+    { key: 'followers', label: 'Plus suivies' },
+    { key: 'likes',     label: 'Plus aimées' },
   ]
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="🎛️ Filtres avancés">
+    <BottomSheet open={open} onClose={onClose} title="Filtres avancés">
       <div className="px-4 pt-2 pb-8 space-y-6" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
 
         {/* Trier par */}
@@ -1697,7 +1683,7 @@ function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setM
               )}
             </div>
             <div>
-              <p className="text-sm font-bold text-dark-800">✅ Boutiques vérifiées seulement</p>
+              <p className="text-sm font-bold text-dark-800 flex items-center gap-1.5"><ShieldCheck size={16} className="text-emerald-600" /> Boutiques vérifiées seulement</p>
               <p className="text-[10px] text-gray-400">Vendeurs officiellement vérifiés par MANG</p>
             </div>
           </button>
@@ -1711,7 +1697,7 @@ function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setM
           </button>
           <button onClick={onClose}
             className="flex-[2] py-3 rounded-2xl bg-primary-600 text-white font-bold text-sm shadow-md active:scale-95">
-            Appliquer ✓
+            Appliquer
           </button>
         </div>
       </div>

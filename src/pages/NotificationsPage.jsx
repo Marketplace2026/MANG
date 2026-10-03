@@ -17,29 +17,29 @@ import { useNavigate } from 'react-router-dom'
 // CONFIG NOTIFICATIONS
 // ============================================================
 const NOTIF_CONFIG = {
-  shop_follow:       { icon: '👥', color: 'bg-blue-100 text-blue-600',     label: 'Abonnement boutique' },
-  product_favorite:  { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Produit favori' },
-  shop_comment:      { icon: '💬', color: 'bg-primary-100 text-primary-600',label: 'Commentaire boutique' },
+  shop_follow:       { icon: Users, color: 'bg-blue-100 text-blue-600',     label: 'Abonnement boutique' },
+  product_favorite:  { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Produit favori' },
+  shop_comment:      { icon: MessageCircle, color: 'bg-primary-100 text-primary-600',label: 'Commentaire boutique' },
   comment_reply:     { icon: '↩️', color: 'bg-primary-100 text-primary-600',label: 'Réponse commentaire' },
-  post_like:         { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Like publication' },
-  shop_like:         { icon: '❤️', color: 'bg-red-100 text-red-600',       label: 'Like boutique' },
-  comment_like:      { icon: '👍', color: 'bg-blue-100 text-blue-600',     label: 'Like commentaire' },
-  user_follow:       { icon: '👤', color: 'bg-violet-100 text-violet-600', label: 'Nouvel abonné' },
-  new_message:       { icon: '💬', color: 'bg-emerald-100 text-emerald-600',label: 'Nouveau message' },
-  order_new:         { icon: '📦', color: 'bg-orange-100 text-orange-600', label: 'Nouvelle commande' },
-  order_accepted:    { icon: '✅', color: 'bg-emerald-100 text-emerald-600',label: 'Commande acceptée' },
-  order_refused:     { icon: '❌', color: 'bg-red-100 text-red-600',       label: 'Commande refusée' },
-  order_paid:        { icon: '💰', color: 'bg-gold-100 text-gold-700',     label: 'Commande payée' },
-  wallet_credit:     { icon: '💵', color: 'bg-emerald-100 text-emerald-600',label: 'Crédit wallet' },
-  wallet_debit:      { icon: '💸', color: 'bg-red-100 text-red-600',       label: 'Débit wallet' },
+  post_like:         { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Like publication' },
+  shop_like:         { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Like boutique' },
+  comment_like:      { icon: ThumbsUp, color: 'bg-blue-100 text-blue-600',     label: 'Like commentaire' },
+  user_follow:       { icon: User, color: 'bg-violet-100 text-violet-600', label: 'Nouvel abonné' },
+  new_message:       { icon: MessageCircle, color: 'bg-emerald-100 text-emerald-600',label: 'Nouveau message' },
+  order_new:         { icon: Package, color: 'bg-orange-100 text-orange-600', label: 'Nouvelle commande' },
+  order_accepted:    { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600',label: 'Commande acceptée' },
+  order_refused:     { icon: XCircle, color: 'bg-red-100 text-red-600',       label: 'Commande refusée' },
+  order_paid:        { icon: Coins, color: 'bg-gold-100 text-gold-700',     label: 'Commande payée' },
+  wallet_credit:     { icon: ArrowDownLeft, color: 'bg-emerald-100 text-emerald-600',label: 'Crédit wallet' },
+  wallet_debit:      { icon: ArrowUpRight, color: 'bg-red-100 text-red-600',       label: 'Débit wallet' },
 }
 
 const FILTER_TABS = [
   { key: 'all',     label: 'Toutes' },
-  { key: 'unread',  label: '🔵 Non lues' },
-  { key: 'orders',  label: '📦 Commandes' },
-  { key: 'social',  label: '❤️ Social' },
-  { key: 'wallet',  label: '💰 Wallet' },
+  { key: 'unread',  label: 'Non lues' },
+  { key: 'orders',  label: 'Commandes' },
+  { key: 'social',  label: 'Social' },
+  { key: 'wallet',  label: 'Wallet' },
 ]
 
 const ORDER_TYPES   = ['order_new','order_accepted','order_refused','order_paid']
@@ -116,7 +116,7 @@ export default function NotificationsPage() {
   const handleMarkAll = async () => {
     if (!unreadCount) { toast('Toutes les notifications sont déjà lues'); return }
     await markAllAsRead(user.id)
-    toast.success('Toutes marquées comme lues ✅')
+    toast.success('Toutes marquées comme lues')
   }
 
   const handleClearAll = async () => {
@@ -137,7 +137,7 @@ export default function NotificationsPage() {
           <div>
             <h1 className="text-white text-2xl font-bold">Notifications</h1>
             <p className="text-white/80 text-sm">
-              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✅'}
+              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
             </p>
           </div>
           <div className="flex gap-3">
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
           {('serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted') && (
             <div className="bg-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 border border-white/20">
               <div className="flex-1">
-                <p className="text-white font-bold text-sm">Recevoir les alertes 📱</p>
+                <p className="text-white font-bold text-sm">Recevoir les alertes</p>
                 <p className="text-white/70 text-[10px] mt-0.5">Même quand l'app est fermée</p>
               </div>
               <button 
@@ -306,11 +306,11 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
 // ============================================================
 function EmptyNotifications({ filter }) {
   const config = {
-    all:     { emoji: '🔔', title: 'Aucune notification', sub: 'Vos notifications apparaîtront ici' },
-    unread:  { emoji: '✅', title: 'Tout est lu !',        sub: 'Vous êtes à jour sur toutes vos notifications' },
-    orders:  { emoji: '📦', title: 'Aucune commande',     sub: 'Vos notifications de commandes apparaîtront ici' },
-    social:  { emoji: '❤️', title: 'Aucune interaction',  sub: 'Likes, commentaires et abonnements apparaîtront ici' },
-    wallet:  { emoji: '💰', title: 'Aucune transaction',  sub: 'Vos mouvements wallet apparaîtront ici' },
+    all:     { icon: Bell, title: 'Aucune notification', sub: 'Vos notifications apparaîtront ici' },
+    unread:  { icon: CheckCircle2, title: 'Tout est lu !',        sub: 'Vous êtes à jour sur toutes vos notifications' },
+    orders:  { icon: Package, title: 'Aucune commande',     sub: 'Vos notifications de commandes apparaîtront ici' },
+    social:  { icon: Heart, title: 'Aucune interaction',  sub: 'Likes, commentaires et abonnements apparaîtront ici' },
+    wallet:  { icon: Wallet, title: 'Aucune transaction',  sub: 'Vos mouvements wallet apparaîtront ici' },
   }
   const { emoji, title, sub } = config[filter] || config.all
 

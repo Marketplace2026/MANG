@@ -17,14 +17,14 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 const AVAIL_LABELS = {
-  now: '✅ Disponible maintenant',
+  now: 'Disponible maintenant',
   '1w': '⏳ Dans 1 semaine',
   '2w': '⏳ Dans 2 semaines',
-  '1m': '📅 Dans 1 mois',
-  '2m': '📅 Dans 2 mois',
-  '3m': '📅 Dans 3 mois',
-  '6m': '📅 Dans 6 mois',
-  '1y': '📆 Dans 1 an',
+  '1m': 'Dans 1 mois',
+  '2m': 'Dans 2 mois',
+  '3m': 'Dans 3 mois',
+  '6m': 'Dans 6 mois',
+  '1y': 'Dans 1 an',
 }
 
 export default function ShopPublicPage() {
@@ -174,7 +174,7 @@ export default function ShopPublicPage() {
   if (loading) return <ShopSkeleton/>
   if (!shop) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
-      <p className="text-5xl">🔍</p>
+      <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Search size={32} /></div>
       <p className="font-display text-xl font-bold text-dark-800">Boutique introuvable</p>
       <Button variant="primary" onClick={() => navigate('/')}>Retour</Button>
     </div>
@@ -253,7 +253,7 @@ export default function ShopPublicPage() {
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-gray-400 text-xs">@{shop.owner?.username}
-                  {shop.city && <span className="text-gray-300 ml-1">· 📍 {shop.city}</span>}
+                  {shop.city && <span className="text-gray-300 ml-1 flex items-center gap-0.5">· <MapPin size={10} />{shop.city}</span>}
                 </p>
                 {shop.reviews_count > 0 && (
                   <button onClick={() => setShowReviews(true)}
@@ -385,7 +385,7 @@ export default function ShopPublicPage() {
 
         {products.length === 0 ? (
           <div className="text-center py-10 bg-white rounded-3xl border border-gray-100">
-            <p className="text-4xl mb-2">📦</p>
+            <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Package size={28} /></div>
             <p className="text-gray-400 text-sm">Aucun produit disponible</p>
           </div>
         ) : (
@@ -406,7 +406,7 @@ export default function ShopPublicPage() {
                     toast.success('Retiré des favoris')
                   } else {
                     await supabase.from('product_favorites').insert({ product_id: product.id, user_id: user.id })
-                    toast.success('Ajouté aux favoris ❤️')
+                    toast.success('Ajouté aux favoris')
                   }
                 }}
               />
@@ -426,7 +426,7 @@ export default function ShopPublicPage() {
               <button onClick={() => setReviewModal(true)}
                 className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 shadow-sm transition-all',
                   myReview ? 'bg-gray-100 text-gray-600' : 'bg-amber-500 text-white')}>
-                {myReview ? '✏️ Modifier mon avis' : '✍️ Donner un avis'}
+                {myReview ? 'Modifier mon avis' : 'Donner un avis'}
               </button>
             )}
           </div>
@@ -501,10 +501,10 @@ export default function ShopPublicPage() {
                         review.rating >= 4 ? 'bg-green-50 text-green-700' :
                         review.rating === 3 ? 'bg-yellow-50 text-yellow-700' :
                         'bg-red-50 text-red-600')}>
-                        {review.rating === 5 ? '😍 Excellent' :
-                         review.rating === 4 ? '😊 Bien' :
-                         review.rating === 3 ? '😐 Correct' :
-                         review.rating === 2 ? '😕 Mauvais' : '😞 Très mauvais'}
+                        {review.rating === 5 ? 'Excellent' :
+                         review.rating === 4 ? 'Bien' :
+                         review.rating === 3 ? 'Correct' :
+                         review.rating === 2 ? 'Mauvais' : 'Très mauvais'}
                       </span>
                     </div>
 
@@ -516,8 +516,8 @@ export default function ShopPublicPage() {
                     {/* Utile ? */}
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-gray-400 text-[10px]">Cet avis vous a été utile ?</span>
-                      <button className="text-[10px] text-primary-600 font-semibold active:scale-95">👍 Oui</button>
-                      <button className="text-[10px] text-gray-400 active:scale-95">👎 Non</button>
+                      <button className="text-[10px] text-primary-600 font-semibold active:scale-95">Oui</button>
+                      <button className="text-[10px] text-gray-400 active:scale-95">Non</button>
                     </div>
                   </div>
                 ))}
@@ -537,7 +537,7 @@ export default function ShopPublicPage() {
               {user && user.id !== shop.owner_id && (
                 <button onClick={() => setReviewModal(true)}
                   className="mt-4 px-5 py-2.5 rounded-2xl bg-amber-500 text-white text-sm font-bold active:scale-95 shadow-md">
-                  ✍️ Écrire un avis
+                  Écrire un avis
                 </button>
               )}
             </div>
@@ -563,7 +563,7 @@ export default function ShopPublicPage() {
       <OrderModal open={!!orderModal} product={orderModal} shop={shop} user={user} onClose={() => setOrderModal(null)}/>
 
       {/* ══════ LIKERS SHEET ══════ */}
-      <BottomSheet open={showLikers} onClose={() => setShowLikers(false)} title="❤️ J'aimes">
+      <BottomSheet open={showLikers} onClose={() => setShowLikers(false)} title="Mentions J'aime">
         <div className="px-4 pt-2 pb-8 space-y-3">
           {likers.length === 0
             ? <p className="text-center text-gray-400 py-8">Soyez le premier à aimer !</p>
@@ -577,7 +577,7 @@ export default function ShopPublicPage() {
       </BottomSheet>
 
       {/* ══════ FOLLOWERS SHEET ══════ */}
-      <BottomSheet open={showFollowers} onClose={() => setShowFollowers(false)} title="👥 Abonnés">
+      <BottomSheet open={showFollowers} onClose={() => setShowFollowers(false)} title="Abonnés">
         <div className="px-4 pt-2 pb-8 space-y-3">
           {followers.length === 0
             ? <p className="text-center text-gray-400 py-8">Aucun abonné pour l'instant</p>
@@ -586,7 +586,7 @@ export default function ShopPublicPage() {
                 <Avatar src={f.user?.avatar_url} name={f.user?.username} size="md"/>
                 <div>
                   <p className="font-semibold text-dark-800 text-sm">@{f.user?.username}</p>
-                  {f.user?.city && <p className="text-gray-400 text-xs">📍 {f.user.city}</p>}
+                  {f.user?.city && <p className="text-gray-400 text-xs flex items-center gap-0.5"><MapPin size={10} />{f.user.city}</p>}
                 </div>
               </div>
             ))}
@@ -639,7 +639,7 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
       <div className="relative h-40 overflow-hidden bg-gray-100">
         {product.image_url
           ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-5xl opacity-20">🌿</div>}
+          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={40} /></div>}
         <span className={clsx(
           'absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold',
           isAvailable ? 'bg-emerald-500 text-white' : 'bg-orange-400 text-white'
@@ -657,14 +657,14 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
           <p className="text-gray-400 text-[11px] leading-tight mt-0.5 line-clamp-2">{product.description}</p>
         )}
         <p className="text-[10px] text-primary-600 font-medium mt-1.5">
-          {AVAIL_LABELS[product.availability] || '✅ Disponible'}
+          {AVAIL_LABELS[product.availability] || 'Disponible'}
         </p>
         <div className="flex items-center justify-between mt-2.5">
           <div>
             <span className="font-black text-primary-700 text-base">{product.price?.toLocaleString('fr-FR')}</span>
             <span className="text-[10px] text-gray-400 ml-1">FCFA</span>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); addItem(product, 1); toast.success('Ajouté au panier ! 🛒') }}
+          <button onClick={(e) => { e.stopPropagation(); addItem(product, 1); toast.success('Ajouté au panier !') }}
             className="px-2.5 py-2 rounded-2xl bg-primary-600 flex items-center gap-1 shadow-md shadow-primary-100 active:scale-90 text-[10px] font-black text-white">
             <ShoppingCart size={12} className="text-white"/>
             Ajouter
@@ -782,7 +782,7 @@ function CommentsSection({ shop, user, profile }) {
           </div>
         ) : comments.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-3xl mb-2">💬</p>
+            <div className="w-12 h-12 rounded-xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><MessageCircle size={24} /></div>
             <p className="text-gray-400 text-sm">Soyez le premier à commenter !</p>
           </div>
         ) : comments.map(comment => (
@@ -893,7 +893,7 @@ function OrderModal({ open, product, shop, user, onClose }) {
         return
       }
 
-      toast.success(data?.message || '📦 Commande créée ! Le vendeur a été notifié.')
+      toast.success(data?.message || 'Commande créée ! Le vendeur a été notifié.')
       setForm({ address: '', phone: '', note: '', quantity: 1 })
       onClose()
     } finally { setLoading(false) }
@@ -902,7 +902,7 @@ function OrderModal({ open, product, shop, user, onClose }) {
   if (!product) return null
 
   return (
-    <Modal open={open} onClose={onClose} title="🛒 Passer commande">
+    <Modal open={open} onClose={onClose} title="Passer commande">
       <div className="p-5 space-y-4">
         <div className="flex gap-3 p-3 bg-gray-50 rounded-2xl">
           {product.image_url && <img src={product.image_url} className="w-14 h-14 rounded-xl object-cover flex-shrink-0"/>}
@@ -933,7 +933,7 @@ function OrderModal({ open, product, shop, user, onClose }) {
           <span className="text-white/50 text-sm">Total</span>
           <span className="font-black text-white text-lg">{((product.price||0)*form.quantity).toLocaleString('fr-FR')} FCFA</span>
         </div>
-        <p className="text-xs text-gray-400 text-center">🔒 Montant bloqué en escrow jusqu'à l'acceptation</p>
+        <p className="text-xs text-gray-400 text-center">Montant bloqué en escrow jusqu'à l'acceptation</p>
         <Button variant="primary" size="lg" className="w-full" loading={loading} onClick={handleOrder}>
           Créer la commande
         </Button>
@@ -979,7 +979,7 @@ function ReviewModal({ open, onClose, shop, user, myReview, onSaved }) {
   const labels = ['', 'Très mauvais', 'Mauvais', 'Correct', 'Bien', 'Excellent !']
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={myReview ? '✏️ Modifier votre avis' : '⭐ Donner un avis'}>
+    <BottomSheet open={open} onClose={onClose} title={myReview ? 'Modifier votre avis' : 'Donner un avis'}>
       <div className="px-5 pt-2 pb-8 space-y-5">
         {/* Stars */}
         <div className="flex flex-col items-center gap-2">

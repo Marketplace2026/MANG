@@ -20,14 +20,14 @@ export default function ProfileProductsGrid({ products = [], shop, profile }) {
       shop_name: shop?.name || 'Boutique MANG',
       unit: prod.unit || 'unité',
     })
-    toast.success(`${prod.name} ajouté au panier 🛒`)
+    toast.success(`${prod.name} ajouté au panier `)
   }
 
   if (!products || products.length === 0) {
     return (
       <div className="py-16 px-4 text-center">
         <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-3 border border-emerald-200/50">
-          🌿
+          
         </div>
         <h3 className="font-bold text-gray-800 dark:text-white text-base mb-1">
           Aucun produit en catalogue
@@ -70,7 +70,7 @@ export default function ProfileProductsGrid({ products = [], shop, profile }) {
                 />
                 {prod.is_organic && (
                   <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider shadow-xs">
-                    🌿 BIO
+                     BIO
                   </span>
                 )}
               </div>

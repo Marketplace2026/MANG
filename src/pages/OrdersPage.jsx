@@ -25,15 +25,15 @@ const STATUS = {
 
 const DELIVERY_STATUS = {
   pending:    { label: 'En attente livraison', icon: '⏳', color: 'bg-orange-50 text-orange-700' },
-  preparing:  { label: 'En préparation',       icon: '📦', color: 'bg-blue-50 text-blue-700'    },
-  shipped:    { label: 'En route',             icon: '🚚', color: 'bg-violet-50 text-violet-700' },
-  delivered:  { label: 'Livré',               icon: '✅', color: 'bg-emerald-50 text-emerald-700' },
+  preparing:  { label: 'En préparation',       icon: Package, color: 'bg-blue-50 text-blue-700'    },
+  shipped:    { label: 'En route',             icon: Truck, color: 'bg-violet-50 text-violet-700' },
+  delivered:  { label: 'Livré',               icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700' },
 }
 
 const TABS = [
   { key: 'all',    label: 'Toutes' },
-  { key: 'buyer',  label: '🛒 Mes achats' },
-  { key: 'seller', label: '🏪 Reçues' },
+  { key: 'buyer',  label: 'Mes achats' },
+  { key: 'seller', label: 'Reçues' },
 ]
 
 async function sha256(text) {
@@ -184,7 +184,7 @@ export default function OrdersPage() {
       const { data, error } = await supabase.rpc('accept_order', { p_order_id: orderId })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
-      toast.success('✅ Commande acceptée !')
+      toast.success('Commande acceptée !')
       loadOrders(false); setSelected(null)
     } catch (err) { toast.error(err.message || 'Erreur lors de l\'acceptation') }
     finally { setProcessing(false) }
@@ -236,7 +236,7 @@ export default function OrdersPage() {
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
 
-      toast.success(`🎉 Paiement de ${data.amount_paid_fcfa?.toLocaleString('fr-FR')} FCFA effectué !`)
+      toast.success(`Paiement de ${data.amount_paid_fcfa?.toLocaleString('fr-FR')} FCFA effectué !`)
       setPinModal(null); setPin(''); setSelected(null)
       loadOrders(false)
     } catch (err) { toast.error(err.message || 'Erreur lors du paiement') }
@@ -254,7 +254,7 @@ export default function OrdersPage() {
         p_status: status,
       })
       if (error) throw new Error(error.message)
-      toast.success(`✅ Statut mis à jour : ${labels[status]}`)
+      toast.success(`Statut mis à jour : ${labels[status]}`)
       loadOrders(false); setSelected(null)
     } catch (err) { toast.error(err.message) }
     finally { setProcessing(false) }
@@ -451,7 +451,7 @@ export default function OrdersPage() {
       doc.text(`Date d'impression : ${new Date().toLocaleString('fr-FR')}`, 297, 818, { align: 'center' })
 
       doc.save(`${receiptNum}.pdf`)
-      toast.success('Facture PDF téléchargée ! 📄')
+      toast.success('Facture PDF téléchargée !')
     } catch (err) {
       console.error(err)
       toast.error('Erreur lors du téléchargement du PDF')
@@ -468,7 +468,7 @@ export default function OrdersPage() {
         const { data } = await supabase.rpc('accept_order', { p_order_id: id })
         if (data?.success || !data?.error) successCount++
       }))
-      toast.success(`✅ ${successCount} commandes acceptées !`)
+      toast.success(`${successCount} commandes acceptées !`)
       setSelectedOrderIds([])
       setSelectionMode(false)
       loadOrders(false)
@@ -492,7 +492,7 @@ export default function OrdersPage() {
         })
         if (data?.success || !data?.error) successCount++
       }))
-      toast.success(`✅ ${successCount} commandes refusées`)
+      toast.success(`${successCount} commandes refusées`)
       setSelectedOrderIds([])
       setSelectionMode(false)
       loadOrders(false)
@@ -516,7 +516,7 @@ export default function OrdersPage() {
         })
         if (data?.success || !data?.error) successCount++
       }))
-      toast.success(`🚚 ${successCount} commandes expédiées !`)
+      toast.success(`${successCount} commandes expédiées !`)
       setSelectedOrderIds([])
       setSelectionMode(false)
       loadOrders(false)
@@ -654,7 +654,7 @@ export default function OrdersPage() {
                   disabled={processing}
                   className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-md"
                 >
-                  🚚 Expédier le lot ({selectedOrderIds.length})
+                  Expédier le lot ({selectedOrderIds.length})
                 </button>
               )}
             </div>
@@ -675,7 +675,7 @@ export default function OrdersPage() {
                   filterStatus === s
                     ? 'border-primary-600 bg-primary-600 text-white'
                     : 'border-surface-200 bg-white text-dark-600')}>
-                {s === 'all' ? '🔄 Toutes' : cfg?.label}
+                {s === 'all' ? 'Toutes' : cfg?.label}
               </button>
             )
           })}
@@ -697,7 +697,7 @@ export default function OrdersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl shadow-card">
-            <p className="text-5xl mb-3">📦</p>
+            <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-3 text-dark-400"><Package size={36} /></div>
             <p className="font-display text-lg font-bold text-dark-800">Aucune commande</p>
             <p className="text-dark-600/50 text-sm mt-1">Vos commandes apparaîtront ici</p>
           </div>
@@ -798,7 +798,7 @@ export default function OrdersPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-modal w-full max-w-sm animate-scale-in">
               <div className="flex items-center justify-between p-5 border-b border-surface-100">
-                <h3 className="font-display text-lg font-bold text-dark-800">🔐 Code PIN Wallet</h3>
+                <h3 className="font-display text-lg font-bold text-dark-800">Code PIN Wallet</h3>
                 <button onClick={() => { setPinModal(null); setPin(''); setPinError(false) }}
                   className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center">
                   <X size={16}/>
@@ -815,10 +815,10 @@ export default function OrdersPage() {
                   <p className="text-dark-600/50 text-xs mt-1">Montant à payer</p>
                 </div>
                 <PinInput value={pin} onChange={v => { setPin(v); setPinError(false) }} error={pinError}/>
-                {pinError && <p className="text-center text-red-500 text-xs font-semibold">❌ PIN incorrect</p>}
+                {pinError && <p className="text-center text-red-500 text-xs font-semibold">PIN incorrect</p>}
                 <button onClick={handlePayWithPin} disabled={processing || pin.length !== 4}
                   className="w-full py-4 bg-primary-600 text-white font-bold rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-green">
-                  {processing ? <Loader2 size={18} className="animate-spin"/> : '💳 Confirmer le paiement'}
+                  {processing ? <Loader2 size={18} className="animate-spin"/> : 'Confirmer le paiement'}
                 </button>
               </div>
             </div>
@@ -850,7 +850,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
             </span>
             <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-lg',
               isBuyer ? 'bg-blue-50 text-blue-600' : 'bg-primary-50 text-primary-600')}>
-              {isBuyer ? '🛒 Achat' : '🏪 Vente'}
+              {isBuyer ? 'Achat' : 'Vente'}
             </span>
           </div>
           <p className="font-bold text-dark-800 text-sm truncate">{order.product?.name || 'Produit'}</p>
@@ -872,12 +872,12 @@ function OrderCard({ order, isBuyer, onOpen }) {
       {/* Actions rapides */}
       {order.status === 'pending' && !isBuyer && (
         <div className="border-t border-surface-100 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-600 text-center">
-          ⚠️ En attente de votre réponse → Voir & Répondre
+          En attente de votre réponse → Voir & Répondre
         </div>
       )}
       {order.status === 'accepted' && isBuyer && (
         <div className="border-t border-surface-100 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600 text-center">
-          ✅ Acceptée — Cliquez pour payer
+          Acceptée — Cliquez pour payer
         </div>
       )}
     </div>
@@ -903,7 +903,7 @@ function OrderDetailSheet({
           <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
             {order.product?.image_url
               ? <img src={order.product.image_url} className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30">🌿</div>}
+              : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Package size={24} /></div>}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-dark-800 text-sm">{order.product?.name}</p>
@@ -930,7 +930,7 @@ function OrderDetailSheet({
           </div>
           {order.escrow_amount > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-gold-400 text-xs">🔒 Escrow</span>
+              <span className="text-gold-400 text-xs font-semibold">Escrow</span>
               <span className="text-gold-400 text-xs font-semibold">
                 {formatFCFA(order.escrow_amount)}
               </span>
@@ -971,13 +971,13 @@ function OrderDetailSheet({
             onClick={() => downloadOrderPDF(order)}
             className="py-3 bg-white border border-surface-200 text-dark-700 hover:bg-surface-50 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-sm"
           >
-            📄 Reçu PDF
+            Reçu PDF
           </button>
           <button
             onClick={() => onContact(order.buyer_id, order.seller_id, order.shop_id)}
             className="py-3 bg-primary-50 text-primary-700 hover:bg-primary-100 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5"
           >
-            💬 Discuter
+            Discuter
           </button>
         </div>
 
@@ -1004,9 +1004,9 @@ function OrderDetailSheet({
             {!isBuyer && order.delivery_status !== 'delivered' && (
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { s: 'preparing', label: '📦 Préparer',  disabled: order.delivery_status !== 'pending' },
-                  { s: 'shipped',   label: '🚚 Expédier',  disabled: order.delivery_status !== 'preparing' },
-                  { s: 'delivered', label: '✅ Livré',      disabled: order.delivery_status !== 'shipped' },
+                  { s: 'preparing', label: 'Préparer',  disabled: order.delivery_status !== 'pending' },
+                  { s: 'shipped',   label: 'Expédier',  disabled: order.delivery_status !== 'preparing' },
+                  { s: 'delivered', label: 'Livré',      disabled: order.delivery_status !== 'shipped' },
                 ].map(btn => (
                   <button key={btn.s}
                     onClick={() => onDeliveryStatus(btn.s)}
@@ -1027,7 +1027,7 @@ function OrderDetailSheet({
           {!isBuyer && order.status === 'pending' && (
             <>
               <p className="text-xs text-dark-600/50 text-center bg-orange-50 p-2.5 rounded-xl">
-                ⚠️ Le montant est en escrow. Acceptez ou refusez.
+                Le montant est en escrow. Acceptez ou refusez.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={onRefuse} disabled={processing}
@@ -1046,7 +1046,7 @@ function OrderDetailSheet({
           {isBuyer && order.status === 'accepted' && (
             <>
               <p className="text-xs text-emerald-600 text-center font-semibold bg-emerald-50 p-2.5 rounded-xl">
-                ✅ Le vendeur a accepté ! Payez maintenant.
+                Le vendeur a accepté ! Payez maintenant.
               </p>
               <button onClick={onPay}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-primary-600 text-white font-bold text-base shadow-green active:scale-95 transition-transform">
@@ -1058,7 +1058,7 @@ function OrderDetailSheet({
           {order.status === 'paid' && (
             <div className="space-y-2">
               <div className="text-center py-3 bg-blue-50 rounded-2xl">
-                <p className="text-blue-700 font-bold">🎉 Commande payée et finalisée !</p>
+                <p className="text-blue-700 font-bold">Commande payée et finalisée !</p>
               </div>
               {isBuyer && (
                 <div className="grid grid-cols-2 gap-2">
@@ -1066,7 +1066,7 @@ function OrderDetailSheet({
                     onClick={() => { onClose(); onOpenDispute(order) }}
                     className="py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
                   >
-                    ⚖️ Ouvrir un litige
+                    Ouvrir un litige
                   </button>
                   {order.delivery_status === 'delivered' ? (
                     <button
@@ -1086,7 +1086,7 @@ function OrderDetailSheet({
           )}
           {order.status === 'refused' && (
             <div className="text-center py-3 bg-red-50 rounded-2xl">
-              <p className="text-red-600 font-bold">❌ Refusée — remboursement effectué</p>
+              <p className="text-red-600 font-bold">Refusée — remboursement effectué</p>
             </div>
           )}
         </div>
@@ -1191,7 +1191,7 @@ function DisputeSheet({ open, onClose, order, user, onSubmitted }) {
       await supabase.rpc('create_notification', {
         p_user_id: order.seller_id,
         p_type: 'order_refused',
-        p_title: '⚠️ Litige ouvert',
+        p_title: 'Litige ouvert',
         p_body: `L'acheteur a ouvert un litige sur la commande #${order.id.slice(0, 8)}. Motif : ${reason}`,
         p_reference_id: order.id,
         p_reference_type: 'order'
@@ -1209,7 +1209,7 @@ function DisputeSheet({ open, onClose, order, user, onSubmitted }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="⚖️ Ouvrir un litige">
+    <BottomSheet open={open} onClose={onClose} title="Ouvrir un litige">
       <div className="px-4 pt-2 pb-8 space-y-4">
         <div className="p-3 bg-red-50 text-red-800 rounded-2xl text-xs leading-normal">
           Si le produit reçu n'est pas conforme, est gâté ou n'a pas été livré, signalez-le. L'argent restera bloqué en escrow le temps de la résolution.

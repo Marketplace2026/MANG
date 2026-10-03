@@ -134,7 +134,7 @@ export default function LocationModal({ open, onClose, onSelect, forceMandatory 
             <form onSubmit={handleManualSubmit} className="space-y-4">
               {gpsError && (
                 <div className="p-3 rounded-2xl bg-red-50 text-red-700 text-[10px] font-bold border border-red-200 leading-normal">
-                  ⚠️ Impossible d'accéder au GPS. Veuillez choisir votre ville et quartier manuellement ci-dessous.
+                  ️ Impossible d'accéder au GPS. Veuillez choisir votre ville et quartier manuellement ci-dessous.
                 </div>
               )}
 

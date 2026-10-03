@@ -7,37 +7,37 @@ const STEP_GROUPS = [
   {
     category: 'Production végétale',
     steps: [
-      { value: 'semis', label: '🌱 Semis / Plantation' },
-      { value: 'arrosage', label: '💧 Arrosage' },
-      { value: 'desherbage', label: '🌾 Désherbage / Entretien' },
-      { value: 'traitement_bio', label: '🛡️ Traitement Bio' },
-      { value: 'recolte', label: '🧺 Récolte' }
+      { value: 'semis', label: ' Semis / Plantation' },
+      { value: 'arrosage', label: ' Arrosage' },
+      { value: 'desherbage', label: ' Désherbage / Entretien' },
+      { value: 'traitement_bio', label: '️ Traitement Bio' },
+      { value: 'recolte', label: ' Récolte' }
     ]
   },
   {
     category: 'Production animale',
     steps: [
-      { value: 'naissance_achat', label: '🐣 Naissance / Achat' },
-      { value: 'vaccination', label: '💉 Vaccination / Soins' },
-      { value: 'alimentation', label: '🌽 Alimentation' },
-      { value: 'pesee', label: '⚖️ Pesée' }
+      { value: 'naissance_achat', label: ' Naissance / Achat' },
+      { value: 'vaccination', label: ' Vaccination / Soins' },
+      { value: 'alimentation', label: ' Alimentation' },
+      { value: 'pesee', label: '️ Pesée' }
     ]
   },
   {
     category: 'Transformation / Agro',
     steps: [
-      { value: 'reception_mp', label: '📦 Matière première' },
-      { value: 'transformation', label: '⚙️ Transformation' },
-      { value: 'pasteurisation', label: '🔥 Cuisson / Chaleur' },
-      { value: 'emballage', label: '🏷️ Emballage / Embouteillage' },
-      { value: 'controle_qualite', label: '✅ Contrôle qualité' }
+      { value: 'reception_mp', label: ' Matière première' },
+      { value: 'transformation', label: '️ Transformation' },
+      { value: 'pasteurisation', label: ' Cuisson / Chaleur' },
+      { value: 'emballage', label: '️ Emballage / Embouteillage' },
+      { value: 'controle_qualite', label: ' Contrôle qualité' }
     ]
   },
   {
     category: 'Logistique / Autre',
     steps: [
-      { value: 'stockage', label: '🏭 Stockage' },
-      { value: 'transport', label: '🚚 Expédition' }
+      { value: 'stockage', label: ' Stockage' },
+      { value: 'transport', label: ' Expédition' }
     ]
   }
 ];

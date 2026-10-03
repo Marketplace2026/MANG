@@ -156,7 +156,7 @@ export default function ProductDetailPage() {
           .from('product_favorites')
           .insert({ product_id: product.id, user_id: user.id })
         setIsFav(true)
-        toast.success('Ajouté aux favoris ! ❤️')
+        toast.success('Ajouté aux favoris ! ️')
       }
     } catch {
       toast.error('Erreur technique')
@@ -168,7 +168,7 @@ export default function ProductDetailPage() {
   // Partager le produit
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
-    toast.success('Lien du produit copié dans le presse-papiers ! 🔗')
+    toast.success('Lien du produit copié dans le presse-papiers ! ')
   }
 
   // Calcul du prix unitaire en fonction de la variante et des paliers de gros
@@ -196,7 +196,7 @@ export default function ProductDetailPage() {
       return
     }
     addItem(product, quantity, selectedVariant)
-    toast.success('Produit ajouté au panier ! 🛒')
+    toast.success('Produit ajouté au panier ! ')
   }
 
   const handleBuyNow = () => {
@@ -251,7 +251,7 @@ export default function ProductDetailPage() {
 
       if (error) throw error
       if (data?.success) {
-        toast.success('Demande de devis envoyée ! Notre équipe et le vendeur vont l\'étudier. 🏷️')
+        toast.success('Demande de devis envoyée ! Notre équipe et le vendeur vont l\'étudier. ️')
         setQuoteOpen(false)
         setQuoteDesc('')
       } else {
@@ -595,7 +595,7 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
                     <div className="flex text-gold-400">
-                      {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
+                      {''.repeat(rev.rating)}{''.repeat(5 - rev.rating)}
                     </div>
                   </div>
                   <p className="text-dark-700 text-xs leading-normal pl-8">{rev.comment}</p>
@@ -644,7 +644,7 @@ export default function ProductDetailPage() {
       {zoomOpen && (
         <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setZoomOpen(false)}>
           <img src={slides[activeSlide]} className="max-w-full max-h-[85vh] object-contain rounded-2xl" alt="Zoom"/>
-          <button className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white" onClick={() => setZoomOpen(false)}>✕</button>
+          <button className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white" onClick={() => setZoomOpen(false)}></button>
         </div>
       )}
 

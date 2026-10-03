@@ -44,7 +44,7 @@ export default function MiniCart() {
         <div className="flex-1 overflow-y-auto py-4 space-y-3.5 no-scrollbar">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-40">
-              <span className="text-4xl mb-2">🛒</span>
+              <span className="text-4xl mb-2"></span>
               <p className="text-sm font-semibold text-dark-600">Votre panier est vide.</p>
             </div>
           ) : (
@@ -53,7 +53,7 @@ export default function MiniCart() {
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">🌾</div>
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0"></div>
                 )}
                 
                 <div className="flex-1 min-w-0">

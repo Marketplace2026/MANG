@@ -1022,9 +1022,9 @@ function AddressesSheet({ open, onClose, userId, addresses, onRefresh }) {
 
 function LoyaltySheet({ open, onClose, memberLevel, totalOrders }) {
   const levels = [
-    { label: 'Bronze',  icon: '🥉', min: 0,  max: 19,  color: 'bg-orange-500',  desc: 'Bienvenue sur MANG !' },
-    { label: 'Silver',  icon: '🥈', min: 20, max: 49,  color: 'bg-slate-400',   desc: '20 commandes passées' },
-    { label: 'Gold',    icon: '🥇', min: 50, max: 9999, color: 'bg-amber-400',   desc: '50 commandes passées' },
+    { label: 'Bronze',  icon: Award, min: 0,  max: 19,  color: 'bg-orange-500',  desc: 'Bienvenue sur MANG !' },
+    { label: 'Silver',  icon: ShieldCheck, min: 20, max: 49,  color: 'bg-slate-400',   desc: '20 commandes passées' },
+    { label: 'Gold',    icon: Crown, min: 50, max: 9999, color: 'bg-amber-400',   desc: '50 commandes passées' },
   ]
   const currentIdx = memberLevel.label.includes('Gold') ? 2 : memberLevel.label.includes('Silver') ? 1 : 0
   const nextLevel = levels[currentIdx + 1]
@@ -1118,7 +1118,7 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
   const handleLocate = () => {
     if (!navigator.geolocation) { toast.error('GPS non disponible'); return }
     setLocating(true)
-    toast('📍 Détection en cours...', { duration: 3000 })
+    toast('Détection en cours...', { duration: 3000 })
     let watchId = null, done = false
     const finish = async (latitude, longitude, accuracy) => {
       if (done) return
@@ -1129,7 +1129,7 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
         setForm(p => ({ ...p, city: geo.city, neighbourhood: geo.neighbourhood }))
         setLocInfo({ label: geo.label, accuracy: Math.round(accuracy), country: geo.country })
         await supabase.from('profiles').update({ latitude, longitude }).eq('id', profile.id)
-        toast.success(`📍 ${geo.label || 'Position détectée'} (±${Math.round(accuracy)}m)`)
+        toast.success(`${geo.label || 'Position détectée'} (±${Math.round(accuracy)}m)`)
       } catch { toast.error('Impossible de récupérer la ville') }
       setLocating(false)
     }
@@ -1169,7 +1169,7 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
     if (error) { toast.error('Erreur: ' + (error.message || 'inconnue')); return }
     await onUpdated()
     onClose()
-    toast.success('Profil mis à jour ✅')
+    toast.success('Profil mis à jour')
   }
 
   return (
@@ -1198,7 +1198,7 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
               {usernameStatus === 'invalid'   && <AlertCircle size={14} className="text-orange-400"/>}
             </div>
           </div>
-          {usernameStatus === 'available' && <p className="text-xs text-emerald-500 mt-1 pl-1 font-medium">Disponible ✓</p>}
+          {usernameStatus === 'available' && <p className="text-xs text-emerald-500 mt-1 pl-1 font-medium">Disponible</p>}
           {usernameStatus === 'taken'     && <p className="text-xs text-red-500 mt-1 pl-1 font-medium">Déjà pris</p>}
           {usernameStatus === 'invalid'   && <p className="text-xs text-orange-400 mt-1 pl-1 font-medium">3-20 caractères, lettres/chiffres/_</p>}
         </div>
@@ -1215,7 +1215,7 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
             )}>
             {locating ? <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin"/>
               : locInfo ? <CheckCircle2 size={16} className="text-emerald-600"/> : <Navigation size={16}/>}
-            <span>{locating ? 'Localisation en cours...' : locInfo ? `📍 ${locInfo.label}` : 'Détecter ma position précise'}</span>
+            <span>{locating ? 'Localisation en cours...' : locInfo ? `${locInfo.label}` : 'Détecter ma position précise'}</span>
           </button>
           {locInfo && <p className="text-xs text-dark-600/50 pl-1 flex items-center gap-1"><AlertCircle size={11}/> Précision : ±{locInfo.accuracy} m · {locInfo.country}</p>}
           <div className="grid grid-cols-2 gap-2 pt-1">
@@ -1246,11 +1246,11 @@ function EditProfileSheet({ open, onClose, profile, onUpdated }) {
 
 function SettingsSheet({ open, onClose, onSignOut, onSecurity, onPrivacy, onNotif, onLanguage, onHelp }) {
   const items = [
-    { icon: '🔒', label: 'Changer le mot de passe',      action: onSecurity },
-    { icon: '📍', label: 'Confidentialité localisation', action: onPrivacy  },
-    { icon: '🔔', label: 'Préférences notifications',    action: onNotif    },
-    { icon: '🌍', label: "Langue de l'application",      action: onLanguage },
-    { icon: '❓', label: "Centre d'aide",                action: onHelp     },
+    { icon: Lock, label: 'Changer le mot de passe',      action: onSecurity },
+    { icon: MapPin, label: 'Confidentialité localisation', action: onPrivacy  },
+    { icon: Bell, label: 'Préférences notifications',    action: onNotif    },
+    { icon: Globe, label: "Langue de l'application",      action: onLanguage },
+    { icon: HelpCircle, label: "Centre d'aide",                action: onHelp     },
   ]
   return (
     <BottomSheet open={open} onClose={onClose} title="Paramètres">
@@ -1265,7 +1265,7 @@ function SettingsSheet({ open, onClose, onSignOut, onSecurity, onPrivacy, onNoti
         ))}
         <button onClick={() => { onClose(); onSignOut() }}
           className="w-full flex items-center gap-3 p-4 rounded-2xl bg-red-50 active:bg-red-100 transition-colors mt-2">
-          <span className="text-xl">🚪</span>
+          <LogOut size={20} className="text-red-500" />
           <span className="flex-1 text-left text-sm font-bold text-red-600">Se déconnecter</span>
         </button>
       </div>
@@ -1312,7 +1312,7 @@ function SecuritySheet({ open, onClose }) {
     const { error } = await supabase.auth.updateUser({ password: form.next })
     setLoading(false)
     if (error) { toast.error('Erreur lors de la mise à jour'); return }
-    toast.success('Mot de passe mis à jour ✅')
+    toast.success('Mot de passe mis à jour')
     onClose()
   }
 
@@ -1335,7 +1335,7 @@ function SecuritySheet({ open, onClose }) {
       <div className="px-5 pt-4 pb-6 space-y-4">
         {isOAuth ? (
           <div className="p-4 bg-blue-50 rounded-2xl text-sm text-blue-700 leading-relaxed">
-            <p className="font-semibold mb-1">🔑 Compte Google</p>
+            <p className="font-semibold mb-1">Compte Google</p>
             <p className="text-xs text-blue-600/80">Votre compte est connecté via Google. La gestion du mot de passe se fait depuis votre compte Google.</p>
           </div>
         ) : (
@@ -1396,7 +1396,7 @@ function NotificationsSheet({ open, onClose, profile, onUpdated }) {
     setLoading(false)
     if (error) { toast.error('Erreur de sauvegarde'); return }
     await onUpdated()
-    toast.success('Préférences mises à jour ✅')
+    toast.success('Préférences mises à jour')
     onClose()
   }
 
@@ -1437,7 +1437,7 @@ function PrivacySheet({ open, onClose, profile, onUpdated }) {
     setLoading(false)
     if (error) { toast.error('Erreur de sauvegarde'); return }
     await onUpdated()
-    toast.success('Confidentialité mise à jour ✅')
+    toast.success('Confidentialité mise à jour')
     onClose()
   }
 
@@ -1445,7 +1445,7 @@ function PrivacySheet({ open, onClose, profile, onUpdated }) {
     <BottomSheet open={open} onClose={onClose} title="Confidentialité localisation">
       <div className="px-5 pt-4 pb-6 space-y-4">
         <div className="p-4 bg-blue-50 rounded-2xl text-sm text-blue-700 leading-relaxed">
-          <p className="font-semibold mb-1">🔒 Vos données GPS</p>
+          <p className="font-semibold mb-1">Vos données GPS</p>
           <p className="text-xs text-blue-600/80">Votre position exacte n'est jamais partagée. Seule votre ville et votre quartier peuvent apparaître sur votre profil public selon vos préférences.</p>
         </div>
         <div className="flex items-center justify-between p-4 bg-surface-50 rounded-2xl">
@@ -1467,10 +1467,10 @@ function PrivacySheet({ open, onClose, profile, onUpdated }) {
 // ─── LanguageSheet ────────────────────────────────────────────────────────────
 
 const LANGUAGES = [
-  { code: 'fr',  label: 'Français', flag: '🇫🇷' },
-  { code: 'fon', label: 'Fon',      flag: '🇧🇯' },
-  { code: 'yo',  label: 'Yoruba',   flag: '🌍'  },
-  { code: 'en',  label: 'English',  flag: '🇬🇧' },
+  { code: 'fr',  label: 'Français', flag: 'FR' },
+  { code: 'fon', label: 'Fon',      flag: 'FON' },
+  { code: 'yo',  label: 'Yoruba',   flag: 'YO' },
+  { code: 'en',  label: 'English',  flag: 'EN' },
 ]
 
 function LanguageSheet({ open, onClose, profile, onUpdated }) {
@@ -1530,7 +1530,7 @@ function HelpSheet({ open, onClose }) {
           </a>
           <a href="https://wa.me/2290197293196" target="_blank" rel="noreferrer"
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 text-emerald-700 font-semibold text-sm active:scale-95 transition-transform">
-            <span className="text-base">💬</span> WhatsApp
+            WhatsApp
           </a>
         </div>
         <p className="text-xs font-semibold text-dark-600/50 uppercase tracking-wider px-1 pt-2">Questions fréquentes</p>

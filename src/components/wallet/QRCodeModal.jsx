@@ -53,7 +53,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
                 tab === 'scan' ? 'bg-[#004D00] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
               }`}
             >
-              📷 Scan & Pay
+               Scan & Pay
             </button>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl bg-gray-200 flex items-center justify-center">
@@ -75,7 +75,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
                 <img src={qrDataUrl} alt="QR Code MANG" className="w-full h-full object-contain" />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-10 h-10 rounded-xl bg-[#004D00] text-white font-black text-sm flex items-center justify-center shadow-lg border-2 border-white">
-                    🌿
+                    
                   </div>
                 </div>
               </div>

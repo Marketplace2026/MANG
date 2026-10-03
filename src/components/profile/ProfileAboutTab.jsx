@@ -11,7 +11,7 @@ export default function ProfileAboutTab({ profile, shop }) {
       {/* 1. Carte Localisation & Contact */}
       <div className="p-5 bg-white dark:bg-dark-900 rounded-3xl border border-surface-200 dark:border-dark-800 space-y-4 shadow-xs">
         <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">
-          📍 Localisation & Contact
+           Localisation & Contact
         </h3>
 
         <div className="space-y-3">
@@ -53,12 +53,12 @@ export default function ProfileAboutTab({ profile, shop }) {
       {shop && (
         <div className="p-5 bg-white dark:bg-dark-900 rounded-3xl border border-surface-200 dark:border-dark-800 space-y-3 shadow-xs">
           <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">
-            🏪 Boutique officielle MANG
+             Boutique officielle MANG
           </h3>
           <div className="flex items-center justify-between p-3 bg-surface-50 dark:bg-dark-800 rounded-2xl">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-xl font-black">
-                🌿
+                
               </div>
               <div>
                 <p className="font-bold text-xs text-gray-900 dark:text-white">{shop.name}</p>

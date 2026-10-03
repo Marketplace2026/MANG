@@ -153,7 +153,7 @@ export default function ProfileHeaderCard({
               <span>Vendeur Vérifié {locationText.split(',')[0]}</span>
             </span>
             <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-              ⚡ Répond en &lt; 15 min
+               Répond en &lt; 15 min
             </span>
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function ProfileHeaderCard({
               {isFollowing ? <><UserCheck size={15} /> Abonné</> : <><UserPlus size={15} /> Suivre</>}
             </button>
 
-            {/* 💬 Messagerie Chat Direct MANG avec Création Instantanée */}
+            {/*  Messagerie Chat Direct MANG avec Création Instantanée */}
             <button
               onClick={handleDirectMessage}
               disabled={creatingConv}
@@ -243,7 +243,7 @@ export default function ProfileHeaderCard({
               <span>Message</span>
             </button>
 
-            {/* 📲 WhatsApp Direct */}
+            {/*  WhatsApp Direct */}
             {whatsappNumber && (
               <button
                 onClick={handleWhatsApp}

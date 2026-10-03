@@ -15,9 +15,9 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
 const OPERATORS = [
-  { id: 'MTN',    label: 'MTN Mobile Money', emoji: '🟡' },
-  { id: 'Moov',   label: 'Moov Money',       emoji: '🔵' },
-  { id: 'Celtis', label: 'Celtis Cash',      emoji: '🟢' },
+  { id: 'MTN',    label: 'MTN Mobile Money', emoji: '' },
+  { id: 'Moov',   label: 'Moov Money',       emoji: '' },
+  { id: 'Celtis', label: 'Celtis Cash',      emoji: '' },
 ];
 
 async function reverseGeocode(lat, lon) {
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
         {/* Section 1: Informations de livraison */}
         <div className="bg-white rounded-3xl p-5 shadow-card border border-surface-150 space-y-4">
           <h2 className="font-display font-black text-dark-800 text-xs uppercase tracking-wider pl-0.5">
-            👤 Informations de livraison
+            Informations de livraison
           </h2>
           
           <div className="space-y-3.5">
@@ -366,7 +366,7 @@ export default function CheckoutPage() {
         {/* Section 2: Récapitulatif par boutique */}
         <div className="bg-white rounded-3xl p-5 shadow-card border border-surface-150 space-y-4">
           <h2 className="font-display font-black text-dark-800 text-xs uppercase tracking-wider pl-0.5">
-            📦 Détail de vos commandes
+            Détail de vos commandes
           </h2>
           
           <div className="space-y-4 divide-y divide-surface-100">
@@ -394,7 +394,7 @@ export default function CheckoutPage() {
         <div className="bg-white rounded-3xl p-5 shadow-card border border-surface-150 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-black text-dark-800 text-xs uppercase tracking-wider pl-0.5">
-              💳 Méthode de Paiement
+              Méthode de Paiement
             </h2>
             <span className="px-2 py-0.5 rounded-lg bg-primary-100 text-primary-700 font-bold text-[9px]">
               Mang Wallet
@@ -433,7 +433,7 @@ export default function CheckoutPage() {
 
           {!isBalanceEnough && (
             <div className="p-3 bg-red-500/10 border border-red-300/20 rounded-2xl text-[10px] text-red-700 leading-normal">
-              ⚠️ Votre solde est insuffisant. Il vous manque <strong>{formatFCFA(total - walletBalance)}</strong>. Cliquez sur <strong>Recharger</strong> ci-dessus pour créditer votre compte instantanément par MTN ou Moov Money.
+              Votre solde est insuffisant. Il vous manque <strong>{formatFCFA(total - walletBalance)}</strong>. Cliquez sur <strong>Recharger</strong> ci-dessus pour créditer votre compte instantanément par MTN ou Moov Money.
             </div>
           )}
         </div>
@@ -511,7 +511,7 @@ export default function CheckoutPage() {
 
       {/* BOTTOM SHEET RECHARGE EN 1-CLIC */}
       {user && (
-        <BottomSheet open={rechargeOpen} onClose={() => setRechargeOpen(false)} title="💰 Recharge Express via Mobile Money">
+        <BottomSheet open={rechargeOpen} onClose={() => setRechargeOpen(false)} title="Recharge Express via Mobile Money">
           <div className="px-4 pt-2 pb-8 space-y-4">
             <div className="p-3 bg-primary-600/10 border border-primary-500/10 rounded-2xl text-[10px] text-primary-700 leading-normal">
               Sécurisé par <strong>FedaPay</strong>. Entrez vos informations pour être redirigé vers le paiement par code USSD / Mobile Money de votre opérateur.
@@ -663,7 +663,7 @@ function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
           latitude: coords.latitude, 
           longitude: coords.longitude 
         }));
-        toast.success(`📍 ${geo.label || 'Position détectée'}`);
+        toast.success(`${geo.label || 'Position détectée'}`);
       } catch (err) {
         toast.error('Erreur de géocodage');
       }
@@ -701,7 +701,7 @@ function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
       toast.error("Erreur d'enregistrement");
       return;
     }
-    toast.success('Adresse enregistrée ✅');
+    toast.success('Adresse enregistrée');
     resetForm();
     setAddMode(false);
     loadAddresses();
@@ -719,7 +719,7 @@ function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="📍 Carnet d'adresses">
+    <BottomSheet open={open} onClose={onClose} title="Carnet d'adresses">
       <div className="px-4 pt-2 pb-8 space-y-4">
         {!addMode ? (
           <>
@@ -732,7 +732,7 @@ function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
 
             {addresses.length === 0 && (
               <div className="text-center py-6">
-                <span className="text-3xl">📍</span>
+                <div className="w-12 h-12 rounded-xl bg-surface-100 flex items-center justify-center mx-auto text-dark-400"><MapPin size={24} /></div>
                 <p className="text-xs font-semibold text-dark-600/60 mt-2">Aucune adresse enregistrée</p>
                 <p className="text-[10px] text-dark-600/40 mt-1">Ajoutez vos adresses de livraison habituelles</p>
               </div>
@@ -839,7 +839,7 @@ function AddressBookSheet({ open, onClose, userId, onSelectAddress }) {
                   <Navigation size={14} />
                 )}
                 <span>
-                  {locating ? 'Localisation...' : form.latitude ? '📍 Position enregistrée' : 'Détecter ma position GPS'}
+                  {locating ? 'Localisation...' : form.latitude ? 'Position enregistrée' : 'Détecter ma position GPS'}
                 </span>
               </button>
 

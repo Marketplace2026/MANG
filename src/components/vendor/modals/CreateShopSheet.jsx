@@ -51,7 +51,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
         const city = data.address?.city || data.address?.town || data.address?.village || ''
         const quarter = data.address?.suburb || data.address?.neighbourhood || data.address?.quarter || ''
         setForm(p => ({ ...p, city, quarter }))
-        toast.success(`📍 ${quarter ? `${quarter}, ${city}` : city}`)
+        toast.success(` ${quarter ? `${quarter}, ${city}` : city}`)
       } catch { toast.success('Position enregistrée') }
       setLocating(false)
     }, () => { toast.error('GPS inaccessible'); setLocating(false) })
@@ -108,11 +108,11 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
       await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'order_new',
-        title: '🏪 Boutique créée !',
+        title: ' Boutique créée !',
         body: `Votre boutique "${form.name}" est maintenant en ligne.`,
       })
 
-      toast.success('Boutique créée avec succès ! 🎉')
+      toast.success('Boutique créée avec succès ! ')
       reset()
       // Recharger les pièces depuis Supabase
       if (refreshWallet) await refreshWallet()
@@ -133,7 +133,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
       if (!groupMap[cat.group_name]) {
         groupMap[cat.group_name] = {
           name: cat.group_name,
-          icon: cat.icon || '🌱',
+          icon: cat.icon || '',
           items: []
         }
       }
@@ -143,7 +143,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
   const filtered = Object.values(groupMap)
 
   return (
-    <BottomSheet open={open} onClose={() => { reset(); onClose() }} title="🏪 Créer une boutique">
+    <BottomSheet open={open} onClose={() => { reset(); onClose() }} title=" Créer une boutique">
       <div className="px-4 pt-2 pb-8 space-y-4">
         {/* Alerte pièces */}
         <div className="flex items-center gap-3 p-3 rounded-2xl bg-gold-50 border border-gold-200">
@@ -218,7 +218,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
               {locating ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
               ) : coords ? (
-                <>✓ Localisé</>
+                <> Localisé</>
               ) : (
                 <><MapPin size={15}/> GPS</>
               )}
@@ -309,7 +309,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
                         <button key={cat.id} onClick={() => { setSelectedCategory(cat); setCatOpen(false); setCatSearch('') }}
                           className={clsx('flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.98]',
                             selectedCategory?.id === cat.id ? 'bg-primary-100 ring-2 ring-primary-400' : 'bg-surface-50 active:bg-primary-50')}>
-                          <span>{cat.icon || '🌱'}</span>
+                          <span>{cat.icon || ''}</span>
                           <span className="text-xs font-bold text-dark-700 truncate">{cat.name}</span>
                         </button>
                       ))}

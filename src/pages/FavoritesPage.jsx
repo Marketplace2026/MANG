@@ -446,7 +446,7 @@ export default function FavoritesPage() {
 
   const handleRefresh = useCallback(async () => {
     await Promise.all([fetchShops(), fetchProducts(), fetchBookmarks()])
-    toast.success('Favoris mis à jour', { icon: '✨' })
+    toast.success('Favoris mis à jour', { icon: '' })
   }, [])
 
   const { onTouchStart, onTouchMove, onTouchEnd, pullDist, pulling } = usePullToRefresh(handleRefresh)
@@ -469,7 +469,7 @@ export default function FavoritesPage() {
           Annuler
         </button>
       </div>
-    ), { duration: 4000, icon: '🗑️' })
+    ), { duration: 4000, icon: '️' })
 
     // Commit after 4s (if not undone, the next time data loads it'll be in sync)
     setTimeout(async () => {
@@ -498,7 +498,7 @@ export default function FavoritesPage() {
           Annuler
         </button>
       </div>
-    ), { duration: 4000, icon: '💔' })
+    ), { duration: 4000, icon: '' })
 
     setTimeout(async () => {
       toast.dismiss(undoId)
@@ -526,7 +526,7 @@ export default function FavoritesPage() {
           Annuler
         </button>
       </div>
-    ), { duration: 4000, icon: '💾' })
+    ), { duration: 4000, icon: '' })
 
     setTimeout(async () => {
       toast.dismiss(undoId)
@@ -706,9 +706,9 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
     if (text.startsWith('{"is_poll":')) {
       try {
         const obj = JSON.parse(text)
-        return `📊 Sondage : ${obj.question}`
+        return ` Sondage : ${obj.question}`
       } catch (e) {
-        return '📊 Sondage de la communauté'
+        return ' Sondage de la communauté'
       }
     }
     return text
@@ -764,7 +764,7 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
       </div>
 
       <div className="flex justify-between items-center pt-2.5 border-t border-surface-100 text-[10px] text-dark-600/50 font-bold">
-        <span>💬 {post.comments_count || 0} commentaire{post.comments_count > 1 ? 's' : ''}</span>
+        <span> {post.comments_count || 0} commentaire{post.comments_count > 1 ? 's' : ''}</span>
         <span className="text-primary-600 font-bold flex items-center gap-0.5">Voir la discussion →</span>
       </div>
     </div>

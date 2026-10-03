@@ -8,10 +8,10 @@ export default function NotificationFiltersNav({
 }) {
   const tabs = [
     { key: 'all',    label: 'Toutes', count: counts.all },
-    { key: 'unread', label: '🔵 Non lues', count: unreadCount },
-    { key: 'orders', label: '📦 Commandes', count: counts.orders },
-    { key: 'social', label: '❤️ Social', count: counts.social },
-    { key: 'wallet', label: '💰 Wallet', count: counts.wallet },
+    { key: 'unread', label: ' Non lues', count: unreadCount },
+    { key: 'orders', label: ' Commandes', count: counts.orders },
+    { key: 'social', label: '️ Social', count: counts.social },
+    { key: 'wallet', label: ' Wallet', count: counts.wallet },
   ]
 
   return (

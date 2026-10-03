@@ -118,7 +118,7 @@ export default function PublicProfilePage() {
       await supabase.rpc('create_notification', {
         p_user_id: profile.id,
         p_type: 'user_follow',
-        p_title: '👤 Nouveau follower',
+        p_title: ' Nouveau follower',
         p_body: `@${myProfile?.username} vous suit maintenant`,
         p_reference_id: user.id,
         p_reference_type: 'profile',
@@ -201,16 +201,16 @@ export default function PublicProfilePage() {
             <div className="flex flex-wrap gap-1 mt-1.5 justify-center">
               {profile.badges.map((badge, idx) => {
                 let colorClass = 'bg-white/20 text-white border-white/20'
-                let emoji = '🎖️'
+                let emoji = '️'
                 if (badge === 'Producteur Vérifié') {
                   colorClass = 'bg-emerald-500/30 text-emerald-100 border-emerald-400/20'
-                  emoji = '🏪'
+                  emoji = ''
                 } else if (badge === 'Top Contributeur') {
                   colorClass = 'bg-violet-500/30 text-violet-100 border-violet-400/20'
-                  emoji = '🔥'
+                  emoji = ''
                 } else if (badge === 'Expert Bio') {
                   colorClass = 'bg-amber-500/30 text-amber-100 border-amber-400/20'
-                  emoji = '🌿'
+                  emoji = ''
                 }
                 return (
                   <span key={idx} className={clsx("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8.5px] font-black border leading-none", colorClass)}>
@@ -280,7 +280,7 @@ export default function PublicProfilePage() {
           {isMe && (
             <button onClick={() => navigate('/profil')}
               className="w-full py-2.5 rounded-2xl bg-surface-100 text-dark-700 text-sm font-bold active:scale-95">
-              ✏️ Modifier mon profil
+              ️ Modifier mon profil
             </button>
           )}
         </div>
@@ -289,8 +289,8 @@ export default function PublicProfilePage() {
       {/* TABS */}
       <div className="flex mx-4 mt-4 bg-white rounded-2xl p-1 shadow-card gap-1">
         {[
-          { key: 'posts', label: '📢 Posts', count: stats.posts },
-          { key: 'shops', label: '🏪 Boutiques', count: shops.length },
+          { key: 'posts', label: ' Posts', count: stats.posts },
+          { key: 'shops', label: ' Boutiques', count: shops.length },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={clsx(
@@ -313,7 +313,7 @@ export default function PublicProfilePage() {
           <div>
             {posts.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-3xl shadow-card">
-                <p className="text-4xl mb-2">📢</p>
+                <p className="text-4xl mb-2"></p>
                 <p className="font-bold text-dark-800">Aucune publication</p>
                 <p className="text-dark-600/50 text-sm mt-1">
                   {isMe ? 'Partagez quelque chose !' : `@${profile.username} n'a pas encore publié`}
@@ -333,7 +333,7 @@ export default function PublicProfilePage() {
           <div>
             {shops.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-3xl shadow-card">
-                <p className="text-4xl mb-2">🏪</p>
+                <p className="text-4xl mb-2"></p>
                 <p className="font-bold text-dark-800">Aucune boutique</p>
                 <p className="text-dark-600/50 text-sm mt-1">
                   {isMe ? 'Créez votre boutique !' : `@${profile.username} n'a pas encore de boutique`}
@@ -356,14 +356,14 @@ export default function PublicProfilePage() {
         onClose={() => setFollowersSheet(false)}
         profileId={profile.id}
         type="followers"
-        title="👥 Abonnés"
+        title=" Abonnés"
       />
       <FollowSheet
         open={followingSheet}
         onClose={() => setFollowingSheet(false)}
         profileId={profile.id}
         type="following"
-        title="👤 Abonnements"
+        title=" Abonnements"
       />
     </div>
   )
@@ -417,12 +417,12 @@ function MiniShopCard({ shop }) {
       <div className="w-20 h-20 flex-shrink-0 bg-primary-100">
         {shop.cover_url
           ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-3xl opacity-30">🌿</div>
+          : <div className="w-full h-full flex items-center justify-center text-3xl opacity-30"></div>
         }
       </div>
       <div className="flex-1 min-w-0 p-3">
         <p className="font-bold text-dark-800 text-sm truncate">{shop.name}</p>
-        {shop.city && <p className="text-dark-600/50 text-xs mt-0.5">📍 {shop.city}</p>}
+        {shop.city && <p className="text-dark-600/50 text-xs mt-0.5"> {shop.city}</p>}
         <div className="flex items-center gap-1 mt-1.5">
           <Users size={10} className="text-primary-500"/>
           <span className="text-dark-600/50 text-xs">{shop.followers_count || 0} abonnés</span>
@@ -482,7 +482,7 @@ function FollowSheet({ open, onClose, profileId, type, title }) {
                 <Avatar src={person.avatar_url} name={person.username} size="md"/>
                 <div className="text-left">
                   <p className="font-bold text-dark-800 text-sm">@{person.username}</p>
-                  {person.city && <p className="text-dark-600/40 text-xs">📍 {person.city}</p>}
+                  {person.city && <p className="text-dark-600/40 text-xs"> {person.city}</p>}
                 </div>
               </button>
             ))}
