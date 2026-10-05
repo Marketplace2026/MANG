@@ -5,12 +5,21 @@
 
 // Clé Gemini optionnelle (depuis l'env ou le stockage local du vendeur)
 export function getGeminiApiKey() {
-  return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('mang_gemini_api_key') || null
+  try {
+    const envKey = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_GEMINI_API_KEY : null
+    const localKey = typeof localStorage !== 'undefined' ? localStorage.getItem('mang_gemini_api_key') : null
+    return envKey || localKey || null
+  } catch {
+    return null
+  }
 }
 
 export function setGeminiApiKey(key) {
-  if (key) localStorage.setItem('mang_gemini_api_key', key.trim())
-  else localStorage.removeItem('mang_gemini_api_key')
+  try {
+    if (typeof localStorage === 'undefined') return
+    if (key) localStorage.setItem('mang_gemini_api_key', key.trim())
+    else localStorage.removeItem('mang_gemini_api_key')
+  } catch {}
 }
 
 // Appel direct à l'API Google Gemini 1.5 Flash REST
