@@ -13,6 +13,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import { mangCache } from '@/utils/cache'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -585,8 +586,12 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       .eq('conversation_id', conv.id)
       .order('created_at', { ascending: true })
       .limit(100)
-    setMessages(data || [])
+    if (data) {
+      setMessages(data)
+      mangCache.set(`chat_${conv.id}`, data)
+    }
     // Mettre à jour delivery_status à read pour les messages reçus non lus
+    if (data) mangCache.set('user_conversations', data)
     if (data?.length) {
       const unreadIds = data.filter(m => m.sender_id !== user.id && m.delivery_status !== 'read').map(m => m.id)
       if (unreadIds.length > 0) {

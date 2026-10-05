@@ -8,6 +8,7 @@ import {
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import { mangCache } from '@/utils/cache'
 import { useAuthStore, useNotificationsStore } from '@/store'
 import { Avatar, PremiumBadge, BottomSheet } from '@/components/ui'
 import { ProductCard } from '@/components/marketplace/ShopCard'
@@ -81,16 +82,20 @@ export default function MarketplacePage() {
   const location = useLocation()
   const { unreadCount } = useNotificationsStore()
 
-  const [shops, setShops] = useState([])
-  const [allShops, setAllShops] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cachedShops = mangCache.get('marketplace_shops')
+  const cachedProds = mangCache.get('marketplace_products')
+  const cachedCats  = mangCache.get('marketplace_categories')
+
+  const [shops, setShops] = useState(() => cachedShops || [])
+  const [allShops, setAllShops] = useState(() => cachedShops || [])
+  const [loading, setLoading] = useState(() => !cachedShops || cachedShops.length === 0)
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1)
   
   // États de recherche avancée
-  const [allProducts, setAllProducts] = useState([])
+  const [allProducts, setAllProducts] = useState(() => cachedProds || [])
   const [filteredProducts, setFilteredProducts] = useState([])
   const [searchTab, setSearchTab] = useState('shops') // 'shops' or 'products'
   const [searchHistory, setSearchHistory] = useState(() => {
@@ -114,7 +119,7 @@ export default function MarketplacePage() {
   const [topOpen, setTopOpen] = useState(false)
   const [topShops, setTopShops] = useState([])
   const [selectedGroup, setSelectedGroup] = useState(null)
-  const [dbCategories, setDbCategories] = useState([])
+  const [dbCategories, setDbCategories] = useState(() => cachedCats || [])
   const [userCity, setUserCity] = useState(null)
   const [geolocError, setGeolocError] = useState(false)
   const [locationModalOpen, setLocationModalOpen] = useState(false)
@@ -141,7 +146,10 @@ export default function MarketplacePage() {
     // Charger les catégories de la base de données
     const loadCats = async () => {
       const { data } = await supabase.from('categories').select('*')
-      setDbCategories(data || [])
+      if (data) {
+        setDbCategories(data)
+        mangCache.set('marketplace_categories', data)
+      }
     }
     loadCats()
 
@@ -258,7 +266,8 @@ export default function MarketplacePage() {
   }
 
   const loadShops = async () => {
-    setLoading(true)
+    // Si on a déjà des données en cache, ne pas bloquer l'écran avec un loader (SWR)
+    if (allShops.length === 0) setLoading(true)
     try {
       let query = supabase
         .from('shops')
@@ -323,6 +332,8 @@ export default function MarketplacePage() {
 
       setAllProducts(activeProducts)
       setAllShops(result)
+      mangCache.set('marketplace_shops', result)
+      mangCache.set('marketplace_products', activeProducts)
       applySearch(result, activeProducts, search)
     } finally {
       setLoading(false)

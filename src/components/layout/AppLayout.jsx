@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore, useNotificationsStore, useMessagesStore, useCartStore } from '@/store' // <- TOUT ICI
 import { clsx } from 'clsx'
+import { prefetch, prefetchImmediate } from '@/utils/prefetch'
 
 const NAV_ITEMS = [
   { icon: Home,          label: 'Accueil',      path: '/marketplace'   },
@@ -38,6 +39,22 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
     }
   }, [user])
 
+  
+  useEffect(() => {
+    // Préchargement automatique intelligent des routes en arrière-plan (façon WhatsApp)
+    prefetch('messages', () => import('@/pages/MessagesPage'))
+    prefetch('cart',     () => import('@/pages/CartPage'))
+    prefetch('profile',  () => import('@/pages/ProfilePage'))
+    prefetch('vendor',   () => import('@/pages/VendorPage'))
+  }, [])
+
+  const triggerPrefetch = (path) => {
+    if (path === '/messages') prefetchImmediate('messages', () => import('@/pages/MessagesPage'))
+    if (path === '/panier')   prefetchImmediate('cart',     () => import('@/pages/CartPage'))
+    if (path === '/profil')   prefetchImmediate('profile',  () => import('@/pages/ProfilePage'))
+    if (path === '/vendeur')  prefetchImmediate('vendor',   () => import('@/pages/VendorPage'))
+  }
+
   const handleNav = (item) => {
     if (!item.path) return
     navigate(item.path, { state: item.state })
@@ -54,7 +71,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
 
         {/* Barre d'outils droite */}
         <div className="flex items-center gap-5">
-          <button onClick={() => navigate('/messages')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+          <button onPointerEnter={() => triggerPrefetch('/messages')} onTouchStart={() => triggerPrefetch('/messages')} onClick={() => navigate('/messages')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
             <MessageCircle size={20}/>
             {unreadMessages > 0 && (
               <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
@@ -63,7 +80,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
             )}
           </button>
           
-          <button onClick={() => navigate('/panier')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+          <button onPointerEnter={() => triggerPrefetch('/panier')} onTouchStart={() => triggerPrefetch('/panier')} onClick={() => navigate('/panier')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
             <ShoppingCart size={20}/>
             {cartCount > 0 && (
               <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
@@ -77,14 +94,14 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
           </button>
 
           <button
-            onClick={() => navigate('/vendeur')}
+            onPointerEnter={() => triggerPrefetch('/vendeur')} onTouchStart={() => triggerPrefetch('/vendeur')} onClick={() => navigate('/vendeur')}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm"
           >
             <Store size={16}/>
             <span>Espace Vendeur</span>
           </button>
 
-          <button onClick={() => navigate('/profil')} className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm border border-primary-200">
+          <button onPointerEnter={() => triggerPrefetch('/profil')} onTouchStart={() => triggerPrefetch('/profil')} onClick={() => navigate('/profil')} className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm border border-primary-200">
             {profile?.full_name ? profile.full_name[0].toUpperCase() : 'U'}
           </button>
         </div>
@@ -128,7 +145,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                     handleNav(item)
                   }
                 }}
-                className="flex-1 flex flex-col items-center justify-center py-1 relative focus:outline-none"
+                onPointerEnter={() => triggerPrefetch(item.path)} onTouchStart={() => triggerPrefetch(item.path)} className="flex-1 flex flex-col items-center justify-center py-1 relative focus:outline-none"
               >
                 {/* Icône avec fond actif de type capsule */}
                 <div className="relative flex items-center justify-center px-4 py-1.5 rounded-full transition-all duration-300">

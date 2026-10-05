@@ -9,10 +9,10 @@ import AuthLayout         from '@/components/layout/AuthLayout'
 import PWAInstallBanner   from '@/components/ui/PWAInstallBanner'
 
 import MarketplacePage from '@/pages/MarketplacePage'
-import MessagesPage    from '@/pages/MessagesPage'
-import VendorPage      from '@/pages/VendorPage'
-import WalletPage      from '@/pages/WalletPage'
-import CommunityPage   from '@/pages/CommunityPage'
+const MessagesPage    = lazy(() => import('@/pages/MessagesPage'))
+const VendorPage      = lazy(() => import('@/pages/VendorPage'))
+const WalletPage      = lazy(() => import('@/pages/WalletPage'))
+const CommunityPage   = lazy(() => import('@/pages/CommunityPage'))
 
 const OnboardingPage     = lazy(() => import('@/pages/OnboardingPage'))
 const LoginPage          = lazy(() => import('@/pages/LoginPage'))
@@ -107,9 +107,13 @@ export default function App() {
     }
   }, [profile?.language])
 
-  // Montrer le splash au moins 2.5s avant de router
+  // Dissoudre le splash screen dès que l'auth est prête (cold-start instantané)
   useEffect(() => {
-    const t = setTimeout(() => setSplashDone(true), 1800)
+    if (!loading) setSplashDone(true)
+  }, [loading])
+
+  useEffect(() => {
+    const t = setTimeout(() => setSplashDone(true), 1000)
     return () => clearTimeout(t)
   }, [])
 
