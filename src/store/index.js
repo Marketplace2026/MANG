@@ -20,31 +20,41 @@ export const useAuthStore = create((set, get) => ({
   setPieces: (pieces) => set({ pieces }),
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      await get().fetchUserData(session.user)
-    }
-    set({ loading: false, initialized: true })
-    
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         await get().fetchUserData(session.user)
-      } else {
-        set({ user: null, profile: null, wallet: null, pieces: null })
+      }
+    } catch (err) {
+      console.warn('[AuthStore] Erreur pendant initialize:', err)
+    } finally {
+      set({ loading: false, initialized: true })
+    }
+    
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      try {
+        if (session?.user) {
+          await get().fetchUserData(session.user)
+        } else {
+          set({ user: null, profile: null, wallet: null, pieces: null })
+        }
+      } catch (err) {
+        console.warn('[AuthStore] Erreur onAuthStateChange:', err)
       }
     })
   },
 
   fetchUserData: async (user) => {
-    set({ user })
-    console.log('[AuthStore] fetchUserData pour user.id:', user.id)
+    try {
+      set({ user })
+      console.log('[AuthStore] fetchUserData pour user.id:', user.id)
 
-    // 1. Récupération des données existantes (utilisation de maybeSingle() pour éviter les erreurs de cache)
-    const [profileRes, walletRes, piecesRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-      supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('pieces').select('*').eq('user_id', user.id).maybeSingle(),
-    ])
+      // 1. Récupération des données existantes (utilisation de maybeSingle() pour éviter les erreurs de cache)
+      const [profileRes, walletRes, piecesRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('pieces').select('*').eq('user_id', user.id).maybeSingle(),
+      ])
 
     let profile = profileRes.data
     let wallet = walletRes.data
@@ -128,6 +138,9 @@ export const useAuthStore = create((set, get) => ({
 
     set({ profile, wallet, pieces })
     get().startOnlineHeartbeat(user.id)
+    } catch (err) {
+      console.error('[AuthStore] Erreur dans fetchUserData:', err)
+    }
   },
 
   heartbeatInterval: null,

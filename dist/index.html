@@ -25,10 +25,63 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <title>MANG — Marché Agricole Nouvelle Génération</title>
-    <script type="module" crossorigin src="/assets/index-kmrJc7Uu.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-o93YW3a3.css">
+
+    <script>
+      // Détection précoce des erreurs de chunk et de cache corrompu
+      window.addEventListener('error', function(e) {
+        var msg = (e && e.message) || '';
+        var isScript = e && e.target && e.target.tagName === 'SCRIPT';
+        if (isScript || msg.indexOf('Unexpected token \'<\'') !== -1 || msg.indexOf('dynamically imported module') !== -1) {
+          console.warn('[MANG Emergency Recovery] Erreur critique de ressource:', e);
+          var k = 'mang_last_recover_ts';
+          var last = sessionStorage.getItem(k);
+          var now = Date.now();
+          if (!last || now - parseInt(last) > 10000) {
+            sessionStorage.setItem(k, now.toString());
+            if ('caches' in window) {
+              caches.keys().then(function(keys) {
+                keys.forEach(function(key) { caches.delete(key); });
+              });
+            }
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+              });
+            }
+            setTimeout(function() { window.location.reload(); }, 300);
+          }
+        }
+      }, true);
+    </script>
+    <script type="module" crossorigin src="/assets/index-9VrtLSVz.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BSxaNwne.css">
   </head>
   <body class="bg-surface-50 font-sans">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback visuel immédiat avant le montage de React (garantit zéro page blanche) -->
+      <div id="mang-preloader" style="position:fixed;inset:0;background:#004D00;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:'Nunito',sans-serif;color:white;text-align:center;padding:24px;">
+        <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+          <img src="/logo-mang.png" alt="MANG" style="width:52px;height:52px;object-fit:contain;" />
+        </div>
+        <h2 style="font-size:26px;font-weight:800;letter-spacing:1px;margin:0 0 6px 0;">MANG</h2>
+        <p style="font-size:13px;opacity:0.85;margin:0 0 24px 0;max-width:280px;line-height:1.4;">Marché Agricole Nouvelle Génération</p>
+        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.2);border-top-color:#facc15;border-radius:50%;animation:mangSpin 0.8s linear infinite;"></div>
+        <div id="mang-recovery-box" style="display:none;margin-top:28px;">
+          <p style="font-size:12px;opacity:0.8;margin-bottom:12px;">Chargement prolongé ?</p>
+          <button onclick="if('caches' in window){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}window.location.reload(true);" style="background:#facc15;color:#0f172a;border:none;padding:10px 20px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+            Actualiser la page
+          </button>
+        </div>
+      </div>
+      <style>
+        @keyframes mangSpin { to { transform: rotate(360deg); } }
+      </style>
+      <script>
+        setTimeout(function() {
+          var box = document.getElementById('mang-recovery-box');
+          if (box) box.style.display = 'block';
+        }, 5000);
+      </script>
+    </div>
   </body>
 </html>

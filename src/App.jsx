@@ -90,7 +90,16 @@ export default function App() {
 
   useGoogleReferral() // Traite le parrainage après retour OAuth Google
 
-  useEffect(() => { initialize() }, [])
+  useEffect(() => {
+    initialize()
+    const safetyTimer = setTimeout(() => {
+      if (useAuthStore.getState().loading) {
+        console.warn('[App] Timeout d\'initialisation d\'auth, déblocage')
+        useAuthStore.setState({ loading: false })
+      }
+    }, 3500)
+    return () => clearTimeout(safetyTimer)
+  }, [])
 
   useEffect(() => {
     if (profile?.language) {
@@ -100,7 +109,7 @@ export default function App() {
 
   // Montrer le splash au moins 2.5s avant de router
   useEffect(() => {
-    const t = setTimeout(() => setSplashDone(true), 2500)
+    const t = setTimeout(() => setSplashDone(true), 1800)
     return () => clearTimeout(t)
   }, [])
 
