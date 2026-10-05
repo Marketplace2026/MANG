@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  Send, ArrowLeft, Image, Mic, Paperclip, Smile,
+  Send, Sparkles, Bot, ArrowLeft, Image, Mic, Paperclip, Smile,
   Check, CheckCheck, MoreVertical, Trash2, X,
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
@@ -14,6 +14,7 @@ import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { mangCache } from '@/utils/cache'
+import { generateAutoReply } from '@/lib/ai'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -625,6 +626,40 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   }
 
   // Envoyer texte
+  
+  // Copilote IA — Suggestion de réponse intelligente en 1-clic
+  const [suggestingAI, setSuggestingAI] = useState(false)
+
+  const handleSuggestAIReply = async () => {
+    const lastOtherMsg = [...messages].reverse().find(m => m.sender_id !== user.id)
+    if (!lastOtherMsg) {
+      toast('Aucun message reçu du client à analyser', { icon: 'ℹ️' })
+      return
+    }
+
+    setSuggestingAI(true)
+    try {
+      const reply = await generateAutoReply({
+        incomingMessage: lastOtherMsg.content,
+        shop: conv.shop,
+        products: [],
+        instructions: 'Être poli, préciser la disponibilité et inviter à commander sur MANG.'
+      })
+      if (reply) {
+        setText(reply)
+        if (inputRef.current) {
+          inputRef.current.style.height = '70px'
+          inputRef.current.focus()
+        }
+        toast.success('Brouillon rédigé par le Copilote IA ! ✨')
+      }
+    } catch {
+      toast.error('Erreur lors de la suggestion IA')
+    } finally {
+      setSuggestingAI(false)
+    }
+  }
+
   const sendText = async () => {
     const content = text.trim()
     if (!content || sending) return

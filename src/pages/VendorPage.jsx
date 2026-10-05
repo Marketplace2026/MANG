@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  Store, Plus, Package, Star, Trash2, Eye, Edit3,
+  Store, Bot, Sparkles, Plus, Package, Star, Trash2, Eye, Edit3,
   MapPin, Truck, Phone, ChevronDown, X, Check,
   TrendingUp, Users, Heart, Coins, Crown, Zap,
   BarChart3, Clock, Camera, Search, ChevronRight,
@@ -14,6 +14,7 @@ import { Avatar, Button, BottomSheet, Modal, PremiumBadge, Skeleton } from '@/co
 import FarmerCycleManager from '@/components/marketplace/FarmerCycleManager'
 import CreateShopSheet from '@/components/vendor/modals/CreateShopSheet'
 import AddProductSheet from '@/components/vendor/modals/AddProductSheet'
+import VendorCopilotPanel from '@/components/vendor/VendorCopilotPanel'
 import {
   formatFCFA, CATEGORIES, AVAILABILITY_OPTIONS,
   PRODUCT_LIMITS, PREMIUM_PLANS, COINS_PACKS, slugify
@@ -286,7 +287,16 @@ export default function VendorPage() {
               activeTab === 'quotes' ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
             )}
           >
-            Devis Grossistes
+            Devis
+          </button>
+          <button
+            onClick={() => setActiveTab('copilot')}
+            className={clsx('flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5',
+              activeTab === 'copilot' ? 'bg-gradient-to-r from-[#003d00] to-emerald-700 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50'
+            )}
+          >
+            <Bot size={14} className={activeTab === 'copilot' ? 'text-gold-400' : 'text-emerald-700'} />
+            <span>Copilote IA</span>
           </button>
         </div>
 
@@ -332,6 +342,13 @@ export default function VendorPage() {
 
         {activeTab === 'quotes' && (
           <QuotesTab quotes={quotes} loading={quotesLoading} onRefresh={loadQuotes} />
+        )}
+
+        {activeTab === 'copilot' && (
+          <VendorCopilotPanel
+            shop={activeShop || shops[0]}
+            products={activeShop?.products || shops[0]?.products || []}
+          />
         )}
       </div>
 

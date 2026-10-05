@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Plus, X, Upload, Check, AlertCircle, Info, MapPin, Camera, Store, ChevronRight, ChevronDown, Package, Trash2 } from 'lucide-react'
+import { Plus, X, Sparkles, Upload, Check, AlertCircle, Info, MapPin, Camera, Store, ChevronRight, ChevronDown, Package, Trash2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { Button, BottomSheet } from '@/components/ui'
+import { generateProductDescription } from '@/lib/ai'
 import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA } from '@/components/vendor/shared'
 
 export default function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWallet }) {
@@ -22,6 +23,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
   const imgRef = useRef()
 
   const reset = () => {
@@ -60,6 +62,27 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
       price: Math.round(+tPrice)
     }])
     setTQty(''); setTPrice('')
+  }
+
+  
+  const handleGenerateWithAI = async () => {
+    if (!form.name.trim()) return toast.error('Veuillez d\'abord saisir le nom du produit')
+    setGeneratingAI(true)
+    try {
+      const desc = await generateProductDescription({
+        productName: form.name,
+        price: form.price,
+        originCity: shop?.city
+      })
+      if (desc) {
+        setForm(prev => ({ ...prev, description: desc }))
+        toast.success('Fiche produit générée par le Copilote IA ! ✨')
+      }
+    } catch (err) {
+      toast.error('Erreur de génération IA')
+    } finally {
+      setGeneratingAI(false)
+    }
   }
 
   const handleAdd = async () => {
@@ -135,10 +158,21 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-sm font-bold text-dark-700">Description</label>
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-bold text-dark-700">Description</label>
+            <button
+              type="button"
+              onClick={handleGenerateWithAI}
+              disabled={generatingAI || !form.name.trim()}
+              className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-emerald-200 transition-all active:scale-95"
+            >
+              <Sparkles size={13} className={generatingAI ? 'animate-spin text-amber-500' : 'text-amber-500'} />
+              <span>{generatingAI ? 'Rédaction IA...' : "✨ Rédiger avec l'IA"}</span>
+            </button>
+          </div>
           <textarea placeholder="Détails, conditionnement, qualité..." value={form.description}
             onChange={e => setForm(p => ({...p, description: e.target.value}))}
-            className="input-field resize-none" rows={2}/>
+            className="input-field resize-none" rows={4}/>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
