@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from '@/store'
 import { useGoogleReferral } from '@/hooks/useGoogleReferral'
+import { useVendorCopilotResponder } from '@/hooks/useVendorCopilotResponder'
 
 import AppLayout          from '@/components/layout/AppLayout'
 import AuthLayout         from '@/components/layout/AuthLayout'
@@ -89,6 +90,7 @@ export default function App() {
   const [splashDone, setSplashDone] = useState(false)
 
   useGoogleReferral() // Traite le parrainage après retour OAuth Google
+  useVendorCopilotResponder() // Répondeur Copilote IA Vendeur 24/7 en arrière-plan
 
   useEffect(() => {
     initialize()

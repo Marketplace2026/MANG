@@ -639,11 +639,28 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
     setSuggestingAI(true)
     try {
+      let shopProducts = []
+      let instructions = 'Être poli, préciser les prix et la disponibilité et inviter à commander sur MANG.'
+      
+      const sId = conv?.shop_id || conv?.shop?.id
+      if (sId) {
+        const { data: prods } = await supabase.from('products').select('id, name, price, is_available').eq('shop_id', sId).limit(8)
+        if (prods) shopProducts = prods
+
+        try {
+          const saved = localStorage.getItem(`mang_copilot_settings_${sId}`)
+          if (saved) {
+            const parsed = JSON.parse(saved)
+            if (parsed.instructions) instructions = parsed.instructions
+          }
+        } catch {}
+      }
+
       const reply = await generateAutoReply({
         incomingMessage: lastOtherMsg.content,
         shop: conv.shop,
-        products: [],
-        instructions: 'Être poli, préciser la disponibilité et inviter à commander sur MANG.'
+        products: shopProducts,
+        instructions
       })
       if (reply) {
         setText(reply)
@@ -1090,7 +1107,32 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </div>
         )}
 
-        {recordedUrl ? (
+                {/* Suggestion Copilote Vendeur IA */}
+        {conv.seller_id === user?.id && messages.length > 0 && messages[messages.length - 1]?.sender_id !== user.id && (
+          <div className="mb-2 p-2.5 bg-gradient-to-r from-emerald-50 via-primary-50 to-emerald-50 border border-primary-200/80 rounded-2xl flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                <Sparkles size={15} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-primary-800">Copilote Vendeur IA</p>
+                <p className="text-xs text-dark-700 truncate font-medium">
+                  Répondre à : « {messages[messages.length - 1]?.content?.slice(0, 30)} »
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleSuggestAIReply}
+              disabled={suggestingAI}
+              className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0"
+            >
+              {suggestingAI ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              Rédiger en 1 clic ✨
+            </button>
+          </div>
+        )}
+
+{recordedUrl ? (
           /* Aperçu avant envoi : écouter, supprimer ou envoyer — même disposition que WhatsApp */
           <VoicePreviewPlayer
             url={recordedUrl}
