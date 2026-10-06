@@ -694,6 +694,17 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     await supabase.from('conversations').update({ last_message: content, last_message_at: new Date().toISOString() }).eq('id', conv.id)
     setReplyTo(null)
     setSending(false)
+
+    // 🤖 Copilote Vendeur 24/7 Cloud : Si l'acheteur écrit au vendeur, déclencher la réponse automatique
+    if (conv?.seller_id && conv.seller_id !== user.id) {
+      setTimeout(() => {
+        fetch('/api/copilot-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId: conv.id, incomingMessage: content })
+        }).catch(err => console.warn('[Copilot Cloud Trigger Error]', err))
+      }, 1200)
+    }
   }
 
   // Upload fichier
