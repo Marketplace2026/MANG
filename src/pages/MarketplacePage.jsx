@@ -657,9 +657,9 @@ export default function MarketplacePage() {
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-green-700 shadow-lg max-w-[480px] mx-auto">
         {/* LIGNE 1 : HEADER PRINCIPAL */}
-        <div className="bg-green-700 h-14 pl-0 pr-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 cursor-pointer h-full" onClick={() => navigate('/marketplace')}>
-            <img src="/logo-mang.png" alt="MANG" className="w-14 h-14 hover:scale-105 active:scale-95 transition-transform duration-200 object-cover" />
+        <div className="bg-green-700 h-14 px-3 flex justify-between items-center">
+          <div className="flex items-center gap-2.5 cursor-pointer h-full py-2" onClick={() => navigate('/marketplace')}>
+            <img src="/logo-mang.png" alt="MANG" className="w-10 h-10 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
             <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
           <div className="flex items-center gap-3">
