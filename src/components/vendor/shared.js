@@ -1,4 +1,4 @@
-﻿export const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+export const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
 export const CATEGORIES = [
   { name: 'Production végétale',           icon: 'sprout', items: ['Céréales & grains','Légumes','Fruits','Racines & tubercules','Plantes industrielles','Plantes aromatiques & médicinales'] },
@@ -21,18 +21,18 @@ export const AVAILABILITY_OPTIONS = [
   { value: '1y',   label: 'Dans 1 an' },
 ]
 
-export const PRODUCT_LIMITS = { 0: 10, 1: 20, 2: 30, 3: Infinity }
+export const PRODUCT_LIMITS = { 0: 5, 1: 10, 2: 20, 3: Infinity }
 
 export const PREMIUM_PLANS = [
   {
     level: 1, name: 'Bronze', price: 1000, stars: '★',
     color: 'from-amber-700 to-amber-800',
-    perks: ['Jusqu\'à 20 produits', 'Boutique affichée plus haut', 'Badge Bronze visible'],
+    perks: ['Jusqu\'à 10 produits', 'Boutique affichée plus haut', 'Badge Bronze visible'],
   },
   {
     level: 2, name: 'Argent', price: 2000, stars: '★★',
     color: 'from-slate-500 to-slate-600',
-    perks: ['Jusqu\'à 30 produits', 'Priorité dans les résultats', 'Badge Argent animé', 'Stats avancées'],
+    perks: ['Jusqu\'à 20 produits', 'Priorité dans les résultats', 'Badge Argent animé', 'Stats avancées'],
   },
   {
     level: 3, name: 'Or', price: 3000, stars: '★★★',

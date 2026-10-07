@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { Button, BottomSheet } from '@/components/ui'
 import { generateProductDescription } from '@/lib/ai'
-import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA } from '@/components/vendor/shared'
+import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA, PRODUCT_LIMITS } from '@/components/vendor/shared'
 
 export default function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', price:'', availability:'now' })
@@ -90,6 +90,19 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
     if (!form.price || isNaN(+form.price) || +form.price <= 0) { toast.error('Prix invalide'); return }
     if (!imageFile) { toast.error('Photo requise'); return }
     if ((pieces?.balance || 0) < 5) { toast.error('Pièces insuffisantes (5 🪙 requis)'); return }
+
+    // Vérifier la limite de produits selon l'abonnement
+    const limit = PRODUCT_LIMITS[shop?.premium_level || 0] ?? 5
+    if (limit !== Infinity) {
+      const { count, error: countErr } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shop.id)
+      if (!countErr && (count || 0) >= limit) {
+        toast.error(`Limite atteinte (${limit} produits max). Passez à l'abonnement supérieur !`)
+        return
+      }
+    }
 
     setLoading(true)
     try {

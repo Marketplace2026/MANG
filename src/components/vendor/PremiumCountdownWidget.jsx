@@ -202,7 +202,7 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
       ) : (
         <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-2xl mb-3 text-center">
           <p className="text-red-300 text-xs font-bold">
-            Votre boutique est actuellement repassée en mode gratuit (10 produits max).
+            Votre boutique est actuellement repassée en mode gratuit (5 produits max).
           </p>
           <p className="text-white/60 text-[11px] mt-0.5">
             Réactivez votre abonnement pour retrouver votre visibilité prioritaire et vos produits illimités.
