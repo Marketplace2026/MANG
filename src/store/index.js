@@ -220,7 +220,7 @@ export const useMessagesStore = create((set, get) => ({
   fetchUnreadCount: async (userId) => {
     const { data: convs } = await supabase.from('conversations').select('id').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
     if (!convs?.length) { set({ unreadCount: 0 }); return }
-    const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true }).or('is_read.is.null,is_read.eq.false').neq('sender_id', userId).in('conversation_id', convs.map(c => c.id))
+    const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true }).or('is_read.is.null,is_read.eq.false').neq('delivery_status', 'read').neq('sender_id', userId).in('conversation_id', convs.map(c => c.id))
     set({ unreadCount: count || 0 })
   },
   subscribeToUnread: (userId) => {

@@ -530,7 +530,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           })
           if (payload.new.sender_id !== user.id) {
             // Update to read since chat is open
-            supabase.from('messages').update({ delivery_status: 'read' }).eq('id', payload.new.id)
+            supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('id', payload.new.id)
             markRead(conv.id)
             onMarkRead?.(conv.id)
           }
@@ -596,10 +596,10 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     if (data?.length) {
       const unreadIds = data.filter(m => m.sender_id !== user.id && m.delivery_status !== 'read').map(m => m.id)
       if (unreadIds.length > 0) {
-        await supabase.from('messages').update({ delivery_status: 'read' }).in('id', unreadIds)
+        await supabase.from('messages').update({ delivery_status: 'read', is_read: true }).in('id', unreadIds)
       }
       const { error } = await supabase.rpc('mark_conversation_read', {
-        p_conv_id: conv.id,
+        p_conv_id: conv.id, p_conversation_id: conv.id,
         p_user_id: user.id
       })
       if (!error) onMarkRead?.(conv.id)
@@ -609,7 +609,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
   const markRead = async (convId) => {
     await supabase.rpc('mark_conversation_read', {
-      p_conv_id: convId,
+      p_conv_id: convId, p_conversation_id: convId,
       p_user_id: user.id
     })
   }
@@ -1644,10 +1644,13 @@ export default function MessagesPage() {
                     readConvsSet.current.add(conv.id)
                     setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
                     // 2) Marquer en DB via fonction SQL (contourne RLS)
+                    await supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('conversation_id', conv.id).neq('sender_id', user.id);
                     await supabase.rpc('mark_conversation_read', {
                       p_conv_id: conv.id,
+                      p_conversation_id: conv.id,
                       p_user_id: user.id
-                    })
+                    }).catch(() => {});
+                    if (user?.id) fetchUnreadCount(user.id);
                     // 3) DB confirmée → nettoyer le verrou
                     readConvsSet.current.delete(conv.id)
                     setActive(conv)
