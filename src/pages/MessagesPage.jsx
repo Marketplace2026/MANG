@@ -599,17 +599,17 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         await supabase.from('messages').update({ delivery_status: 'read', is_read: true }).in('id', unreadIds)
       }
       const { error } = await supabase.rpc('mark_conversation_read', {
-        p_conv_id: conv.id, p_conversation_id: conv.id,
+        p_conversation_id: conv.id,
         p_user_id: user.id
       })
-      if (!error) onMarkRead?.(conv.id)
+      onMarkRead?.(conv.id)
     }
     setLoading(false)
   }
 
   const markRead = async (convId) => {
     await supabase.rpc('mark_conversation_read', {
-      p_conv_id: convId, p_conversation_id: convId,
+      p_conversation_id: convId,
       p_user_id: user.id
     })
   }
@@ -1646,7 +1646,6 @@ export default function MessagesPage() {
                     // 2) Marquer en DB via fonction SQL (contourne RLS)
                     await supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('conversation_id', conv.id).neq('sender_id', user.id);
                     await supabase.rpc('mark_conversation_read', {
-                      p_conv_id: conv.id,
                       p_conversation_id: conv.id,
                       p_user_id: user.id
                     }).catch(() => {});
