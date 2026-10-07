@@ -53,3 +53,39 @@ export function slugify(text) {
   return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 }
+
+export async function syncShopProductVisibility(supabase, shopId, premiumLevel = 0) {
+  if (!shopId || !supabase) return
+  const limit = PRODUCT_LIMITS[premiumLevel] ?? 5
+
+  try {
+    const { data: prods, error } = await supabase
+      .from('products')
+      .select('id, is_available')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false })
+
+    if (error || !prods || prods.length === 0) return
+
+    const toActivate = []
+    const toDeactivate = []
+
+    prods.forEach((prod, index) => {
+      const shouldBeVisible = limit === Infinity || index < limit
+      if (shouldBeVisible && !prod.is_available) {
+        toActivate.push(prod.id)
+      } else if (!shouldBeVisible && prod.is_available) {
+        toDeactivate.push(prod.id)
+      }
+    })
+
+    if (toActivate.length > 0) {
+      await supabase.from('products').update({ is_available: true }).in('id', toActivate)
+    }
+    if (toDeactivate.length > 0) {
+      await supabase.from('products').update({ is_available: false }).in('id', toDeactivate)
+    }
+  } catch (err) {
+    console.warn('[syncShopProductVisibility] Erreur de synchro:', err)
+  }
+}

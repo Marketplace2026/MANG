@@ -18,7 +18,7 @@ import VendorCopilotPanel from '@/components/vendor/VendorCopilotPanel'
 import PremiumCountdownWidget from '@/components/vendor/PremiumCountdownWidget'
 import {
   formatFCFA, CATEGORIES, AVAILABILITY_OPTIONS,
-  PRODUCT_LIMITS, PREMIUM_PLANS, COINS_PACKS, slugify
+  PRODUCT_LIMITS, PREMIUM_PLANS, COINS_PACKS, slugify, syncShopProductVisibility
 } from '@/components/vendor/shared'
 
 // ============================================================
@@ -145,6 +145,7 @@ export default function VendorPage() {
           console.log(`[Auto-Expiration] Boutique ${sh.name} expirée. Rétrogradation automatique à 0.`)
           await supabase.from('shops').update({ premium_level: 0 }).eq('id', sh.id)
           sh.premium_level = 0
+          await syncShopProductVisibility(supabase, sh.id, 0)
         }
       }
     }
@@ -613,6 +614,21 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
           ))}
         </div>
 
+        {/* Bannière surplus masqué si la boutique a plus de produits que son quota */}
+        {products.length > (limit === Infinity ? 999 : limit) && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl mb-3 flex items-start gap-2.5">
+            <span className="text-base">🔒</span>
+            <div className="text-xs">
+              <p className="font-bold text-amber-800">
+                {products.length - limit} produit(s) en pause (quota {limit === Infinity ? 'illimité' : limit} max)
+              </p>
+              <p className="text-amber-700/80 mt-0.5 leading-snug">
+                Seuls vos {limit} produits les plus récents sont visibles sur la marketplace. Réactivez votre abonnement Premium pour tout débloquer.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Bouton ajouter */}
         <button onClick={onAddProduct}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary-600 text-white font-bold text-sm shadow-green active:scale-95 transition-transform mb-4">
@@ -632,8 +648,8 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
           </div>
         ) : (
           <div className="space-y-3">
-            {products.map(product => (
-              <ProductItem key={product.id} product={product} onDelete={() => handleDelete(product)} onToggle={() => toggleAvailable(product)}/>
+            {products.map((product, idx) => (
+              <ProductItem key={product.id} product={product} isExcess={limit !== Infinity && idx >= limit} onDelete={() => handleDelete(product)} onToggle={() => toggleAvailable(product)}/>
             ))}
           </div>
         )}
@@ -645,7 +661,7 @@ function ShopDetailSheet({ open, onClose, shop, user, pieces, onDeleteProduct, o
 // ============================================================
 // PRODUCT ITEM
 // ============================================================
-function ProductItem({ product, onDelete, onToggle }) {
+function ProductItem({ product, isExcess, onDelete, onToggle }) {
   const AVAIL_LABELS = {
     now:'Dispo','1w':'1 sem','2w':'2 sem','1m':'1 mois','2m':'2 mois','3m':'3 mois','6m':'6 mois','1y':'1 an'
   }
@@ -658,7 +674,14 @@ function ProductItem({ product, onDelete, onToggle }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-bold text-dark-800 text-sm truncate">{product.name}</p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="font-bold text-dark-800 text-sm truncate">{product.name}</p>
+            {isExcess && (
+              <span className="flex-shrink-0 text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md">
+                🔒 Masqué
+              </span>
+            )}
+          </div>
           <div className="flex gap-1 flex-shrink-0">
             <button onClick={onToggle}
               className={clsx('w-6 h-6 rounded-lg flex items-center justify-center text-[10px] transition-colors',
@@ -719,6 +742,9 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
       // Mettre à jour boutiques
       if (shops.length > 0) {
         await supabase.from('shops').update({ premium_level: plan.level, premium_expires_at: expiresAt.toISOString() }).eq('owner_id', user.id)
+        for (const sh of shops) {
+          await syncShopProductVisibility(supabase, sh.id, plan.level)
+        }
       }
 
       toast.success(`Premium ${plan.name} activé pour 30 jours !`)
