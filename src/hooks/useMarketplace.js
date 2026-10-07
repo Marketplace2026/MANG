@@ -41,6 +41,14 @@ export function useShops({ category, hasDelivery, search, limit = 20 } = {}) {
       if (err) throw err
 
       let result = data || []
+      const now = new Date()
+      // Filtre automatique d'expiration Premium
+      result = result.map(s => {
+        if (s.premium_level > 0 && s.premium_expires_at && new Date(s.premium_expires_at) <= now) {
+          return { ...s, premium_level: 0 }
+        }
+        return s
+      })
 
       // Recherche floue côté client avec Fuse.js
       if (search && search.trim().length > 0) {
@@ -302,7 +310,12 @@ export function useTopShops() {
       .order('followers_count', { ascending: false })
       .limit(5)
       .then(({ data }) => {
-        const result = data || []
+        const now = new Date()
+        // Top boutiques : uniquement les abonnements encore valides
+        const result = (data || []).filter(s => {
+          if (!s.premium_expires_at) return s.premium_level > 0
+          return new Date(s.premium_expires_at) > now
+        })
         setTopShopsState(result)
         setTopShops(result) // Cache Zustand
       })

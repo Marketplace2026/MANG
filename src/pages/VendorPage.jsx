@@ -15,6 +15,7 @@ import FarmerCycleManager from '@/components/marketplace/FarmerCycleManager'
 import CreateShopSheet from '@/components/vendor/modals/CreateShopSheet'
 import AddProductSheet from '@/components/vendor/modals/AddProductSheet'
 import VendorCopilotPanel from '@/components/vendor/VendorCopilotPanel'
+import PremiumCountdownWidget from '@/components/vendor/PremiumCountdownWidget'
 import {
   formatFCFA, CATEGORIES, AVAILABILITY_OPTIONS,
   PRODUCT_LIMITS, PREMIUM_PLANS, COINS_PACKS, slugify
@@ -103,15 +104,29 @@ export default function VendorPage() {
   }
 
   const checkPremium = async () => {
-    const { data } = await supabase
+    // 1. Chercher un abonnement actif non expiré
+    const { data: activeSub } = await supabase
       .from('premium_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .gt('expires_at', new Date().toISOString())
       .order('expires_at', { ascending: false })
       .limit(1)
-      .single()
-    setPremiumStatus(data)
+      .maybeSingle()
+
+    if (activeSub) {
+      setPremiumStatus(activeSub)
+    } else {
+      // 2. Si aucun actif, récupérer le dernier pour afficher l'état expiré
+      const { data: lastSub } = await supabase
+        .from('premium_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setPremiumStatus(lastSub || null)
+    }
   }
 
   const loadShops = async () => {
@@ -121,6 +136,19 @@ export default function VendorPage() {
       .select('*, products(count)')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false })
+
+    if (data && data.length > 0) {
+      const now = new Date()
+      // Rétrogradation automatique en base si les 30 jours sont dépassés
+      for (const sh of data) {
+        if (sh.premium_level > 0 && sh.premium_expires_at && new Date(sh.premium_expires_at) <= now) {
+          console.log(`[Auto-Expiration] Boutique ${sh.name} expirée. Rétrogradation automatique à 0.`)
+          await supabase.from('shops').update({ premium_level: 0 }).eq('id', sh.id)
+          sh.premium_level = 0
+        }
+      }
+    }
+
     setShops(data || [])
     setLoading(false)
   }
@@ -182,21 +210,13 @@ export default function VendorPage() {
 
         <div className="relative px-4 pt-2">
 
-          {/* Badge premium actif */}
-          {premiumStatus && (
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-gold-500/20 border border-gold-400/30 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gold-500/30 flex items-center justify-center">
-                <Crown size={20} className="text-gold-300"/>
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-bold text-sm">Premium actif</p>
-                <p className="text-gold-300 text-xs">{daysLeft} jour(s) restant(s)</p>
-              </div>
-              <button onClick={() => setPremiumOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-gold-500 text-white text-xs font-bold active:scale-95">
-                Renouveler
-              </button>
-            </div>
+          {/* Compteur interactif & Signaux d'alerte Premium */}
+          {(premiumStatus || shops.some(s => s.premium_level > 0)) && (
+            <PremiumCountdownWidget
+              shop={shops[0]}
+              premiumStatus={premiumStatus}
+              onRenew={() => setPremiumOpen(true)}
+            />
           )}
 
           {/* Stats globales */}
@@ -676,7 +696,9 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
 
     setLoading(plan.level)
     try {
-      const expiresAt = new Date()
+      const isCurrentlyActive = currentPremium && new Date(currentPremium.expires_at) > new Date()
+      const baseDate = isCurrentlyActive ? new Date(currentPremium.expires_at) : new Date()
+      const expiresAt = new Date(baseDate)
       expiresAt.setDate(expiresAt.getDate() + 30)
 
       // Déduire wallet

@@ -295,6 +295,17 @@ export default function MarketplacePage() {
 
       const { data } = await query
       let result = data || []
+      const now = new Date()
+      // Filtre automatique d'expiration du statut Premium
+      result = result.map(s => {
+        if (s.premium_level > 0 && s.premium_expires_at && new Date(s.premium_expires_at) <= now) {
+          return { ...s, premium_level: 0 }
+        }
+        return s
+      })
+      if (topShopsOnly) {
+        result = result.filter(s => s.premium_level > 0)
+      }
 
       // Calculer systématiquement la distance pour toutes les boutiques si la position de l'utilisateur est connue
       if (userLocation) {
