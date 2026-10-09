@@ -177,10 +177,10 @@ export default function NotificationsPage() {
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'Total',     value: notifications.length,                        color: 'text-white' },
-              { label: 'Non lues',  value: unreadCount,                                  color: 'text-orange-300' },
-              { label: 'Commandes', value: notifications.filter(n => ORDER_TYPES.includes(n.type)).length,  color: 'text-blue-300' },
-              { label: 'Social',    value: notifications.filter(n => SOCIAL_TYPES.includes(n.type)).length, color: 'text-pink-300' },
+              { label: 'Total',     value: notifications?.length || 0,                        color: 'text-white' },
+              { label: 'Non lues',  value: unreadCount || 0,                                  color: 'text-orange-300' },
+              { label: 'Commandes', value: (notifications || []).filter(n => ORDER_TYPES.includes(n.type)).length,  color: 'text-blue-300' },
+              { label: 'Social',    value: (notifications || []).filter(n => SOCIAL_TYPES.includes(n.type)).length, color: 'text-pink-300' },
             ].map((s, i) => (
               <div key={i} className="bg-white/10 rounded-2xl p-2.5 text-center">
                 <p className={clsx('font-display font-bold text-xl leading-none', s.color)}>{s.value}</p>
@@ -273,7 +273,7 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className={clsx('text-sm leading-tight', notif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 font-bold')}>
-            {notif.title}
+            {typeof notif.title === 'object' ? JSON.stringify(notif.title) : (notif.title || '')}
           </p>
           {/* Point non lu */}
           {!notif.is_read && (
@@ -281,7 +281,9 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
           )}
         </div>
         {notif.body && (
-          <p className="text-dark-600/60 text-xs mt-0.5 line-clamp-2">{notif.body}</p>
+          <p className="text-dark-600/60 text-xs mt-0.5 line-clamp-2">
+            {typeof notif.body === 'object' ? JSON.stringify(notif.body) : (notif.body || '')}
+          </p>
         )}
         <p className="text-dark-600/40 text-[10px] mt-1">
           {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: fr })}
