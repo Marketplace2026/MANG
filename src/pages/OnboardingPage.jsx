@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/store'
 import { clsx } from 'clsx'
 import {
   ShieldCheck, Truck, Percent, CheckCircle, ArrowRight,
@@ -31,6 +32,13 @@ const FEATURES = [
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+
+  useEffect(() => {
+    if (user) {
+      navigate('/marketplace', { replace: true })
+    }
+  }, [user, navigate])
   const [page, setPage] = useState(1) // 1 or 2
   const [tIdx, setTIdx] = useState(0)
   const [animating, setAnimating] = useState(false)
