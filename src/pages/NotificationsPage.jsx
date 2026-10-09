@@ -20,7 +20,7 @@ const NOTIF_CONFIG = {
   shop_follow:       { icon: Users, color: 'bg-blue-100 text-blue-600',     label: 'Abonnement boutique' },
   product_favorite:  { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Produit favori' },
   shop_comment:      { icon: MessageCircle, color: 'bg-primary-100 text-primary-600',label: 'Commentaire boutique' },
-  comment_reply:     { icon: '↩️', color: 'bg-primary-100 text-primary-600',label: 'Réponse commentaire' },
+  comment_reply:     { icon: MessageCircle, color: 'bg-primary-100 text-primary-600',label: 'Réponse commentaire' },
   post_like:         { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Like publication' },
   shop_like:         { icon: Heart, color: 'bg-red-100 text-red-600',       label: 'Like boutique' },
   comment_like:      { icon: ThumbsUp, color: 'bg-blue-100 text-blue-600',     label: 'Like commentaire' },
@@ -261,8 +261,12 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
       )}
     >
       {/* Icône */}
-      <div className={clsx('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl', cfg.color)}>
-        {cfg.icon}
+      <div className={clsx('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0', cfg.color)}>
+        {typeof cfg.icon === 'function' ? (
+          <cfg.icon size={20} />
+        ) : (
+          <span className="text-lg">{cfg.icon || '🔔'}</span>
+        )}
       </div>
 
       {/* Contenu */}
@@ -312,11 +316,13 @@ function EmptyNotifications({ filter }) {
     social:  { icon: Heart, title: 'Aucune interaction',  sub: 'Likes, commentaires et abonnements apparaîtront ici' },
     wallet:  { icon: Wallet, title: 'Aucune transaction',  sub: 'Vos mouvements wallet apparaîtront ici' },
   }
-  const { emoji, title, sub } = config[filter] || config.all
+  const { icon: EmptyIcon, title, sub } = config[filter] || config.all
 
   return (
     <div className="text-center py-16 bg-white rounded-3xl shadow-card px-6">
-      <p className="text-5xl mb-3">{emoji}</p>
+      <div className="w-16 h-16 rounded-3xl bg-primary-50 flex items-center justify-center mx-auto mb-3 text-primary-600">
+        <EmptyIcon size={32} />
+      </div>
       <p className="font-display text-lg font-bold text-dark-800">{title}</p>
       <p className="text-dark-600/50 text-sm mt-2">{sub}</p>
     </div>

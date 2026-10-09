@@ -92,7 +92,7 @@ export class ErrorBoundary extends React.Component {
             </div>
 
             {/* Détails techniques escamotables en cas de besoin */}
-            {process.env.NODE_ENV !== 'production' && this.state.error && (
+            {this.state.error && (
               <details className="mt-6 text-left w-full bg-surface-100 p-3 rounded-xl text-xs text-dark-700 overflow-auto max-h-40">
                 <summary className="font-semibold cursor-pointer text-dark-900">Détails techniques</summary>
                 <pre className="mt-2 text-[10px] whitespace-pre-wrap">{this.state.error.toString()}</pre>
