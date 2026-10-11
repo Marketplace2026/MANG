@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, ToastBar, toast } from 'react-hot-toast'
 import { useAuthStore } from '@/store'
 import { useGoogleReferral } from '@/hooks/useGoogleReferral'
 import { useVendorCopilotResponder } from '@/hooks/useVendorCopilotResponder'
@@ -177,19 +177,45 @@ export default function App() {
         </Routes>
       </Suspense>
 
-      <Toaster position="top-center" gutter={10} containerStyle={{ top: 70 }} toastOptions={{
-        duration: 30000,
-        style: {
-          background: '#0f172a', color: '#f8fafc', borderRadius: '16px',
-          fontSize: '14px', fontFamily: 'Nunito, sans-serif',
-          fontWeight: '600', padding: '14px 18px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          maxWidth: '420px',
-        },
-        success: { iconTheme: { primary: '#004D00', secondary: '#fff' } },
-        error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-      }}/>
+      <Toaster 
+        position="top-center" 
+        gutter={8} 
+        containerStyle={{ top: 56 }} 
+        toastOptions={{
+          duration: 2500,
+          style: {
+            background: '#111827',
+            color: '#f9fafb',
+            borderRadius: '16px',
+            fontSize: '13.5px',
+            fontFamily: 'Nunito, sans-serif',
+            fontWeight: '600',
+            padding: '10px 16px',
+            boxShadow: '0 12px 30px -4px rgba(0, 0, 0, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            maxWidth: '390px',
+            cursor: 'pointer',
+          },
+          success: { 
+            duration: 2200, 
+            iconTheme: { primary: '#10b981', secondary: '#ffffff' } 
+          },
+          error: { 
+            duration: 3500, 
+            iconTheme: { primary: '#ef4444', secondary: '#ffffff' } 
+          },
+        }}
+      >
+        {(t) => (
+          <div 
+            onClick={() => toast.dismiss(t.id)} 
+            className="cursor-pointer active:scale-95 transition-transform"
+            title="Cliquer pour fermer"
+          >
+            <ToastBar toast={t} />
+          </div>
+        )}
+      </Toaster>
     </BrowserRouter>
   )
 }
