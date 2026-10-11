@@ -855,11 +855,14 @@ function TxDetailSheet({ open, onClose, tx }) {
       <div className="px-5 py-4 pb-10 space-y-4">
         <div className="text-center py-6 bg-gray-50 rounded-2xl">
           <div className={clsx('w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3', cfg.bg)}>
-            {typeof cfg.icon === 'function' ? (
-              <cfg.icon size={30} className={cfg.color} strokeWidth={2.2} />
-            ) : (
-              <span className="text-3xl">{cfg.icon}</span>
-            )}
+            {(() => {
+              const IconComp = cfg.icon || CreditCard
+              return typeof IconComp === 'string' ? (
+                <span className="text-3xl">{IconComp}</span>
+              ) : (
+                <IconComp size={30} className={cfg.color} strokeWidth={2.2} />
+              )
+            })()}
           </div>
           <p className={clsx('font-black text-4xl', isCredit ? 'text-emerald-600' : 'text-red-600')}>
             {isCredit?'+':'-'}{amtFCFA.toLocaleString('fr-FR')} FCFA
