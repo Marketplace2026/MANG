@@ -247,17 +247,37 @@ export default function NotificationsPage() {
 }
 
 // ============================================================
+// HELPER — Convertit n'importe quelle valeur en string safe pour React
+// ============================================================
+function safeStr(val) {
+  if (val === null || val === undefined) return ''
+  if (typeof val === 'object') return JSON.stringify(val)
+  return String(val)
+}
+
+// ============================================================
 // NOTIFICATION ITEM
 // ============================================================
 function NotifItem({ notif, onClick, onDelete, isDeleting }) {
-  const cfg = NOTIF_CONFIG[notif.type] || { icon: '🔔', color: 'bg-surface-100 text-dark-600' }
+  // Sécurisation complète de tous les champs avant rendu
+  const safeNotif = {
+    id: safeStr(notif?.id),
+    type: safeStr(notif?.type),
+    title: safeStr(notif?.title),
+    body: safeStr(notif?.body),
+    is_read: !!notif?.is_read,
+    created_at: notif?.created_at || new Date().toISOString(),
+    reference_id: notif?.reference_id,
+  }
+
+  const cfg = NOTIF_CONFIG[safeNotif.type] || { icon: Bell, color: 'bg-surface-100 text-dark-600' }
 
   return (
     <div
       onClick={onClick}
       className={clsx(
         'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors active:bg-surface-50',
-        !notif.is_read && 'bg-primary-50/50'
+        !safeNotif.is_read && 'bg-primary-50/50'
       )}
     >
       {/* Icône */}
@@ -272,21 +292,21 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
       {/* Contenu */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className={clsx('text-sm leading-tight', notif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 font-bold')}>
-            {typeof notif.title === 'object' ? JSON.stringify(notif.title) : (notif.title || '')}
+          <p className={clsx('text-sm leading-tight', safeNotif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 font-bold')}>
+            {safeNotif.title}
           </p>
           {/* Point non lu */}
-          {!notif.is_read && (
+          {!safeNotif.is_read && (
             <div className="w-2 h-2 rounded-full bg-primary-600 flex-shrink-0 mt-1"/>
           )}
         </div>
-        {notif.body && (
+        {safeNotif.body && (
           <p className="text-dark-600/60 text-xs mt-0.5 line-clamp-2">
-            {typeof notif.body === 'object' ? JSON.stringify(notif.body) : (notif.body || '')}
+            {safeNotif.body}
           </p>
         )}
         <p className="text-dark-600/40 text-[10px] mt-1">
-          {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: fr })}
+          {formatDistanceToNow(new Date(safeNotif.created_at), { addSuffix: true, locale: fr })}
         </p>
       </div>
 
@@ -353,11 +373,12 @@ function NotifSkeleton() {
 function groupByDate(notifs) {
   const groups = {}
   notifs.forEach(n => {
-    const d = new Date(n.created_at)
+    const rawDate = n.created_at || new Date().toISOString()
+    const d = new Date(rawDate)
     const now = new Date()
     let label
     const diff = (now - d) / 86400000
-    if (diff < 1)       label = "Aujourd'hui"
+    if (isNaN(diff) || diff < 1)  label = "Aujourd'hui"
     else if (diff < 2)  label = 'Hier'
     else if (diff < 7)  label = 'Cette semaine'
     else if (diff < 30) label = 'Ce mois'
