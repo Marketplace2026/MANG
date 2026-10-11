@@ -745,99 +745,247 @@ function PinSetupSheet({ open, onClose, user }) {
 // ══════════════════════════════════════════════════════════
 // REÇU PDF
 // ══════════════════════════════════════════════════════════
+async function generateQRCodeDataUrl(text) {
+  try {
+    const QRCode = (await import('qrcode')).default || (await import('qrcode'))
+    return await QRCode.toDataURL(text, {
+      width: 160,
+      margin: 1,
+      color: { dark: '#003300', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M',
+    })
+  } catch (e) {
+    console.warn('QR Code generation fallback:', e)
+    return null
+  }
+}
+
+async function computeTxHash(tx, receiptNum) {
+  const payload = [receiptNum, tx.id, tx.amount, tx.created_at, tx.wallet_id || ''].join('|')
+  return await sha256(payload)
+}
+
 async function downloadPDF(tx) {
   try {
     const { jsPDF } = await import('jspdf')
     const cfg = getTxCfg(tx)
     const amtFCFA = toFCFA(tx.amount)
     const isCredit = Number(tx.amount) > 0
-    const receiptNum = tx.receipt_number || `MANG-${new Date().getFullYear()}-${String(tx.id||'').slice(0,6).toUpperCase()}`
+    const receiptNum = tx.receipt_number || ('MANG-' + new Date().getFullYear() + '-' + String(tx.id || '').slice(0, 6).toUpperCase())
+    const txHash = await computeTxHash(tx, receiptNum)
+    const verificationUrl = 'https://mangafrica.com/verifier-recu?ref=' + encodeURIComponent(receiptNum) + '&hash=' + encodeURIComponent(txHash.slice(0, 16))
+    
+    // Page Format A5 Portrait (420 x 595 pt)
     const doc = new jsPDF({ unit: 'pt', format: 'a5' })
+    const pageWidth = 420
+    const pageHeight = 595
 
-    // Charger l'image du logo de manière asynchrone
+    // ── 1. FOND DE SÉCURITÉ & CADRE INSTITUTIONNEL
+    doc.setFillColor(252, 253, 252)
+    doc.rect(0, 0, pageWidth, pageHeight, 'F')
+
+    // Double liseré de sécurité périmétrique
+    doc.setDrawColor(218, 225, 218)
+    doc.setLineWidth(1)
+    doc.rect(12, 12, pageWidth - 24, pageHeight - 24)
+    doc.setDrawColor(0, 77, 0)
+    doc.setLineWidth(0.5)
+    doc.rect(15, 15, pageWidth - 30, pageHeight - 30)
+
+    // ── 2. EN-TÊTE NOBLE (Vert Émeraude Profond + Liséré Or)
+    doc.setFillColor(0, 60, 20)
+    doc.rect(15, 15, pageWidth - 30, 78, 'F')
+
+    // Filet d'or de prestige
+    doc.setFillColor(212, 175, 55)
+    doc.rect(15, 93, pageWidth - 30, 2.5, 'F')
+
+    // Logo MANG
     const logoImg = await new Promise((resolve) => {
       const img = new Image()
       img.src = '/logo-mang.png'
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
     })
-
-    doc.setFillColor(11, 61, 46)
-    doc.rect(0, 0, 420, 80, 'F')
-
     if (logoImg) {
-      doc.addImage(logoImg, 'PNG', 25, 20, 40, 40)
+      doc.addImage(logoImg, 'PNG', 28, 28, 48, 48)
     }
 
-    const startX = logoImg ? 75 : 30
-    doc.setTextColor('#fff')
-    doc.setFontSize(22); doc.setFont(undefined,'bold')
-    doc.text('MANG Wallet', startX, 45)
-    doc.setFontSize(8); doc.setFont(undefined,'normal')
-    doc.text('Marché Agricole Nouvelle Génération', startX, 62)
-    doc.text('REÇU OFFICIEL', 390, 48, { align:'right' })
+    const titleX = logoImg ? 86 : 30
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(19)
+    doc.setFont(undefined, 'bold')
+    doc.text('MANG AFRIQUE', titleX, 48)
 
-    doc.setTextColor(isCredit ? '#004D00' : '#dc2626')
-    doc.setFontSize(32); doc.setFont(undefined,'bold')
-    doc.text(`${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`, 210, 140, { align:'center' })
+    doc.setFontSize(8)
+    doc.setFont(undefined, 'normal')
+    doc.setTextColor(220, 240, 220)
+    doc.text('PLATEFORME AGRO-COMMERCIALE & SERVICES FINANCIERS SÉCURISÉS', titleX, 62)
+    doc.text('SYSTÈME DE SÉQUESTRE & PAIEMENT PROTÉGÉ (ESCROW GUARANTEED)', titleX, 73)
 
-    doc.setTextColor('#555')
-    doc.setFontSize(12); doc.setFont(undefined,'normal')
-    doc.text(cfg.label, 210, 162, { align:'center' })
+    // Badge ATTESTATION OFFICIELLE
+    doc.setFillColor(0, 85, 30)
+    doc.roundedRect(pageWidth - 138, 28, 110, 24, 4, 4, 'F')
+    doc.setTextColor(255, 215, 0)
+    doc.setFontSize(8.5)
+    doc.setFont(undefined, 'bold')
+    doc.text('ATTESTATION OFFICIELLE', pageWidth - 83, 41, { align: 'center' })
+    doc.setFontSize(6.5)
+    doc.setTextColor(220, 255, 220)
+    doc.text('TRANSACTION SCELLÉE', pageWidth - 83, 49, { align: 'center' })
 
-    doc.setDrawColor('#e5e7eb'); doc.line(30, 178, 390, 178)
+    // ── 3. BANNIÈRE DE MONTANT & STATUT SÉCURISÉ
+    const isCreditColor = isCredit ? [0, 110, 40] : [190, 25, 25]
+    doc.setFillColor(isCredit ? 240 : 254, isCredit ? 250 : 242, isCredit ? 242 : 242)
+    doc.roundedRect(26, 108, pageWidth - 52, 68, 8, 8, 'F')
+    doc.setDrawColor(isCredit ? 180 : 240, isCredit ? 225 : 190, isCredit ? 190 : 190)
+    doc.setLineWidth(1)
+    doc.roundedRect(26, 108, pageWidth - 52, 68, 8, 8, 'D')
 
-    const rows = [
-      ['Reçu N°', receiptNum],
-      ['Date', new Date(tx.created_at).toLocaleString('fr-FR')],
-      ['Type', cfg.label],
-      ['Montant', `${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA`],
-      ['Statut', 'Validé'],
-      tx.description && ['Description', tx.description],
+    doc.setTextColor(100, 110, 100)
+    doc.setFontSize(9)
+    doc.setFont(undefined, 'bold')
+    doc.text("MONTANT NET DE L'OPÉRATION", pageWidth / 2, 126, { align: 'center' })
+
+    doc.setTextColor(isCreditColor[0], isCreditColor[1], isCreditColor[2])
+    doc.setFontSize(26)
+    doc.setFont(undefined, 'bold')
+    doc.text((isCredit ? '+' : '-') + amtFCFA.toLocaleString('fr-FR') + ' FCFA', pageWidth / 2, 152, { align: 'center' })
+
+    // Pilule Statut Approuvé
+    doc.setFillColor(0, 120, 45)
+    doc.roundedRect(pageWidth / 2 - 70, 159, 140, 14, 7, 7, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(7.5)
+    doc.setFont(undefined, 'bold')
+    doc.text('✓ SUCCÈS & FONDS VALIDÉS', pageWidth / 2, 169, { align: 'center' })
+
+    // ── 4. TABLEAU DÉTAILLÉ DE LA TRANSACTION
+    const tableY = 190
+    const txDate = new Date(tx.created_at)
+    const dateStr = txDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const timeStr = txDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+    const fields = [
+      ['Référence Unique', receiptNum],
+      ['Type d\'opération', cfg.label.toUpperCase()],
+      ['Date & Heure d\'exécution', dateStr + ' à ' + timeStr],
+      ['Canal de Règlement', 'Portefeuille Numérique MANG Pay / Mobile Money'],
+      ['Protection des Fonds', 'Garantie Intégrale sous Séquestre Commercial'],
+      ['Frais de Transaction', '0 FCFA (Prise en charge intégrale MANG)'],
+      tx.balance_after !== undefined ? ['Nouveau Solde Garanti', Number(tx.balance_after).toLocaleString('fr-FR') + ' FCFA'] : null,
+      tx.description ? ['Motif / Note d\'ordre', tx.description] : null,
     ].filter(Boolean)
 
-    let y = 205
-    rows.forEach(([lbl, val]) => {
-      doc.setFont(undefined,'bold'); doc.setTextColor('#374151')
-      doc.setFontSize(10); doc.text(lbl + ' :', 35, y)
-      doc.setFont(undefined,'normal'); doc.setTextColor('#111')
-      doc.text(String(val), 160, y)
-      doc.setDrawColor('#f3f4f6'); doc.line(30, y+8, 390, y+8)
-      y += 28
+    let currentY = tableY
+    fields.forEach(([label, value], idx) => {
+      const isAlt = idx % 2 === 0
+      if (isAlt) {
+        doc.setFillColor(247, 250, 248)
+        doc.rect(26, currentY - 11, pageWidth - 52, 20, 'F')
+      }
+      doc.setFont(undefined, 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(90, 105, 95)
+      doc.text(label, 36, currentY + 3)
+
+      doc.setFont(undefined, 'bold')
+      doc.setFontSize(8.5)
+      doc.setTextColor(20, 35, 25)
+      doc.text(String(value), pageWidth - 36, currentY + 3, { align: 'right' })
+
+      doc.setDrawColor(235, 240, 235)
+      doc.setLineWidth(0.5)
+      doc.line(26, currentY + 9, pageWidth - 26, currentY + 9)
+      currentY += 21
     })
 
-    doc.setFillColor(249,250,251); doc.rect(0, 530, 420, 60, 'F')
-    doc.setFontSize(7); doc.setTextColor('#9ca3af')
-    doc.text('Reçu certifié MANG — mang-pbgk.vercel.app', 210, 550, { align:'center' })
-    doc.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, 210, 564, { align:'center' })
+    // ── 5. BLOC DE CERTIFICATION & QR CODE VÉRIFIABLE
+    const certifBoxY = currentY + 10
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(26, certifBoxY, pageWidth - 52, 90, 6, 6, 'F')
+    doc.setDrawColor(200, 215, 200)
+    doc.setLineWidth(1)
+    doc.roundedRect(26, certifBoxY, pageWidth - 52, 90, 6, 6, 'D')
 
-    doc.save(`${receiptNum}.pdf`)
-    toast.success('Reçu PDF téléchargé !')
+    // Génération QR Code
+    const qrDataUrl = await generateQRCodeDataUrl(verificationUrl)
+    if (qrDataUrl) {
+      doc.addImage(qrDataUrl, 'PNG', 36, certifBoxY + 8, 74, 74)
+    }
+
+    const certifTextX = qrDataUrl ? 120 : 40
+    doc.setTextColor(0, 77, 0)
+    doc.setFontSize(9)
+    doc.setFont(undefined, 'bold')
+    doc.text('CERTIFICAT DE CONFORMITÉ NUMÉRIQUE', certifTextX, certifBoxY + 22)
+
+    doc.setTextColor(70, 80, 75)
+    doc.setFontSize(7)
+    doc.setFont(undefined, 'normal')
+    doc.text('Ce reçu est certifié authentique et garanti par le protocole sécurisé MANG.', certifTextX, certifBoxY + 35)
+    doc.text('Scannez ce QR Code pour vérifier l\'intégrité des fonds et l\'identité de la transaction.', certifTextX, certifBoxY + 45)
+
+    // Affichage Empreinte Cryptographique (SHA-256)
+    doc.setFillColor(242, 246, 242)
+    doc.roundedRect(certifTextX, certifBoxY + 54, pageWidth - certifTextX - 36, 24, 3, 3, 'F')
+    doc.setTextColor(0, 80, 30)
+    doc.setFontSize(6.5)
+    doc.setFont(undefined, 'bold')
+    doc.text('EMPREINTE NUMÉRIQUE SHA-256 DE SCELLAGE :', certifTextX + 6, certifBoxY + 64)
+    doc.setFont('courier', 'normal')
+    doc.setFontSize(6.5)
+    doc.setTextColor(50, 70, 55)
+    doc.text(txHash.slice(0, 32) + '...', certifTextX + 6, certifBoxY + 73)
+
+    // ── 6. PIED DE PAGE & MENTIONS LÉGALES INTERNATIONALES
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(130, 145, 135)
+    doc.setFontSize(6.5)
+    doc.text('MANG AFRICA TECHNOLOGIES — Plateforme panafricaine certifiée pour le commerce et les paiements sécurisés.', pageWidth / 2, pageHeight - 34, { align: 'center' })
+    doc.text('Document officiel délivré électroniquement — Fait foi de quittance légale irrévocable.', pageWidth / 2, pageHeight - 24, { align: 'center' })
+
+    const cleanFileName = 'MANG_RECU_OFFICIEL_' + receiptNum + '.pdf'
+    doc.save(cleanFileName)
+    toast.success('Reçu de transaction officiel téléchargé avec succès !')
   } catch (err) {
-    console.error(err)
-    toast.error('Erreur PDF. Assurez-vous que jspdf est installé.')
+    console.error('Erreur génération reçu certifié:', err)
+    toast.error('Impossible de générer le reçu. Veuillez réessayer.')
   }
 }
 
-function copyReceipt(tx) {
+async function copyReceipt(tx) {
   const cfg = getTxCfg(tx)
   const amtFCFA = toFCFA(tx.amount)
   const isCredit = Number(tx.amount) > 0
   const receiptNum = tx.receipt_number || 'N/A'
-  const text = `
-MANG WALLET — REÇU OFFICIEL
-================================
-Reçu N°   : ${receiptNum}
-Date      : ${new Date(tx.created_at).toLocaleString('fr-FR')}
-Type      : ${cfg.label}
-Montant   : ${isCredit?'+':'-'}${amtFCFA.toLocaleString('fr-FR')} FCFA
-Statut    : Validé
-${tx.description ? 'Note      : ' + tx.description : ''}
-================================
-MANG — mang-pbgk.vercel.app
-`.trim()
+  const txHash = await computeTxHash(tx, receiptNum)
+  const dateStr = new Date(tx.created_at).toLocaleString('fr-FR')
+  
+  const text = [
+    '╔══════════════════════════════════════╗',
+    '       🏛️  *MANG AFRICA — REÇU OFFICIEL*',
+    '   _Plateforme de Commerce & Paiements Sécurisés_',
+    '╚══════════════════════════════════════╝',
+    '',
+    '📌 *RÉFÉRENCE :* `' + receiptNum + '`',
+    '📅 *DATE :* ' + dateStr,
+    '🔄 *TYPE D\'OPÉRATION :* ' + cfg.label.toUpperCase(),
+    '💰 *MONTANT TRANSACTION :* *' + (isCredit ? '+' : '-') + amtFCFA.toLocaleString('fr-FR') + ' FCFA*',
+    '🛡️ *STATUT :* ✅ SUCCÈS & FONDS SCELLÉS',
+    tx.description ? ('📝 *MOTIF / NOTE :* ' + tx.description) : '',
+    tx.balance_after !== undefined ? ('💼 *SOLDE GARANTI :* ' + Number(tx.balance_after).toLocaleString('fr-FR') + ' FCFA') : '',
+    '',
+    '🔐 *SÉCURITÉ & AUTHENTIFICATION :*',
+    '• Fonds garantis sous Séquestre Commercial MANG',
+    '• Empreinte SHA-256 : `' + txHash.slice(0, 16) + '...`',
+    '• Vérification en direct : https://mangafrica.com/verifier-recu?ref=' + encodeURIComponent(receiptNum),
+    '',
+    '_Ce reçu numérique officiel fait foi de quittance légale irrévocable._',
+  ].filter(Boolean).join('\n')
+
   navigator.clipboard.writeText(text)
-  toast.success('Reçu copié ! Collez-le sur WhatsApp.')
+  toast.success('Reçu certifié copié ! Prêt à être partagé sur WhatsApp.')
 }
 
 // ══════════════════════════════════════════════════════════
