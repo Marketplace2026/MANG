@@ -282,11 +282,14 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
     >
       {/* Icône */}
       <div className={clsx('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0', cfg.color)}>
-        {typeof cfg.icon === 'function' ? (
-          <cfg.icon size={20} />
-        ) : (
-          <span className="text-lg">{cfg.icon || '🔔'}</span>
-        )}
+        {(() => {
+          const IconComp = cfg.icon || Bell
+          return typeof IconComp === 'string' ? (
+            <span className="text-lg">{IconComp}</span>
+          ) : (
+            <IconComp size={20} />
+          )
+        })()}
       </div>
 
       {/* Contenu */}
