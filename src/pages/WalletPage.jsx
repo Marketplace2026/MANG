@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Wallet, RefreshCw, Copy, Check, Eye, EyeOff,
   Shield, ChevronRight, X, Loader2, TrendingUp,
-  TrendingDown, Phone, Download, FileText, CheckCircle2, CreditCard, ArrowDownLeft, ArrowUpRight, Coins, ShoppingCart
+  TrendingDown, Phone, Download, FileText, CheckCircle2, CreditCard, ArrowDownLeft, ArrowUpRight, Coins, ShoppingCart, Star, CornerUpLeft
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -31,9 +31,9 @@ const TX_TYPES = {
   transfer_in:     { label: 'Transfert reçu',   icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   order_payment:   { label: 'Paiement commande',icon: ShoppingCart, color: 'text-red-600',     bg: 'bg-red-50'     },
   order_received:  { label: 'Vente reçue',      icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  order_refund:    { label: 'Remboursement',    icon: '↩️', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  subscription:    { label: 'Abonnement',       icon: '⭐', color: 'text-red-600',     bg: 'bg-red-50'     },
-  pieces_purchase: { label: 'Achat pièces',     icon: Coins, color: 'text-red-600',     bg: 'bg-red-50'     },
+  order_refund:    { label: 'Remboursement',    icon: CornerUpLeft, color: 'text-blue-600', bg: 'bg-blue-50' },
+  subscription:    { label: 'Abonnement Premium', icon: Star, color: 'text-amber-600',     bg: 'bg-amber-50'   },
+  pieces_purchase: { label: 'Achat de pièces',   icon: Coins, color: 'text-amber-600',     bg: 'bg-amber-50'   },
 }
 
 function getTxCfg(tx) {
@@ -43,6 +43,8 @@ function getTxCfg(tx) {
   if (t.includes('withdraw')) return TX_TYPES.withdraw
   if (t.includes('transfer_out') || (t.includes('transfer') && Number(tx.amount) < 0)) return TX_TYPES.transfer_out
   if (t.includes('transfer_in')  || (t.includes('transfer') && Number(tx.amount) > 0)) return TX_TYPES.transfer_in
+  if (t.includes('subscription') || t.includes('premium')) return TX_TYPES.subscription
+  if (t.includes('piece') || t.includes('coin')) return TX_TYPES.pieces_purchase
   if (t.includes('order') && Number(tx.amount) < 0) return TX_TYPES.order_payment
   if (t.includes('order')) return TX_TYPES.order_received
   return { label: 'Transaction', icon: CreditCard, color: 'text-gray-600', bg: 'bg-gray-50' }
@@ -1179,7 +1181,7 @@ export default function WalletPage() {
       <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-40">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">MANG PAY Pro</h1>
+            <h1 className="text-white text-2xl font-bold">MANG PAY</h1>
             <p className="text-white/80 text-xs font-semibold">Portefeuille Numérique Sécurisé</p>
           </div>
           <div className="flex gap-2">

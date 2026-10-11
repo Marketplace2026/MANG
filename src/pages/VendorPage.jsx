@@ -725,10 +725,36 @@ function PremiumSheet({ open, onClose, wallet, user, currentPremium, shops, onPu
       expiresAt.setDate(expiresAt.getDate() + 30)
 
       // Déduire wallet
+      const newBalance = wallet.balance_available - plan.price
       await supabase.from('wallets').update({
-        balance_available: wallet.balance_available - plan.price,
+        balance_available: newBalance,
         balance_total: (wallet.balance_total || wallet.balance_available) - plan.price,
       }).eq('user_id', user.id)
+
+      // Générer numéro de reçu officiel certifié
+      const year = new Date().getFullYear()
+      const receiptNum = `MANG-${year}-${Math.floor(Math.random() * 999999 + 1).toString().padStart(6, '0')}`
+
+      // Enregistrer la transaction dans le wallet (Dépenses & Historique)
+      await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        wallet_id: wallet?.id || null,
+        type: 'subscription',
+        transaction_type: 'subscription',
+        amount: -plan.price,
+        balance_after: newBalance,
+        status: 'completed',
+        description: `Abonnement Premium ${plan.name} (30j)`,
+        receipt_number: receiptNum,
+      })
+
+      // Créer notification pour l'utilisateur
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'wallet_debit',
+        title: 'Abonnement Premium activé !',
+        body: `-${plan.price.toLocaleString('fr-FR')} FCFA pour l'abonnement ${plan.name} (30 jours).`,
+      })
 
       // Créer abonnement
       await supabase.from('premium_subscriptions').insert({
@@ -846,25 +872,40 @@ function CoinsSheet({ open, onClose, wallet, user, pieces, onPurchased }) {
 
     setLoading(pack.coins)
     try {
+      const newBalance = wallet.balance_available - pack.price
       await supabase.from('wallets').update({
-        balance_available: wallet.balance_available - pack.price,
-        balance_total: wallet.balance_total - pack.price,
+        balance_available: newBalance,
+        balance_total: (wallet.balance_total || wallet.balance_available) - pack.price,
       }).eq('user_id', user.id)
 
       // Récupérer le vrai solde pieces depuis Supabase avant d'incrémenter
       const { data: realPieces } = await supabase.from('pieces').select('balance').eq('user_id', user.id).single()
       await supabase.from('pieces').update({ balance: (realPieces?.balance || 0) + pack.coins }).eq('user_id', user.id)
 
+      const year = new Date().getFullYear()
+      const receiptNum = `MANG-${year}-${Math.floor(Math.random() * 999999 + 1).toString().padStart(6, '0')}`
+
       await supabase.from('wallet_transactions').insert({
         user_id: user.id,
-        wallet_id: wallet.id,
+        wallet_id: wallet?.id || null,
+        type: 'pieces_purchase',
         transaction_type: 'pieces_purchase',
         amount: -pack.price,
+        balance_after: newBalance,
         status: 'completed',
         description: `Achat de ${pack.coins} pièces 🪙`,
+        receipt_number: receiptNum,
       })
 
-      toast.success(`pièces ${pack.coins} pièces achetées !`)
+      // Notification
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'wallet_debit',
+        title: 'Recharge de pièces réussie !',
+        body: `-${pack.price.toLocaleString('fr-FR')} FCFA pour +${pack.coins} pièces.`,
+      })
+
+      toast.success(`${pack.coins} pièces achetées avec succès !`)
       onPurchased()
       onClose()
     } catch { toast.error('Erreur lors de l\'achat') }

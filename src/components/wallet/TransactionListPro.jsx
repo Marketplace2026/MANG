@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, RefreshCw, ChevronRight, ArrowDownLeft, ArrowUpRight, ShoppingBag, Coins, CornerUpLeft } from 'lucide-react'
+import { Search, RefreshCw, ChevronRight, ArrowDownLeft, ArrowUpRight, ShoppingBag, Coins, CornerUpLeft, Star } from 'lucide-react'
 
 const TX_CONFIGS = {
   deposit:         { label: 'Rechargement MoMo', icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -10,6 +10,7 @@ const TX_CONFIGS = {
   order_payment:   { label: 'Achat Produit MANG', icon: ShoppingBag, color: 'text-red-600', bg: 'bg-red-50' },
   order_received:  { label: 'Vente encaissée', icon: ShoppingBag, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   order_refund:    { label: 'Remboursement', icon: CornerUpLeft, color: 'text-blue-600', bg: 'bg-blue-50' },
+  subscription:    { label: 'Abonnement Premium', icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
   pieces_purchase: { label: 'Achat de Pièces', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-50' },
 }
 
@@ -20,7 +21,7 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
   // Filtrage combiné (Texte + Catégorie)
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
-      const type = (tx.type || '').toLowerCase()
+      const type = (tx.type || tx.transaction_type || '').toLowerCase()
       const isCredit = Number(tx.amount) > 0
       
       // Filtre Onglet
@@ -113,8 +114,12 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
           {filteredTransactions.map((tx) => {
             const isCredit = Number(tx.amount) > 0
             const amountFCFA = Math.abs(Number(tx.amount))
-            const typeKey = (tx.type || '').toLowerCase()
-            const cfg = TX_CONFIGS[typeKey] || { label: 'Transaction', icon: ArrowUpRight, color: 'text-gray-600', bg: 'bg-gray-50' }
+            const typeKey = (tx.type || tx.transaction_type || '').toLowerCase()
+            const cfg = TX_CONFIGS[typeKey] || (
+              typeKey.includes('subscription') || typeKey.includes('premium') ? TX_CONFIGS.subscription :
+              typeKey.includes('piece') || typeKey.includes('coin') ? TX_CONFIGS.pieces_purchase :
+              { label: 'Transaction', icon: ArrowUpRight, color: 'text-gray-600', bg: 'bg-gray-50' }
+            )
             const Icon = cfg.icon
             const txDate = new Date(tx.created_at)
 

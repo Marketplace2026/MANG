@@ -70,13 +70,13 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
 
       {/* Rangée supérieure : Marque & QR Code */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 backdrop-blur-md overflow-hidden p-1">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border-2 border-white/80 shadow-lg p-1.5 flex-shrink-0">
             <img src="/logo-mang.png" alt="MANG" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h3 className="font-display font-black text-sm tracking-wider text-amber-400">MANG PAY</h3>
-            <p className="text-[10px] text-white/60 font-semibold">Compte Professionnel Certifié</p>
+            <h3 className="font-display font-black text-base tracking-wider text-amber-400">MANG PAY</h3>
+            <p className="text-[10px] text-white/70 font-semibold">Compte Professionnel Certifié</p>
           </div>
         </div>
 
