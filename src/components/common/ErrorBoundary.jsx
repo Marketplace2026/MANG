@@ -93,9 +93,16 @@ export class ErrorBoundary extends React.Component {
 
             {/* Détails techniques escamotables en cas de besoin */}
             {this.state.error && (
-              <details className="mt-6 text-left w-full bg-surface-100 p-3 rounded-xl text-xs text-dark-700 overflow-auto max-h-40">
-                <summary className="font-semibold cursor-pointer text-dark-900">Détails techniques</summary>
-                <pre className="mt-2 text-[10px] whitespace-pre-wrap">{this.state.error.toString()}</pre>
+              <details open className="mt-6 text-left w-full bg-surface-100 p-3 rounded-xl text-xs text-dark-700 overflow-auto max-h-60 border border-surface-300">
+                <summary className="font-semibold cursor-pointer text-dark-900 select-none">Détails techniques (Erreur)</summary>
+                <div className="mt-2 text-[11px] font-mono text-red-600 font-bold whitespace-pre-wrap">
+                  {this.state.error?.name}: {this.state.error?.message || this.state.error.toString()}
+                </div>
+                {this.state.error?.stack && (
+                  <pre className="mt-2 text-[9px] text-dark-500 whitespace-pre-wrap overflow-x-auto max-h-36">
+                    {this.state.error.stack}
+                  </pre>
+                )}
               </details>
             )}
 
