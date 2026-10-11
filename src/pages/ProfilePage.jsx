@@ -755,7 +755,7 @@ function WalletCard({ wallet, pieces, copied, onCopy, onNavigate }) {
               style={{ background: 'rgba(0,160,0,0.25)', border: '1px solid rgba(0,200,0,0.2)' }}>
               <Wallet size={13} className="text-green-400"/>
             </div>
-            <span className="text-white/80 text-[13px] font-bold tracking-wide">MANG Wallet</span>
+            <span className="text-white/80 text-[13px] font-bold tracking-wide">MANG PAY</span>
           </div>
           <span className="text-white/25 text-[11px] font-mono tracking-[0.2em]">{walletNum}</span>
         </div>

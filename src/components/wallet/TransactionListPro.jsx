@@ -139,7 +139,7 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-0.5 truncate">{tx.description || 'Opération MANG Wallet'}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5 truncate">{tx.description || 'Opération MANG PAY'}</p>
                   <p className="text-[10px] text-gray-400 font-medium">
                     {txDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} à {txDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </p>

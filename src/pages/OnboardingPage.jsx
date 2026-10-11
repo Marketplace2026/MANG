@@ -23,7 +23,7 @@ const STATS = [
 
 const FEATURES = [
   { icon: Store,         title: 'Boutique gratuite', desc: 'Créez votre vitrine en 2 min' },
-  { icon: Wallet,        title: 'MANG Wallet',       desc: 'Mobile Money intégré' },
+  { icon: Wallet,        title: 'MANG PAY',          desc: 'Mobile Money intégré' },
   { icon: MessageCircle, title: 'Chat temps réel',   desc: 'Avec acheteurs et vendeurs' },
   { icon: ShieldCheck,   title: 'Escrow sécurisé',   desc: 'Argent protégé jusqu\'à livraison' },
   { icon: BarChart3,     title: 'Dashboard vendeur', desc: 'Suivez vos ventes en direct' },

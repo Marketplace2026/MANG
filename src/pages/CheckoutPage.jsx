@@ -397,7 +397,7 @@ export default function CheckoutPage() {
               Méthode de Paiement
             </h2>
             <span className="px-2 py-0.5 rounded-lg bg-primary-100 text-primary-700 font-bold text-[9px]">
-              Mang Wallet
+              MANG PAY
             </span>
           </div>
 

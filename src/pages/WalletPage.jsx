@@ -171,7 +171,7 @@ function DepositSheet({ open, onClose, user, wallet, onSuccess }) {
         body: JSON.stringify({
           user_id: user.id, type: 'deposit', operator,
           phone: phone.trim(), amount: amt, currency: 'XOF',
-          description: 'Recharge MANG Wallet',
+          description: 'Recharge MANG PAY',
           email: user.email || `${user.id}@mang.app`,
           customer: {
             firstname: fname, lastname: lname,
@@ -312,7 +312,7 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
         body: JSON.stringify({
           user_id: user.id, type: 'withdraw', operator,
           phone: phone.trim(), amount: amt, currency: 'XOF',
-          description: 'Retrait MANG Wallet',
+          description: 'Retrait MANG PAY',
           email: user.email || `${user.id}@mang.app`,
           customer: {
             firstname: fname, lastname: lname,
@@ -813,9 +813,9 @@ async function downloadPDF(tx) {
 
     const titleX = logoImg ? 86 : 30
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(19)
+    doc.setFontSize(22)
     doc.setFont(undefined, 'bold')
-    doc.text('MANG AFRIQUE', titleX, 48)
+    doc.text('MANG', titleX, 48)
 
     doc.setFontSize(8)
     doc.setFont(undefined, 'normal')
@@ -964,7 +964,7 @@ async function copyReceipt(tx) {
   
   const text = [
     '╔══════════════════════════════════════╗',
-    '       🏛️  *MANG AFRICA — REÇU OFFICIEL*',
+    '       🏛️  *MANG — REÇU OFFICIEL*',
     '   _Plateforme de Commerce & Paiements Sécurisés_',
     '╚══════════════════════════════════════╝',
     '',
@@ -1179,7 +1179,7 @@ export default function WalletPage() {
       <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-40">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">MANG Wallet Pro</h1>
+            <h1 className="text-white text-2xl font-bold">MANG PAY Pro</h1>
             <p className="text-white/80 text-xs font-semibold">Portefeuille Numérique Sécurisé</p>
           </div>
           <div className="flex gap-2">

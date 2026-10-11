@@ -865,7 +865,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
           <ul className="text-xs text-red-600 leading-relaxed space-y-1 list-disc list-inside">
             <li>Toutes vos données seront supprimées</li>
             <li>Vos commandes et boutiques seront fermées</li>
-            <li>Votre solde MANG Wallet sera perdu</li>
+            <li>Votre solde MANG PAY sera perdu</li>
           </ul>
         </div>
         <div>
