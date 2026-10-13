@@ -155,7 +155,9 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
                   <p className={`font-black text-sm sm:text-base ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
                     {isCredit ? '+' : '-'}{amountFCFA.toLocaleString('fr-FR')} FCFA
                   </p>
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">Validé</span>
+                  <span className={`text-[9px] font-bold uppercase ${tx.status === 'pending' ? 'text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200' : 'text-gray-400'}`}>
+                    {tx.status === 'pending' ? 'En cours ⏳' : 'Validé'}
+                  </span>
                 </div>
 
                 <ChevronRight size={16} className="text-gray-300 group-hover:text-emerald-600 transition-colors flex-shrink-0" />

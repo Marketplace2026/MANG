@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Wallet, RefreshCw, Copy, Check, Eye, EyeOff,
   Shield, ChevronRight, X, Loader2, TrendingUp,
-  TrendingDown, Phone, Download, FileText, CheckCircle2, CreditCard, ArrowDownLeft, ArrowUpRight, Coins, ShoppingCart, Star, CornerUpLeft
+  TrendingDown, Phone, Download, FileText, CheckCircle2, CreditCard, ArrowDownLeft, ArrowUpRight, Coins, ShoppingCart, Star, CornerUpLeft, Clock
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -126,23 +126,25 @@ function PinInput({ value, onChange, error, label }) {
 }
 
 // ── Enregistrer transaction + notification ───────────────
-async function recordTx({ walletId, userId, type, amountCents: amount, balanceAfterCents: balanceAfter, description }) {
+async function recordTx({ walletId, userId, type, amountCents: amount, balanceAfterCents: balanceAfter, description, status = 'completed' }) {
   const year = new Date().getFullYear()
   const receiptNum = `MANG-${year}-${Math.floor(Math.random()*999999+1).toString().padStart(6,'0')}`
-  await supabase.from('wallet_transactions').insert({
+  const { data: inserted } = await supabase.from('wallet_transactions').insert({
     wallet_id: walletId, user_id: userId, type,
     amount: amount, balance_after: balanceAfter,
     description, receipt_number: receiptNum,
-  })
+    status,
+  }).select('id').maybeSingle()
+
   const notifMap = {
     deposit:      ['wallet_credit', 'Rechargement réussi !',  `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA crédités.`],
-    withdraw:     ['wallet_debit',  'Retrait effectué !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA retirés.`],
+    withdraw:     ['wallet_debit',  'Demande de retrait enregistrée ⏳', `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA en cours de traitement vers Mobile Money.`],
     transfer_out: ['wallet_debit',  'Transfert envoyé !',     `-${toFCFA(Math.abs(amount)).toLocaleString('fr-FR')} FCFA transférés.`],
     transfer_in:  ['wallet_credit', 'Transfert reçu !',       `+${toFCFA(amount).toLocaleString('fr-FR')} FCFA reçus.`],
   }
   const n = notifMap[type]
   if (n) await supabase.from('notifications').insert({ user_id: userId, type: n[0], title: n[1], body: n[2] })
-  return receiptNum
+  return { receiptNum, txId: inserted?.id }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -302,49 +304,49 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
       if (!freshWallet) { setLoading(false); return toast.error('Wallet introuvable') }
       if (amt > freshWallet.balance_available) { setLoading(false); return toast.error(`Solde insuffisant. Disponible : ${freshWallet.balance_available.toLocaleString('fr-FR')} FCFA`) }
 
-      // Appel FedaPay D'ABORD — ne débiter qu'après confirmation
-      const { data: { session } } = await supabase.auth.getSession()
-      const meta = user.user_metadata || {}
-      const fname = meta.full_name?.split(' ')[0] || meta.username || 'Client'
-      const lname = meta.full_name?.split(' ').slice(1).join(' ') || 'MANG'
-
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transaction`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          user_id: user.id, type: 'withdraw', operator,
-          phone: phone.trim(), amount: amt, currency: 'XOF',
-          description: 'Retrait MANG PAY',
-          email: user.email || `${user.id}@mang.app`,
-          customer: {
-            firstname: fname, lastname: lname,
-            email: user.email || `${user.id}@mang.app`,
-            phone_number: { number: phone.trim(), country: 'BJ' },
-          },
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || data.message || 'Erreur FedaPay')
-
-      // FedaPay OK → débiter maintenant
+      // 1. Débiter immédiatement le solde disponible (Sécurité anti-double dépense)
       const newBal = freshWallet.balance_available - amt
-      await supabase.from('wallets').update({
+      const { error: updateErr } = await supabase.from('wallets').update({
         balance_available: newBal,
-        balance_total: freshWallet.balance_total - amt,
+        balance_total: (freshWallet.balance_total || freshWallet.balance_available) - amt,
       }).eq('user_id', user.id)
 
-      // Enregistrer transaction
-      await recordTx({
-        walletId: wd.id, userId: user.id, type: 'withdraw',
-        amountCents: -amt, balanceAfterCents: newBal,
-        description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${OPERATORS.find(o=>o.id===operator)?.label} → ${phone}`,
+      if (updateErr) throw new Error('Impossible de débiter le portefeuille')
+
+      const opLabel = OPERATORS.find(o => o.id === operator)?.label || operator
+
+      // 2. Enregistrer la transaction officielle dans wallet_transactions (statut en attente)
+      const { receiptNum, txId } = await recordTx({
+        walletId: wd.id,
+        userId: user.id,
+        type: 'withdraw',
+        amountCents: -amt,
+        balanceAfterCents: newBal,
+        description: `Retrait ${amt.toLocaleString('fr-FR')} FCFA via ${opLabel} (${phone.trim()})`,
+        status: 'pending',
       })
 
-      toast.success(`Retrait de ${amt.toLocaleString('fr-FR')} FCFA initié !`)
+      // 3. Enregistrer la demande sécurisée dans withdrawal_requests
+      try {
+        await supabase.from('withdrawal_requests').insert({
+          user_id: user.id,
+          wallet_id: wd.id,
+          amount: amt,
+          operator,
+          phone: phone.trim(),
+          status: 'pending',
+          receipt_number: receiptNum,
+          transaction_id: txId || null,
+        })
+      } catch (reqErr) {
+        console.warn('withdrawal_requests insert non-blocking:', reqErr)
+      }
+
+      toast.success(`Demande de retrait de ${amt.toLocaleString('fr-FR')} FCFA enregistrée !`)
       onSuccess(); onClose(); reset()
     } catch (err) {
       console.error('Withdraw error:', err)
-      toast.error(err.message)
+      toast.error(err.message || 'Erreur lors du retrait')
     } finally { setLoading(false) }
   }
 
@@ -854,13 +856,14 @@ async function downloadPDF(tx) {
     doc.setFont(undefined, 'bold')
     doc.text((isCredit ? '+' : '-') + amtFCFA.toLocaleString('fr-FR') + ' FCFA', pageWidth / 2, 152, { align: 'center' })
 
-    // Pilule Statut Approuvé
-    doc.setFillColor(0, 120, 45)
-    doc.roundedRect(pageWidth / 2 - 70, 159, 140, 14, 7, 7, 'F')
+    // Pilule Statut Approuvé / En cours
+    const isPending = tx.status === 'pending'
+    doc.setFillColor(isPending ? 180 : 0, isPending ? 110 : 120, isPending ? 20 : 45)
+    doc.roundedRect(pageWidth / 2 - 75, 159, 150, 14, 7, 7, 'F')
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(7.5)
     doc.setFont(undefined, 'bold')
-    doc.text('✓ SUCCÈS & FONDS VALIDÉS', pageWidth / 2, 169, { align: 'center' })
+    doc.text(isPending ? '⏳ EN COURS DE TRANSFERT' : '✓ SUCCÈS & FONDS VALIDÉS', pageWidth / 2, 169, { align: 'center' })
 
     // ── 4. TABLEAU DÉTAILLÉ DE LA TRANSACTION
     const tableY = 190
@@ -974,7 +977,7 @@ async function copyReceipt(tx) {
     '📅 *DATE :* ' + dateStr,
     '🔄 *TYPE D\'OPÉRATION :* ' + cfg.label.toUpperCase(),
     '💰 *MONTANT TRANSACTION :* *' + (isCredit ? '+' : '-') + amtFCFA.toLocaleString('fr-FR') + ' FCFA*',
-    '🛡️ *STATUT :* ✅ SUCCÈS & FONDS SCELLÉS',
+    '🛡️ *STATUT :* ' + (tx.status === 'pending' ? '⏳ EN COURS DE TRANSFERT' : '✅ SUCCÈS & FONDS SCELLÉS'),
     tx.description ? ('📝 *MOTIF / NOTE :* ' + tx.description) : '',
     tx.balance_after !== undefined ? ('💼 *SOLDE GARANTI :* ' + Number(tx.balance_after).toLocaleString('fr-FR') + ' FCFA') : '',
     '',
@@ -1019,7 +1022,15 @@ function TxDetailSheet({ open, onClose, tx }) {
           </p>
           <p className="text-gray-500 text-sm mt-1">{cfg.label}</p>
         </div>
-        <div className="bg-emerald-100 text-emerald-700 text-sm font-bold text-center py-2 rounded-xl flex items-center justify-center gap-1.5"><CheckCircle2 size={16} /> Transaction validée</div>
+        {tx.status === 'pending' ? (
+          <div className="bg-amber-50 text-amber-700 text-sm font-bold text-center py-2.5 rounded-xl flex items-center justify-center gap-1.5 border border-amber-200">
+            <Clock size={16} /> Demande de retrait en cours de traitement
+          </div>
+        ) : (
+          <div className="bg-emerald-100 text-emerald-700 text-sm font-bold text-center py-2 rounded-xl flex items-center justify-center gap-1.5">
+            <CheckCircle2 size={16} /> Transaction validée
+          </div>
+        )}
         <div className="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-100">
           {[
             ['Reçu N°', receiptNum],

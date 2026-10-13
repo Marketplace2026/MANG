@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Check, X, Shield, Users, Store, Package,
-  TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle, FileText
+  TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle, FileText,
+  CreditCard, Clock, CheckCircle2, Phone, AlertCircle
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -70,6 +71,14 @@ export default function AdminVerificationPage() {
   const [catalogShops, setCatalogShops] = useState([])
   const [catalogProducts, setCatalogProducts] = useState([])
   const [catalogLoading, setCatalogLoading] = useState(false)
+
+  // Withdrawals state
+  const [withdrawals, setWithdrawals] = useState([])
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(false)
+  const [withdrawalFilter, setWithdrawalFilter] = useState('pending')
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null)
+  const [rejectWithdrawalModal, setRejectWithdrawalModal] = useState(false)
+  const [rejectWithdrawalReason, setRejectWithdrawalReason] = useState('')
 
   // Sécurité — seul l'admin peut accéder
   useEffect(() => {
@@ -145,11 +154,116 @@ export default function AdminVerificationPage() {
     setCatalogLoading(false)
   }
 
+  const loadWithdrawals = useCallback(async () => {
+    setWithdrawalsLoading(true)
+    try {
+      let query = supabase
+        .from('withdrawal_requests')
+        .select('*, user:profiles(id, username, full_name, avatar_url, phone)')
+        .order('created_at', { ascending: false })
+      if (withdrawalFilter !== 'all') {
+        query = query.eq('status', withdrawalFilter)
+      }
+      const { data, error } = await query
+      if (!error) setWithdrawals(data || [])
+    } catch (e) {
+      console.error('loadWithdrawals error:', e)
+    } finally {
+      setWithdrawalsLoading(false)
+    }
+  }, [withdrawalFilter])
+
   useEffect(() => {
+    if (activeTab === 'withdrawals') loadWithdrawals()
     if (activeTab === 'stats') loadStats()
     if (activeTab === 'disputes') loadDisputes()
     if (activeTab === 'catalog') loadCatalog()
-  }, [activeTab])
+  }, [activeTab, loadWithdrawals])
+
+  const handleApproveWithdrawal = async (w) => {
+    if (!confirm(`Confirmer que le virement Mobile Money de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a été transféré au ${w.phone} (${w.operator}) ?`)) return
+    setProcessing(true)
+    try {
+      await supabase.from('withdrawal_requests').update({
+        status: 'approved',
+        processed_at: new Date().toISOString(),
+      }).eq('id', w.id)
+
+      if (w.transaction_id) {
+        await supabase.from('wallet_transactions').update({ status: 'completed' }).eq('id', w.transaction_id)
+      } else if (w.receipt_number) {
+        await supabase.from('wallet_transactions').update({ status: 'completed' }).eq('receipt_number', w.receipt_number)
+      }
+
+      await supabase.from('notifications').insert({
+        user_id: w.user_id,
+        type: 'wallet_debit',
+        title: 'Retrait Mobile Money validé ! ✅',
+        body: `Votre retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA vers ${w.operator} (${w.phone}) a été transféré avec succès.`,
+      })
+
+      toast.success('Retrait validé avec succès !')
+      setSelectedWithdrawal(null)
+      loadWithdrawals()
+    } catch {
+      toast.error('Erreur lors de la validation')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleRejectWithdrawal = async () => {
+    if (!selectedWithdrawal) return
+    const w = selectedWithdrawal
+    const reason = rejectWithdrawalReason.trim() || 'Numéro incorrect ou contrôle de sécurité'
+    setProcessing(true)
+    try {
+      await supabase.from('withdrawal_requests').update({
+        status: 'rejected',
+        admin_note: reason,
+        processed_at: new Date().toISOString(),
+      }).eq('id', w.id)
+
+      const { data: userWallet } = await supabase.from('wallets').select('id, balance_available, balance_total').eq('user_id', w.user_id).single()
+      if (userWallet) {
+        const refundedBal = (userWallet.balance_available || 0) + Number(w.amount)
+        await supabase.from('wallets').update({
+          balance_available: refundedBal,
+          balance_total: (userWallet.balance_total || userWallet.balance_available) + Number(w.amount),
+        }).eq('id', userWallet.id)
+
+        const year = new Date().getFullYear()
+        const refundReceipt = `MANG-${year}-${Math.floor(Math.random()*999999+1).toString().padStart(6,'0')}`
+        await supabase.from('wallet_transactions').insert({
+          wallet_id: userWallet.id,
+          user_id: w.user_id,
+          type: 'order_refund',
+          amount: Number(w.amount),
+          balance_after: refundedBal,
+          description: `Remboursement retrait annulé (${reason})`,
+          receipt_number: refundReceipt,
+          status: 'completed',
+        })
+      }
+
+      await supabase.from('notifications').insert({
+        user_id: w.user_id,
+        type: 'wallet_credit',
+        title: 'Demande de retrait annulée & Remboursée ↩️',
+        body: `Votre demande de retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a été annulée (${reason}). Le montant a été recrédité sur votre portefeuille MANG PAY.`,
+      })
+
+      toast.success('Retrait rejeté et solde remboursé !')
+      setRejectWithdrawalModal(false)
+      setSelectedWithdrawal(null)
+      setRejectWithdrawalReason('')
+      loadWithdrawals()
+    } catch {
+      toast.error('Erreur lors du rejet')
+    } finally {
+      setProcessing(false)
+    }
+  }
 
   // APPROBATION DE BOUTIQUE
   const approve = async (req) => {
@@ -277,21 +391,25 @@ export default function AdminVerificationPage() {
         </div>
 
         {/* TABS SELECTOR */}
-        <div className="flex bg-white/10 rounded-2xl p-1 border border-white/10 mt-4 text-xs font-bold text-white">
+        <div className="flex bg-white/10 rounded-2xl p-1 border border-white/10 mt-4 text-xs font-bold text-white overflow-x-auto no-scrollbar gap-1">
+          <button onClick={() => setActiveTab('withdrawals')}
+            className={clsx('flex-1 py-2.5 px-2.5 rounded-xl transition-all whitespace-nowrap', activeTab === 'withdrawals' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            Retraits 💵
+          </button>
           <button onClick={() => setActiveTab('verifications')}
-            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'verifications' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            className={clsx('flex-1 py-2.5 px-2.5 rounded-xl transition-all whitespace-nowrap', activeTab === 'verifications' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
             Vérifications
           </button>
           <button onClick={() => setActiveTab('stats')}
-            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'stats' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            className={clsx('flex-1 py-2.5 px-2.5 rounded-xl transition-all whitespace-nowrap', activeTab === 'stats' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
             Dashboard
           </button>
           <button onClick={() => setActiveTab('disputes')}
-            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'disputes' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            className={clsx('flex-1 py-2.5 px-2.5 rounded-xl transition-all whitespace-nowrap', activeTab === 'disputes' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
             Litiges
           </button>
           <button onClick={() => setActiveTab('catalog')}
-            className={clsx('flex-1 py-2.5 rounded-xl transition-all', activeTab === 'catalog' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
+            className={clsx('flex-1 py-2.5 px-2.5 rounded-xl transition-all whitespace-nowrap', activeTab === 'catalog' ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-white/5')}>
             Catalogue
           </button>
         </div>
@@ -299,6 +417,134 @@ export default function AdminVerificationPage() {
 
       <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
         
+        {/* ONGLET 0 : GESTION DES RETRAITS MOBILE MONEY */}
+        {activeTab === 'withdrawals' && (
+          <div className="space-y-4">
+            {/* Filtres de statut */}
+            <div className="flex gap-2">
+              {[
+                { id: 'pending',  label: 'En attente ⏳' },
+                { id: 'approved', label: 'Validés ✅' },
+                { id: 'rejected', label: 'Rejetés ❌' },
+                { id: 'all',      label: 'Tous' },
+              ].map(st => (
+                <button
+                  key={st.id}
+                  onClick={() => setWithdrawalFilter(st.id)}
+                  className={clsx(
+                    'flex-1 py-2.5 rounded-2xl font-bold text-xs border-2 transition-all active:scale-95 whitespace-nowrap',
+                    withdrawalFilter === st.id ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
+                  )}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+
+            {withdrawalsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
+              </div>
+            ) : withdrawals.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
+                <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400">
+                  <CreditCard size={28} />
+                </div>
+                <p className="font-bold">Aucune demande de retrait</p>
+                <p className="text-xs text-dark-600/40 mt-1">Aucune demande trouvée avec ce filtre.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {withdrawals.map(w => {
+                  const isPending = w.status === 'pending'
+                  const isApproved = w.status === 'approved'
+                  return (
+                    <div
+                      key={w.id}
+                      className="bg-white rounded-3xl p-4 shadow-card border-2 border-transparent hover:border-blue-200 transition-all space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar src={w.user?.avatar_url} name={w.user?.full_name || w.user?.username || 'Vendeur'} size="md" />
+                          <div>
+                            <p className="font-bold text-dark-900 text-sm">
+                              {w.user?.full_name || w.user?.username || 'Vendeur'}
+                            </p>
+                            <p className="text-dark-500 text-xs">@{w.user?.username || 'user'}</p>
+                            <p className="text-[10px] text-dark-400 mt-0.5">
+                              {new Date(w.created_at).toLocaleDateString('fr-FR')} à {new Date(w.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="font-black text-dark-900 text-base text-red-600">
+                            -{Number(w.amount).toLocaleString('fr-FR')} FCFA
+                          </p>
+                          <span className={clsx(
+                            'inline-block text-[10px] font-bold px-2 py-0.5 rounded-lg mt-1',
+                            isPending ? 'bg-amber-100 text-amber-800' :
+                            isApproved ? 'bg-emerald-100 text-emerald-800' :
+                            'bg-red-100 text-red-800'
+                          )}>
+                            {isPending ? 'En attente ⏳' : isApproved ? 'Transféré ✅' : 'Rejeté ❌'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Coordonnées de paiement Mobile Money */}
+                      <div className="p-3 bg-surface-50 rounded-2xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-dark-700 bg-white px-2 py-1 rounded-lg border border-surface-200">
+                            {w.operator}
+                          </span>
+                          <span className="font-mono font-bold text-dark-900 text-sm">{w.phone}</span>
+                        </div>
+                        {w.receipt_number && (
+                          <span className="text-[10px] font-mono text-dark-400 bg-white px-1.5 py-0.5 rounded border border-surface-200">
+                            #{w.receipt_number}
+                          </span>
+                        )}
+                      </div>
+
+                      {w.admin_note && (
+                        <p className="text-[11px] text-red-600 bg-red-50 p-2 rounded-xl border border-red-200">
+                          <strong>Note :</strong> {w.admin_note}
+                        </p>
+                      )}
+
+                      {/* Actions Administrateur */}
+                      {isPending && (
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => {
+                              setSelectedWithdrawal(w)
+                              setRejectWithdrawalReason('')
+                              setRejectWithdrawalModal(true)
+                            }}
+                            disabled={processing}
+                            className="flex-1 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl text-xs transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            Refuser & Rembourser
+                          </button>
+                          <button
+                            onClick={() => handleApproveWithdrawal(w)}
+                            disabled={processing}
+                            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+                          >
+                            <CheckCircle2 size={14} />
+                            Valider le virement
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ONGLET 1 : VERIFICATIONS (BOUTIQUES) */}
         {activeTab === 'verifications' && (
           <div className="space-y-4">
@@ -644,6 +890,41 @@ export default function AdminVerificationPage() {
 
             <Button onClick={handleResolveDispute} disabled={processing} className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-md">
               {processing ? 'Application...' : <><CheckCircle size={15}/> Appliquer la décision</>}
+            </Button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* REJET DEMANDE DE RETRAIT SHEET */}
+      {rejectWithdrawalModal && selectedWithdrawal && (
+        <BottomSheet
+          open={rejectWithdrawalModal}
+          onClose={() => { setRejectWithdrawalModal(false); setSelectedWithdrawal(null) }}
+          title="Refuser et Rembourser le retrait"
+        >
+          <div className="px-4 pt-2 pb-8 space-y-4">
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-xs leading-normal">
+              <strong>Annulation & Sécurité :</strong> Le montant de <strong>{Number(selectedWithdrawal.amount).toLocaleString('fr-FR')} FCFA</strong> sera immédiatement recrédité sur le portefeuille MANG PAY du vendeur et une notification lui sera envoyée.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Motif du refus (visible par le vendeur) *</label>
+              <textarea
+                placeholder="Ex : Numéro Mobile Money erroné ou non attribué. Veuillez corriger vos coordonnées."
+                value={rejectWithdrawalReason}
+                onChange={e => setRejectWithdrawalReason(e.target.value)}
+                rows={3}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none font-medium"
+              />
+            </div>
+
+            <Button
+              onClick={handleRejectWithdrawal}
+              disabled={processing}
+              variant="danger"
+              className="w-full py-3.5 text-sm font-bold shadow-md"
+            >
+              {processing ? 'Remboursement en cours...' : 'Confirmer le refus & Rembourser'}
             </Button>
           </div>
         </BottomSheet>
