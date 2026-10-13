@@ -777,7 +777,7 @@ export default function AdminVerificationPage() {
               activeTab === 'verifications' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Boutiques 🏪</span>
+            <span>Vérification 🏪</span>
             {badgeCounts.verifications > 0 && (
               <span className="bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                 {badgeCounts.verifications}
