@@ -5,7 +5,7 @@ import {
   TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle, FileText,
   CreditCard, Clock, CheckCircle2, Phone, AlertCircle, Copy, ExternalLink,
   MessageCircle, Ban, UserX, UserCheck, Search, Filter, RefreshCw, Eye,
-  Calendar, DollarSign, Flag, MoreVertical
+  Calendar, DollarSign, Flag, MoreVertical, Banknote, ShieldCheck, XCircle, MessageSquare
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -370,7 +370,7 @@ export default function AdminVerificationPage() {
       await supabase.from('notifications').insert({
         user_id: w.user_id,
         type: 'wallet_debit',
-        title: 'Retrait Mobile Money validé ! ✅',
+        title: 'Retrait Mobile Money validé !',
         body: `Votre retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA vers ${w.operator} (${w.phone}) a été transféré avec succès.`,
       })
 
@@ -422,7 +422,7 @@ export default function AdminVerificationPage() {
       await supabase.from('notifications').insert({
         user_id: w.user_id,
         type: 'wallet_credit',
-        title: 'Demande de retrait annulée & Remboursée ↩️',
+        title: 'Demande de retrait annulée & Remboursée',
         body: `Votre demande de retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a été annulée (${reason}). Le montant a été recrédité sur votre portefeuille MANG PAY.`,
       })
 
@@ -451,7 +451,7 @@ export default function AdminVerificationPage() {
       await supabase.rpc('create_notification', {
         p_user_id: req.user_id,
         p_type: 'shop_follow',
-        p_title: 'Boutique vérifiée ! 🏪',
+        p_title: 'Boutique vérifiée !',
         p_body: `Félicitations ! Votre boutique "${req.shop?.name}" a été vérifiée par l'administration. Le badge vérifié est maintenant visible.`,
         p_reference_id: req.shop_id,
         p_reference_type: 'shop',
@@ -507,7 +507,7 @@ export default function AdminVerificationPage() {
   // ACTIONS UTILISATEURS (SUPABASE CONTROL)
   // ==========================================
   const handleDeleteUser = async (u) => {
-    if (!confirm(`⚠️ ACTION CRITIQUE : Supprimer définitivement le compte de @${u.username} (${u.full_name || u.phone || u.id}) ?\n\nCette action supprimera également ses boutiques, ses annonces, son portefeuille et ses données comme dans le dashboard Supabase.`)) return
+    if (!confirm(`ACTION CRITIQUE : Supprimer définitivement le compte de @${u.username} (${u.full_name || u.phone || u.id}) ?\n\nCette action supprimera également ses boutiques, ses annonces, son portefeuille et ses données comme dans le dashboard Supabase.`)) return
     setProcessing(true)
     try {
       // Tenter la fonction RPC dédiée si présente, sinon suppression directe de profil
@@ -576,7 +576,7 @@ export default function AdminVerificationPage() {
     try {
       const { error } = await supabase.from('posts').update({ status: nextStatus }).eq('id', post.id)
       if (error) throw error
-      toast.success(nextStatus === 'quarantined' ? 'Publication mise en quarantaine ⚠️' : 'Publication rétablie en ligne ✅')
+      toast.success(nextStatus === 'quarantined' ? 'Publication mise en quarantaine' : 'Publication rétablie en ligne')
       loadPosts()
       loadBadgeCounts()
     } catch {
@@ -762,7 +762,8 @@ export default function AdminVerificationPage() {
               activeTab === 'withdrawals' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Retraits 💵</span>
+            <Banknote size={15} />
+            <span>Retraits</span>
             {badgeCounts.withdrawals > 0 && (
               <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                 {badgeCounts.withdrawals}
@@ -777,7 +778,8 @@ export default function AdminVerificationPage() {
               activeTab === 'verifications' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Vérification 🏪</span>
+            <ShieldCheck size={15} />
+            <span>Vérification</span>
             {badgeCounts.verifications > 0 && (
               <span className="bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                 {badgeCounts.verifications}
@@ -792,7 +794,8 @@ export default function AdminVerificationPage() {
               activeTab === 'stats' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Trésorerie 📊</span>
+            <TrendingUp size={15} />
+            <span>Trésorerie</span>
           </button>
 
           <button
@@ -802,7 +805,8 @@ export default function AdminVerificationPage() {
               activeTab === 'users' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Utilisateurs 👥</span>
+            <Users size={15} />
+            <span>Utilisateurs</span>
             <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 rounded-full">
               {badgeCounts.users}
             </span>
@@ -815,7 +819,8 @@ export default function AdminVerificationPage() {
               activeTab === 'posts' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Posts 📝</span>
+            <FileText size={15} />
+            <span>Posts</span>
             {badgeCounts.posts > 0 && (
               <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                 {badgeCounts.posts}
@@ -830,7 +835,8 @@ export default function AdminVerificationPage() {
               activeTab === 'disputes' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Litiges ⚖️</span>
+            <Scale size={15} />
+            <span>Litiges</span>
             {badgeCounts.disputes > 0 && (
               <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                 {badgeCounts.disputes}
@@ -845,7 +851,8 @@ export default function AdminVerificationPage() {
               activeTab === 'catalog' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <span>Catalogue 📦</span>
+            <Package size={15} />
+            <span>Catalogue</span>
           </button>
         </div>
       </div>
@@ -877,22 +884,26 @@ export default function AdminVerificationPage() {
 
               <div className="flex gap-1.5">
                 {[
-                  { id: 'pending',  label: 'En attente ⏳' },
-                  { id: 'approved', label: 'Validés ✅' },
-                  { id: 'rejected', label: 'Rejetés ❌' },
-                  { id: 'all',      label: 'Tous' },
-                ].map(st => (
-                  <button
-                    key={st.id}
-                    onClick={() => setWithdrawalFilter(st.id)}
-                    className={clsx(
-                      'flex-1 py-2 rounded-xl font-bold text-xs border transition-all active:scale-95 whitespace-nowrap text-center',
-                      withdrawalFilter === st.id ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
-                    )}
-                  >
-                    {st.label}
-                  </button>
-                ))}
+                  { id: 'pending',  label: 'En attente', icon: Clock },
+                  { id: 'approved', label: 'Validés', icon: CheckCircle2 },
+                  { id: 'rejected', label: 'Rejetés', icon: XCircle },
+                  { id: 'all',      label: 'Tous', icon: null },
+                ].map(st => {
+                  const Icon = st.icon
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => setWithdrawalFilter(st.id)}
+                      className={clsx(
+                        'flex-1 py-2 px-1 rounded-xl font-bold text-xs border transition-all active:scale-95 whitespace-nowrap flex items-center justify-center gap-1',
+                        withdrawalFilter === st.id ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
+                      )}
+                    >
+                      {Icon && <Icon size={12} />}
+                      <span>{st.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -957,12 +968,15 @@ export default function AdminVerificationPage() {
                             -{Number(w.amount).toLocaleString('fr-FR')} FCFA
                           </p>
                           <span className={clsx(
-                            'inline-block text-[10px] font-bold px-2 py-0.5 rounded-lg mt-1',
+                            'inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg mt-1',
                             isPending ? 'bg-amber-100 text-amber-800' :
                             isApproved ? 'bg-emerald-100 text-emerald-800' :
                             'bg-red-100 text-red-800'
                           )}>
-                            {isPending ? 'En attente ⏳' : isApproved ? 'Transféré ✅' : 'Rejeté ❌'}
+                            {isPending && <Clock size={11} />}
+                            {isApproved && <CheckCircle2 size={11} />}
+                            {!isPending && !isApproved && <XCircle size={11} />}
+                            <span>{isPending ? 'En attente' : isApproved ? 'Transféré' : 'Rejeté'}</span>
                           </span>
                         </div>
                       </div>
@@ -1396,20 +1410,24 @@ export default function AdminVerificationPage() {
 
               <div className="flex gap-2">
                 {[
-                  { id: 'all',         label: 'Toutes les publications' },
-                  { id: 'quarantined', label: 'En quarantaine / Signalées ⚠️' },
-                ].map(pf => (
-                  <button
-                    key={pf.id}
-                    onClick={() => setPostFilter(pf.id)}
-                    className={clsx(
-                      'flex-1 py-2 rounded-xl font-bold text-xs border transition-all text-center',
-                      postFilter === pf.id ? 'border-red-600 bg-red-50 text-red-800' : 'border-surface-200 bg-white text-dark-600'
-                    )}
-                  >
-                    {pf.label}
-                  </button>
-                ))}
+                  { id: 'all',         label: 'Toutes les publications', icon: FileText },
+                  { id: 'quarantined', label: 'En quarantaine / Signalées', icon: AlertTriangle },
+                ].map(pf => {
+                  const Icon = pf.icon
+                  return (
+                    <button
+                      key={pf.id}
+                      onClick={() => setPostFilter(pf.id)}
+                      className={clsx(
+                        'flex-1 py-2 rounded-xl font-bold text-xs border transition-all flex items-center justify-center gap-1.5',
+                        postFilter === pf.id ? 'border-red-600 bg-red-50 text-red-800' : 'border-surface-200 bg-white text-dark-600'
+                      )}
+                    >
+                      <Icon size={13} />
+                      <span>{pf.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -1446,10 +1464,11 @@ export default function AdminVerificationPage() {
                         </div>
 
                         <span className={clsx(
-                          'text-[10px] font-bold px-2 py-0.5 rounded-lg',
+                          'inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg',
                           isQuarantined ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
                         )}>
-                          {isQuarantined ? 'En Quarantaine ⚠️' : 'En ligne'}
+                          {isQuarantined ? <AlertTriangle size={11} /> : <CheckCircle2 size={11} />}
+                          <span>{isQuarantined ? 'En Quarantaine' : 'En ligne'}</span>
                         </span>
                       </div>
 
@@ -1466,9 +1485,16 @@ export default function AdminVerificationPage() {
 
                       {/* Statistiques & Actions de modération */}
                       <div className="flex items-center justify-between pt-2 border-t border-surface-100 text-xs">
-                        <span className="text-dark-400 text-[11px]">
-                          ❤️ {p.likes_count || 0} • 💬 {p.comments_count || 0}
-                        </span>
+                        <div className="flex items-center gap-3 text-dark-400 text-[11px]">
+                          <span className="flex items-center gap-1">
+                            <Heart size={12} className="text-rose-500 fill-rose-500" />
+                            <span>{p.likes_count || 0}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageSquare size={12} className="text-blue-500" />
+                            <span>{p.comments_count || 0}</span>
+                          </span>
+                        </div>
 
                         <div className="flex items-center gap-2">
                           <button
