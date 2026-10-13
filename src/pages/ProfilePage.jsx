@@ -388,6 +388,20 @@ export default function ProfilePage() {
         {/* ── INFORMATIONS PERSONNELLES ── */}
         <PersonalInfoCard profile={profile} onEdit={() => setEditOpen(true)}/>
 
+        {/* ── ADMINISTRATION (VISIBLE UNIQUEMENT PAR L'ADMINISTRATEUR) ── */}
+        {(user?.id === 'd9f97369-ae78-4da2-844c-1c9c97b12445' || profile?.is_admin) && (
+          <MenuSection title="Administration Plateforme" icon="👑">
+            <MenuItem
+              icon={Shield}
+              color="text-blue-600 bg-blue-50"
+              label="Panel Administrateur"
+              sub="Valider les retraits, vérifications, litiges"
+              onClick={() => navigate('/admin/verifications')}
+              last
+            />
+          </MenuSection>
+        )}
+
 
 
 
