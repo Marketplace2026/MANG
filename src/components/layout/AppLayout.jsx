@@ -1,8 +1,9 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
-  Home, ShoppingCart, User, LayoutGrid, Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle, Bell
+  Home, ShoppingCart, User, LayoutGrid, Package, Wallet, Store, Globe, X, ChevronRight, Heart, Gift, MessageCircle, Bell, Eye, LogIn
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useAuthStore, useNotificationsStore, useMessagesStore, useCartStore } from '@/store' // <- TOUT ICI
 import { clsx } from 'clsx'
 import { prefetch, prefetchImmediate } from '@/utils/prefetch'
@@ -20,7 +21,7 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { user, profile }  = useAuthStore()
+  const { user, profile, isGuest }  = useAuthStore()
   const { unreadCount, fetchNotifications, subscribeToNotifications } = useNotificationsStore()
   const { unreadCount: unreadMessages, fetchUnreadCount, subscribeToUnread } = useMessagesStore()
 const { items } = useCartStore()
@@ -57,54 +58,109 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
 
   const handleNav = (item) => {
     if (!item.path) return
+    if (!user && (item.path === '/messages' || item.path === '/panier' || item.path === '/profil')) {
+      toast('Connectez-vous pour accéder à votre espace personnel', {
+        icon: '🔒',
+        duration: 3500
+      })
+      navigate('/connexion')
+      return
+    }
     navigate(item.path, { state: item.state })
   }
 
   return (
     <div className="min-h-dvh flex flex-col bg-surface-50">
+      {/* BANNIÈRE MODE INVITÉ */}
+      {!user && (
+        <div className="sticky top-0 z-40 bg-gradient-to-r from-amber-500 via-primary-600 to-amber-600 text-white px-4 py-2 text-xs md:text-sm font-medium flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2 mx-auto md:mx-0">
+            <Eye size={16} className="shrink-0" />
+            <span>
+              <strong>Mode Invité :</strong> Vous explorez le marché MANG en lecture seule.
+            </span>
+          </div>
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => navigate('/connexion')}
+              className="px-3 py-1 bg-white text-primary-700 font-bold rounded-lg text-xs hover:bg-surface-100 transition shadow-sm"
+            >
+              Se connecter
+            </button>
+            <button
+              onClick={() => navigate('/inscription')}
+              className="px-3 py-1 bg-primary-800 hover:bg-primary-900 text-white font-bold rounded-lg text-xs transition"
+            >
+              Créer un compte
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* HEADER DESKTOP */}
-      <header className="sticky top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
+      <header className={clsx(
+        "sticky left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6",
+        !user ? "top-9" : "top-0"
+      )}>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
-          <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" />
+          <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" alt="MANG" />
           <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
         </div>
 
         {/* Barre d'outils droite */}
-        <div className="flex items-center gap-5">
-          <button onPointerEnter={() => triggerPrefetch('/messages')} onTouchStart={() => triggerPrefetch('/messages')} onClick={() => navigate('/messages')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
-            <MessageCircle size={20}/>
-            {unreadMessages > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-          </button>
-          
-          <button onPointerEnter={() => triggerPrefetch('/panier')} onTouchStart={() => triggerPrefetch('/panier')} onClick={() => navigate('/panier')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
-            <ShoppingCart size={20}/>
-            {cartCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </button>
+        {!user ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/connexion')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-dark-700 hover:text-primary-600 hover:bg-surface-100 transition-colors"
+            >
+              <LogIn size={16} />
+              <span>Se connecter</span>
+            </button>
+            <button
+              onClick={() => navigate('/inscription')}
+              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm"
+            >
+              <span>Créer un compte</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-5">
+            <button onPointerEnter={() => triggerPrefetch('/messages')} onTouchStart={() => triggerPrefetch('/messages')} onClick={() => navigate('/messages')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+              <MessageCircle size={20}/>
+              {unreadMessages > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </button>
+            
+            <button onPointerEnter={() => triggerPrefetch('/panier')} onTouchStart={() => triggerPrefetch('/panier')} onClick={() => navigate('/panier')} className="relative p-2 text-dark-600 hover:text-primary-600 transition-colors">
+              <ShoppingCart size={20}/>
+              {cartCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center px-1">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </button>
 
-          <button onClick={() => navigate('/favoris')} className="p-2 text-dark-600 hover:text-primary-600 transition-colors">
-            <Heart size={20}/>
-          </button>
+            <button onClick={() => navigate('/favoris')} className="p-2 text-dark-600 hover:text-primary-600 transition-colors">
+              <Heart size={20}/>
+            </button>
 
-          <button
-            onPointerEnter={() => triggerPrefetch('/vendeur')} onTouchStart={() => triggerPrefetch('/vendeur')} onClick={() => navigate('/vendeur')}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm"
-          >
-            <Store size={16}/>
-            <span>Espace Vendeur</span>
-          </button>
+            <button
+              onPointerEnter={() => triggerPrefetch('/vendeur')} onTouchStart={() => triggerPrefetch('/vendeur')} onClick={() => navigate('/vendeur')}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm"
+            >
+              <Store size={16}/>
+              <span>Espace Vendeur</span>
+            </button>
 
-          <button onPointerEnter={() => triggerPrefetch('/profil')} onTouchStart={() => triggerPrefetch('/profil')} onClick={() => navigate('/profil')} className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm border border-primary-200">
-            {profile?.full_name ? profile.full_name[0].toUpperCase() : 'U'}
-          </button>
-        </div>
+            <button onPointerEnter={() => triggerPrefetch('/profil')} onTouchStart={() => triggerPrefetch('/profil')} onClick={() => navigate('/profil')} className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm border border-primary-200">
+              {profile?.full_name ? profile.full_name[0].toUpperCase() : 'U'}
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 safe-pb">

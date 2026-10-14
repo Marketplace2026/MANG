@@ -13,11 +13,21 @@ export const useAuthStore = create((set, get) => ({
   pieces: null,
   loading: true,
   initialized: false,
+  isGuest: typeof window !== 'undefined' ? localStorage.getItem('mang_guest_mode') === 'true' : false,
 
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setWallet: (wallet) => set({ wallet }),
   setPieces: (pieces) => set({ pieces }),
+  setGuestMode: (active) => {
+    if (active) {
+      if (typeof window !== 'undefined') localStorage.setItem('mang_guest_mode', 'true')
+      set({ isGuest: true, user: null, profile: null })
+    } else {
+      if (typeof window !== 'undefined') localStorage.removeItem('mang_guest_mode')
+      set({ isGuest: false })
+    }
+  },
 
   initialize: async () => {
     try {
@@ -46,7 +56,8 @@ export const useAuthStore = create((set, get) => ({
 
   fetchUserData: async (user) => {
     try {
-      set({ user })
+      if (typeof window !== 'undefined') localStorage.removeItem('mang_guest_mode')
+      set({ user, isGuest: false })
       console.log('[AuthStore] fetchUserData pour user.id:', user.id)
 
       // 1. Récupération des données existantes (utilisation de maybeSingle() pour éviter les erreurs de cache)
@@ -156,8 +167,9 @@ export const useAuthStore = create((set, get) => ({
   signOut: async () => {
     const { heartbeatInterval } = get()
     if (heartbeatInterval) clearInterval(heartbeatInterval)
+    if (typeof window !== 'undefined') localStorage.removeItem('mang_guest_mode')
     await supabase.auth.signOut()
-    set({ user: null, profile: null, wallet: null, pieces: null, heartbeatInterval: null })
+    set({ user: null, profile: null, wallet: null, pieces: null, heartbeatInterval: null, isGuest: false })
   },
 
   refreshWallet: async () => {

@@ -62,17 +62,25 @@ function PageLoader() {
 
 // ── Route racine intelligente ─────────────────────────────
 function RootRoute() {
-  const { user, loading } = useAuthStore()
+  const { user, loading, isGuest } = useAuthStore()
   if (loading) return <PageLoader />
-  if (user) return <Navigate to="/marketplace" replace />
+  if (user || isGuest) return <Navigate to="/marketplace" replace />
   return <Navigate to="/accueil" replace />
 }
 
-// ── Route privée ──────────────────────────────────────────
+// ── Route privée (autorisée aux connectés et invités en lecture) ─
 function PrivateRoute({ children }) {
+  const { user, loading, isGuest } = useAuthStore()
+  if (loading) return <PageLoader />
+  if (!user && !isGuest) return <Navigate to="/accueil" replace />
+  return children
+}
+
+// ── Route strictement connectée (Interdite aux invités) ───
+function StrictAuthRoute({ children }) {
   const { user, loading } = useAuthStore()
   if (loading) return <PageLoader />
-  if (!user) return <Navigate to="/accueil" replace />
+  if (!user) return <Navigate to="/connexion" replace />
   return children
 }
 
@@ -151,24 +159,26 @@ export default function App() {
               element={<ResetPasswordPage />} />
           </Route>
 
-          {/* App protégée */}
+          {/* App principale (Accessible aux connectés et invités en lecture seule) */}
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
             <Route path="/marketplace"   element={<MarketplacePage />} />
-            <Route path="/commandes"     element={<OrdersPage />} />
-            <Route path="/portefeuille"  element={<WalletPage />} />
-            <Route path="/favoris"       element={<FavoritesPage />} />
-            <Route path="/profil"        element={<ProfilePage />} />
-            <Route path="/vendeur"       element={<VendorPage />} />
-            <Route path="/messages"      element={<MessagesPage />} />
             <Route path="/communaute"    element={<CommunityPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/parrainage"         element={<ReferralPage />} />
-            <Route path="/profil/:username" element={<PublicProfilePage />} />
-            <Route path="/admin/verifications" element={<AdminVerificationPage />} />
             <Route path="/produit/:id"   element={<ProductDetailPage />} />
-            <Route path="/panier"        element={<CartPage />} />
-            <Route path="/checkout"      element={<CheckoutPage />} />
-            <Route path="/parametres"    element={<SettingsPage />} />
+            <Route path="/profil/:username" element={<PublicProfilePage />} />
+
+            {/* Routes exigeant une connexion stricte (non accessibles aux invités) */}
+            <Route path="/commandes"     element={<StrictAuthRoute><OrdersPage /></StrictAuthRoute>} />
+            <Route path="/portefeuille"  element={<StrictAuthRoute><WalletPage /></StrictAuthRoute>} />
+            <Route path="/favoris"       element={<StrictAuthRoute><FavoritesPage /></StrictAuthRoute>} />
+            <Route path="/profil"        element={<StrictAuthRoute><ProfilePage /></StrictAuthRoute>} />
+            <Route path="/vendeur"       element={<StrictAuthRoute><VendorPage /></StrictAuthRoute>} />
+            <Route path="/messages"      element={<StrictAuthRoute><MessagesPage /></StrictAuthRoute>} />
+            <Route path="/notifications" element={<StrictAuthRoute><NotificationsPage /></StrictAuthRoute>} />
+            <Route path="/parrainage"    element={<StrictAuthRoute><ReferralPage /></StrictAuthRoute>} />
+            <Route path="/admin/verifications" element={<StrictAuthRoute><AdminVerificationPage /></StrictAuthRoute>} />
+            <Route path="/panier"        element={<StrictAuthRoute><CartPage /></StrictAuthRoute>} />
+            <Route path="/checkout"      element={<StrictAuthRoute><CheckoutPage /></StrictAuthRoute>} />
+            <Route path="/parametres"    element={<StrictAuthRoute><SettingsPage /></StrictAuthRoute>} />
           </Route>
 
           {/* Fallback */}

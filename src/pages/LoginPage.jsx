@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useAuthStore } from '@/store'
 
 // Icône Google SVG inline
 function GoogleIcon() {
@@ -121,7 +122,8 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => {
-            toast.success("Mode invité activé (lecture seule)")
+            useAuthStore.getState().setGuestMode(true)
+            toast.success("Mode invité activé — Bienvenue sur le marché MANG !")
             navigate('/marketplace')
           }}
           className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/15 transition-all duration-200 active:scale-95 flex items-center justify-center mt-2"

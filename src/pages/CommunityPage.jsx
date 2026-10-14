@@ -1290,6 +1290,10 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
   }
 
   const publish = async () => {
+    if (!user) {
+      toast.error('Connectez-vous pour publier une annonce ou poser une question')
+      return
+    }
     if (!content.trim() && !imageFile && !selectedShop && !isPollMode) {
       toast.error('Écrivez un message ou ajoutez une option !'); return
     }
@@ -2049,7 +2053,11 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
   useEffect(() => { if (open) { setLoading(true); loadComments() } }, [open, loadComments])
 
   const sendComment = async () => {
-    if (!text.trim() || sending || !user) return
+    if (!user) {
+      toast.error('Connectez-vous pour laisser un commentaire')
+      return
+    }
+    if (!text.trim() || sending) return
     setSending(true)
     const { error } = await supabase.from('post_comments').insert({
       post_id: post.id,
