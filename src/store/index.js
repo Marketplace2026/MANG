@@ -127,14 +127,14 @@ export const useAuthStore = create((set, get) => ({
       }
     }
 
-    // 4. Si les pièces n'existent pas, on les crée côté client (Tâche 3)
+    // 4. Si les pièces n'existent pas, on les crée côté client (Tâche 3 : 20 pièces de bienvenue)
     if (!pieces && profile) {
-      console.log('[AuthStore] Pièces absentes, initialisation...')
+      console.log('[AuthStore] Pièces absentes, initialisation avec 20 pièces offertes...')
       const { data: newPieces, error: piecesErr } = await supabase
         .from('pieces')
         .insert({
           user_id: user.id,
-          balance: 0
+          balance: 20
         })
         .select()
         .maybeSingle()

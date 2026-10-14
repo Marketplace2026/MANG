@@ -11,8 +11,13 @@ export default function ForgotPasswordPage() {
 
   const handleReset = async (e) => {
     e.preventDefault()
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      toast.error('Veuillez saisir votre adresse email')
+      return
+    }
     setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`
     })
     setLoading(false)

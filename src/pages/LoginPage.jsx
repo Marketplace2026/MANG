@@ -27,12 +27,28 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      toast.error('Veuillez saisir votre adresse email')
+      return
+    }
+
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
     setLoading(false)
     if (error) {
-      toast.error('Email ou mot de passe incorrect')
+      if (error.message?.includes('Email not confirmed')) {
+        toast.error("Veuillez confirmer votre adresse email en cliquant sur le lien reçu dans votre boîte de réception.", { duration: 6000 })
+      } else if (error.message?.includes('Invalid login credentials')) {
+        toast.error("Email ou mot de passe incorrect.")
+      } else if (error.message?.includes('Too many requests')) {
+        toast.error("Trop de tentatives infructueuses. Veuillez patienter quelques minutes.")
+      } else {
+        toast.error(error.message || "Erreur de connexion.")
+      }
     } else {
+      useAuthStore.getState().setGuestMode(false)
+      toast.success("Bon retour sur MANG !")
       navigate('/marketplace')
     }
   }
@@ -83,6 +99,7 @@ export default function LoginPage() {
           <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type="email"
+            name="email"
             placeholder="Adresse email"
             value={email}
             onChange={e => setEmail(e.target.value)}
@@ -96,6 +113,7 @@ export default function LoginPage() {
           <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type={showPass ? 'text' : 'password'}
+            name="password"
             placeholder="Mot de passe"
             value={password}
             onChange={e => setPassword(e.target.value)}
@@ -116,7 +134,7 @@ export default function LoginPage() {
         <button type="submit" disabled={loading || googleLoading}
           className="w-full py-3.5 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-green mt-2 flex items-center justify-center gap-2">
           {loading && <Loader2 size={16} className="animate-spin"/>}
-          {loading ? 'Connexion...' : 'Se connecter'}
+          {loading ? 'Connexion en cours...' : 'Se connecter'}
         </button>
 
         <button
