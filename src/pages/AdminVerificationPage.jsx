@@ -5,7 +5,9 @@ import {
   TrendingUp, Scale, Trash2, Heart, Award, CheckCircle, AlertTriangle, FileText,
   CreditCard, Clock, CheckCircle2, Phone, AlertCircle, Copy, ExternalLink,
   MessageCircle, Ban, UserX, UserCheck, Search, Filter, RefreshCw, Eye,
-  Calendar, DollarSign, Flag, MoreVertical, Banknote, ShieldCheck, XCircle, MessageSquare
+  Calendar, DollarSign, Flag, MoreVertical, Banknote, ShieldCheck, XCircle,
+  MessageSquare, Download, Bell, Send, Lock, History, ChevronRight, Truck,
+  Wallet, PlusCircle, MinusCircle, FileSpreadsheet, AlertOctagon
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -56,7 +58,7 @@ export default function AdminVerificationPage() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('withdrawals') 
-  // 'withdrawals' | 'verifications' | 'stats' | 'users' | 'posts' | 'disputes' | 'catalog'
+  // 'withdrawals' | 'verifications' | 'stats' | 'escrow' | 'users' | 'broadcast' | 'posts' | 'audit' | 'disputes' | 'catalog'
 
   // Live badge counts
   const [badgeCounts, setBadgeCounts] = useState({
@@ -65,6 +67,7 @@ export default function AdminVerificationPage() {
     disputes: 0,
     posts: 0,
     users: 0,
+    escrowOrders: 0,
   })
 
   // General processing flag
@@ -93,32 +96,51 @@ export default function AdminVerificationPage() {
   const [statsLoading, setStatsLoading] = useState(false)
   const [dateFilter, setDateFilter] = useState('all') // 'all' | 'today' | '7d' | 'month'
 
-  // 4. Users Management state
+  // 4. Escrow Live Orders Tracker state
+  const [escrowOrders, setEscrowOrders] = useState([])
+  const [escrowLoading, setEscrowLoading] = useState(false)
+
+  // 5. Users Management state
   const [usersList, setUsersList] = useState([])
   const [usersLoading, setUsersLoading] = useState(false)
   const [userSearch, setUserSearch] = useState('')
-  const [userRoleFilter, setUserRoleFilter] = useState('all') // 'all' | 'banned' | 'sellers'
+  const [userRoleFilter, setUserRoleFilter] = useState('all') // 'all' | 'banned' | 'suspicious'
   const [selectedUser, setSelectedUser] = useState(null)
   const [userWalletsMap, setUserWalletsMap] = useState({})
 
-  // 5. Posts Moderation state
+  // User Wallet Manual Adjustment state
+  const [adjustWalletModal, setAdjustWalletModal] = useState(false)
+  const [adjOperation, setAdjOperation] = useState('credit') // 'credit' | 'debit'
+  const [adjAmount, setAdjAmount] = useState('')
+  const [adjReason, setAdjReason] = useState('')
+
+  // 6. Posts Moderation state
   const [postsList, setPostsList] = useState([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [postFilter, setPostFilter] = useState('all') // 'all' | 'quarantined'
   const [postSearch, setPostSearch] = useState('')
 
-  // 6. Disputes state
+  // 7. Disputes state
   const [disputes, setDisputes] = useState([])
   const [disputesLoading, setDisputesLoading] = useState(false)
   const [resolvingDispute, setResolvingDispute] = useState(null)
   const [resNote, setResNote] = useState('')
   const [resDecision, setResDecision] = useState('')
 
-  // 7. Catalog moderation state
+  // 8. Catalog moderation state
   const [catalogShops, setCatalogShops] = useState([])
   const [catalogProducts, setCatalogProducts] = useState([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogSearch, setCatalogSearch] = useState('')
+
+  // 9. Broadcast Notification state
+  const [broadcastTitle, setBroadcastTitle] = useState('')
+  const [broadcastBody, setBroadcastBody] = useState('')
+  const [broadcastTarget, setBroadcastTarget] = useState('all')
+
+  // 10. Audit Logs state
+  const [auditLogs, setAuditLogs] = useState([])
+  const [auditLoading, setAuditLoading] = useState(false)
 
   // Sécurité — seul le super-administrateur peut accéder
   useEffect(() => {
@@ -128,6 +150,21 @@ export default function AdminVerificationPage() {
     }
   }, [user, navigate])
 
+  // Helper pour consigner les logs d'audit
+  const recordAuditLog = useCallback(async (action, targetType = null, targetId = null, details = {}) => {
+    try {
+      await supabase.from('admin_audit_logs').insert({
+        admin_id: user?.id || ADMIN_ID,
+        action,
+        target_type: targetType,
+        target_id: targetId ? targetId.toString() : null,
+        details,
+      })
+    } catch (e) {
+      console.warn('Audit log write error:', e)
+    }
+  }, [user])
+
   // Compteurs en temps réel pour les pastilles des onglets
   const loadBadgeCounts = useCallback(async () => {
     try {
@@ -136,13 +173,15 @@ export default function AdminVerificationPage() {
         { count: pendingV },
         { count: openD },
         { count: quarantinedP },
-        { count: totalU }
+        { count: totalU },
+        { count: escrowO }
       ] = await Promise.all([
         supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('verification_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'open'),
         supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'quarantined'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'paid')
       ])
 
       setBadgeCounts({
@@ -151,6 +190,7 @@ export default function AdminVerificationPage() {
         disputes: openD || 0,
         posts: quarantinedP || 0,
         users: totalU || 0,
+        escrowOrders: escrowO || 0,
       })
     } catch (e) {
       console.warn('loadBadgeCounts error:', e)
@@ -207,7 +247,6 @@ export default function AdminVerificationPage() {
       const { count: verifiedShopsCount } = await supabase.from('shops').select('*', { count: 'exact', head: true }).eq('is_verified', true)
       const { count: disputesCount } = await supabase.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'open')
 
-      // Requête Commandes selon filtre temporel
       let ordersQuery = supabase.from('orders').select('id, total_amount, commission, created_at').eq('status', 'paid')
       if (period === 'today') {
         const todayStart = new Date()
@@ -224,12 +263,10 @@ export default function AdminVerificationPage() {
       }
       const { data: orders } = await ordersQuery
 
-      // Séquestre Global & Soldes Portefeuilles (wallets)
       const { data: walletsData } = await supabase.from('wallets').select('balance_reserved, balance_available, balance_total')
       const globalEscrow = walletsData ? walletsData.reduce((sum, w) => sum + (Number(w.balance_reserved) || 0), 0) : 0
       const totalAvailable = walletsData ? walletsData.reduce((sum, w) => sum + (Number(w.balance_available) || 0), 0) : 0
 
-      // Total des retraits en attente
       const { data: pendingWData } = await supabase.from('withdrawal_requests').select('amount').eq('status', 'pending')
       const totalPendingWithdrawals = pendingWData ? pendingWData.reduce((sum, w) => sum + (Number(w.amount) || 0), 0) : 0
 
@@ -254,7 +291,29 @@ export default function AdminVerificationPage() {
     }
   }, [dateFilter])
 
-  // 4. UTILISATEURS (COMPTES)
+  // 4. COMMANDES EN SÉQUESTRE (ESCROW TRACKER)
+  const loadEscrowOrders = useCallback(async () => {
+    setEscrowLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id, created_at, total_amount, commission, net_amount, status, delivery_phone, delivery_address,
+          product:products(name, image_url),
+          buyer:profiles!orders_buyer_id_fkey(username, full_name, phone),
+          seller:profiles!orders_seller_id_fkey(username, full_name, phone)
+        `)
+        .eq('status', 'paid')
+        .order('created_at', { ascending: false })
+      if (!error) setEscrowOrders(data || [])
+    } catch (e) {
+      console.error('loadEscrowOrders error:', e)
+    } finally {
+      setEscrowLoading(false)
+    }
+  }, [])
+
+  // 5. UTILISATEURS (COMPTES)
   const loadUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
@@ -262,12 +321,11 @@ export default function AdminVerificationPage() {
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200)
+        .limit(300)
 
       if (!error && profiles) {
         setUsersList(profiles)
 
-        // Récupérer les portefeuilles pour les afficher
         const { data: wallets } = await supabase
           .from('wallets')
           .select('user_id, balance_available, balance_reserved, wallet_number')
@@ -284,7 +342,7 @@ export default function AdminVerificationPage() {
     }
   }, [])
 
-  // 5. PUBLICATIONS COMMUNAUTAIRES
+  // 6. PUBLICATIONS COMMUNAUTAIRES
   const loadPosts = useCallback(async () => {
     setPostsLoading(true)
     try {
@@ -307,7 +365,7 @@ export default function AdminVerificationPage() {
     }
   }, [postFilter])
 
-  // 6. LITIGES
+  // 7. LITIGES
   const loadDisputes = useCallback(async () => {
     setDisputesLoading(true)
     try {
@@ -323,7 +381,7 @@ export default function AdminVerificationPage() {
     }
   }, [])
 
-  // 7. CATALOGUE
+  // 8. CATALOGUE
   const loadCatalog = useCallback(async () => {
     setCatalogLoading(true)
     try {
@@ -338,22 +396,46 @@ export default function AdminVerificationPage() {
     }
   }, [])
 
+  // 9. AUDIT LOGS
+  const loadAuditLogs = useCallback(async () => {
+    setAuditLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('admin_audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (!error) setAuditLogs(data || [])
+    } catch (e) {
+      console.error('loadAuditLogs error:', e)
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [])
+
   // Déclenchement automatique selon l'onglet actif
   useEffect(() => {
     if (activeTab === 'withdrawals') loadWithdrawals()
     else if (activeTab === 'verifications') loadRequests()
     else if (activeTab === 'stats') loadStats()
+    else if (activeTab === 'escrow') loadEscrowOrders()
     else if (activeTab === 'users') loadUsers()
     else if (activeTab === 'posts') loadPosts()
     else if (activeTab === 'disputes') loadDisputes()
     else if (activeTab === 'catalog') loadCatalog()
-  }, [activeTab, loadWithdrawals, loadRequests, loadStats, loadUsers, loadPosts, loadDisputes, loadCatalog])
+    else if (activeTab === 'audit') loadAuditLogs()
+  }, [activeTab, loadWithdrawals, loadRequests, loadStats, loadEscrowOrders, loadUsers, loadPosts, loadDisputes, loadCatalog, loadAuditLogs])
 
   // ==========================================
   // ACTIONS RETRAITS
   // ==========================================
   const handleApproveWithdrawal = async (w) => {
-    if (!confirm(`Confirmer que le virement Mobile Money de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a bien été envoyé au ${w.phone} (${w.operator}) ?`)) return
+    if (Number(w.amount) >= 100000) {
+      if (!confirm(`GROS VIREMENT : Le montant est de ${Number(w.amount).toLocaleString('fr-FR')} FCFA. Confirmez-vous que ce transfert a été exécuté ?`)) return
+    } else {
+      if (!confirm(`Confirmer que le virement Mobile Money de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a bien été envoyé au ${w.phone} (${w.operator}) ?`)) return
+    }
+
     setProcessing(true)
     try {
       await supabase.from('withdrawal_requests').update({
@@ -372,6 +454,13 @@ export default function AdminVerificationPage() {
         type: 'wallet_debit',
         title: 'Retrait Mobile Money validé !',
         body: `Votre retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA vers ${w.operator} (${w.phone}) a été transféré avec succès.`,
+      })
+
+      await recordAuditLog('withdrawal_approved', 'withdrawal_request', w.id, {
+        amount: w.amount,
+        phone: w.phone,
+        operator: w.operator,
+        user_id: w.user_id,
       })
 
       toast.success('Retrait validé avec succès !')
@@ -426,6 +515,12 @@ export default function AdminVerificationPage() {
         body: `Votre demande de retrait de ${Number(w.amount).toLocaleString('fr-FR')} FCFA a été annulée (${reason}). Le montant a été recrédité sur votre portefeuille MANG PAY.`,
       })
 
+      await recordAuditLog('withdrawal_rejected', 'withdrawal_request', w.id, {
+        amount: w.amount,
+        reason,
+        user_id: w.user_id,
+      })
+
       toast.success('Retrait rejeté et solde remboursé !')
       setRejectWithdrawalModal(false)
       setSelectedWithdrawal(null)
@@ -434,6 +529,245 @@ export default function AdminVerificationPage() {
       loadBadgeCounts()
     } catch {
       toast.error('Erreur lors du rejet')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // EXPORT COMPTABLE CSV / EXCEL
+  // ==========================================
+  const exportFinancialReportCSV = async () => {
+    toast.loading('Génération du rapport comptable...', { id: 'csv-export' })
+    try {
+      let ordersQuery = supabase
+        .from('orders')
+        .select(`
+          id, created_at, total_amount, commission, net_amount, status,
+          buyer:profiles!orders_buyer_id_fkey(username, full_name, phone),
+          seller:profiles!orders_seller_id_fkey(username, full_name, phone)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (dateFilter === 'today') {
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        ordersQuery = ordersQuery.gte('created_at', todayStart.toISOString())
+      } else if (dateFilter === '7d') {
+        ordersQuery = ordersQuery.gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
+      } else if (dateFilter === 'month') {
+        const m = new Date()
+        m.setDate(1)
+        m.setHours(0, 0, 0, 0)
+        ordersQuery = ordersQuery.gte('created_at', m.toISOString())
+      }
+      const { data: orders } = await ordersQuery
+
+      const { data: withdrawalsList } = await supabase
+        .from('withdrawal_requests')
+        .select('id, created_at, processed_at, amount, operator, phone, status, receipt_number, user:profiles(username, full_name)')
+        .order('created_at', { ascending: false })
+
+      let csvContent = '\uFEFF' // UTF-8 BOM pour Excel
+      csvContent += 'RAPPORT COMPTABLE ET FINANCIER MANG\n'
+      csvContent += `Date d'exportation;${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR')};Filtre;${dateFilter}\n\n`
+
+      csvContent += '--- TRANSACTIONS COMMANDES MARCHÉ ---\n'
+      csvContent += 'Date;ID Commande;Acheteur;Vendeur;Total Commande (FCFA);Commission MANG (5%);Net Vendeur (FCFA);Statut\n'
+      if (orders && orders.length > 0) {
+        orders.forEach(o => {
+          csvContent += `${new Date(o.created_at).toLocaleDateString('fr-FR')};${o.id.slice(0, 8)};"${o.buyer?.full_name || o.buyer?.username || ''}";"${o.seller?.full_name || o.seller?.username || ''}";${o.total_amount || 0};${o.commission || 0};${o.net_amount || (o.total_amount - (o.commission || 0))};${o.status}\n`
+        })
+      } else {
+        csvContent += 'Aucune commande enregistrée sur cette période;;;;;;;\n'
+      }
+
+      csvContent += '\n--- RETRAITS MOBILE MONEY ---\n'
+      csvContent += 'Date;ID Retrait;Bénéficiaire;Opérateur;Numéro de Téléphone;Montant (FCFA);Reçu MANG;Statut\n'
+      if (withdrawalsList && withdrawalsList.length > 0) {
+        withdrawalsList.forEach(w => {
+          csvContent += `${new Date(w.created_at).toLocaleDateString('fr-FR')};${w.id.slice(0, 8)};"${w.user?.full_name || w.user?.username || ''}";${w.operator};${w.phone};${w.amount};${w.receipt_number || ''};${w.status}\n`
+        })
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `rapport-financier-mang-${dateFilter}-${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Rapport exporté avec succès (compatible Excel)', { id: 'csv-export' })
+      await recordAuditLog('export_financial_csv', 'financial_stats', null, { period: dateFilter })
+    } catch (e) {
+      console.error('Export error:', e)
+      toast.error('Erreur lors de l\'exportation', { id: 'csv-export' })
+    }
+  }
+
+  // ==========================================
+  // LIBÉRATION D'OFFICE DU SÉQUESTRE COMMANDE
+  // ==========================================
+  const handleReleaseEscrow = async (order) => {
+    if (!confirm(`Confirmer la libération d'office du séquestre de ${Number(order.total_amount).toLocaleString('fr-FR')} FCFA pour la commande #${order.id.slice(0, 8)} ?\n\nLe montant net (${Number(order.net_amount || order.total_amount * 0.95).toLocaleString('fr-FR')} FCFA) sera immédiatement versé sur le portefeuille du vendeur @${order.seller?.username}.`)) return
+    setProcessing(true)
+    try {
+      const { data, error } = await supabase.rpc('admin_release_escrow_order', {
+        p_order_id: order.id,
+        p_note: 'Libération d\'office effectuée par le super-administrateur'
+      })
+
+      if (error) {
+        // Fallback direct
+        const { data: sellerWallet } = await supabase.from('wallets').select('*').eq('user_id', order.seller_id).single()
+        if (sellerWallet) {
+          const net = Number(order.net_amount || order.total_amount * 0.95)
+          await supabase.from('wallets').update({
+            balance_reserved: Math.max(0, (sellerWallet.balance_reserved || 0) - Number(order.total_amount)),
+            balance_available: (sellerWallet.balance_available || 0) + net,
+            balance_total: (sellerWallet.balance_total || 0) + net,
+          }).eq('id', sellerWallet.id)
+
+          await supabase.from('orders').update({ status: 'accepted' }).eq('id', order.id)
+        }
+      }
+
+      await recordAuditLog('escrow_released', 'order', order.id, {
+        total: order.total_amount,
+        seller_id: order.seller_id,
+      })
+
+      toast.success('Séquestre libéré : Le vendeur a été payé !')
+      loadEscrowOrders()
+      loadStats()
+      loadBadgeCounts()
+    } catch (err) {
+      toast.error('Erreur lors de la libération du séquestre')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // AJUSTEMENT MANUEL DU PORTEFEUILLE USER
+  // ==========================================
+  const handleAdjustWallet = async () => {
+    if (!selectedUser) return
+    const numAmount = parseInt(adjAmount, 10)
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error('Veuillez saisir un montant valide')
+      return
+    }
+    if (!adjReason.trim()) {
+      toast.error('Le motif d\'ajustement est obligatoire')
+      return
+    }
+    setProcessing(true)
+    try {
+      const { data, error } = await supabase.rpc('admin_adjust_wallet', {
+        p_target_user_id: selectedUser.id,
+        p_operation: adjOperation,
+        p_amount: numAmount,
+        p_reason: adjReason.trim()
+      })
+
+      if (error) {
+        const { data: userWallet } = await supabase.from('wallets').select('*').eq('user_id', selectedUser.id).single()
+        if (!userWallet) throw new Error('Portefeuille introuvable')
+        const diff = adjOperation === 'credit' ? numAmount : -numAmount
+        if (adjOperation === 'debit' && userWallet.balance_available < numAmount) {
+          throw new Error('Solde disponible insuffisant pour ce débit')
+        }
+        const newAvail = userWallet.balance_available + diff
+        const newTot = userWallet.balance_total + diff
+        await supabase.from('wallets').update({
+          balance_available: newAvail,
+          balance_total: newTot,
+        }).eq('id', userWallet.id)
+
+        const year = new Date().getFullYear()
+        const receipt = `MANG-ADJ-${year}-${Math.floor(Math.random() * 9999 + 1)}`
+        await supabase.from('wallet_transactions').insert({
+          wallet_id: userWallet.id,
+          user_id: selectedUser.id,
+          type: adjOperation === 'credit' ? 'order_refund' : 'order_payment',
+          amount: numAmount,
+          balance_after: newAvail,
+          description: `Ajustement admin : ${adjReason.trim()}`,
+          receipt_number: receipt,
+          status: 'completed',
+        })
+
+        await supabase.from('notifications').insert({
+          user_id: selectedUser.id,
+          type: adjOperation === 'credit' ? 'wallet_credit' : 'wallet_debit',
+          title: adjOperation === 'credit' ? 'Solde crédité' : 'Solde débité',
+          body: `${numAmount.toLocaleString('fr-FR')} FCFA ont été ${adjOperation === 'credit' ? 'crédités sur' : 'déduits de'} votre compte MANG PAY. Motif : ${adjReason.trim()}`,
+        })
+      }
+
+      await recordAuditLog('wallet_adjusted', 'wallet', selectedUser.id, {
+        operation: adjOperation,
+        amount: numAmount,
+        reason: adjReason.trim(),
+      })
+
+      toast.success(`Portefeuille ${adjOperation === 'credit' ? 'crédité' : 'débité'} de ${numAmount.toLocaleString('fr-FR')} FCFA !`)
+      setAdjustWalletModal(false)
+      setAdjAmount('')
+      setAdjReason('')
+      loadUsers()
+      loadStats()
+    } catch (err) {
+      toast.error('Erreur : ' + (err.message || 'Échec de l\'opération'))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // ==========================================
+  // DIFFUSION NOTIFICATION GLOBALE (BROADCAST)
+  // ==========================================
+  const handleSendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+      toast.error('Veuillez remplir le titre et le corps du message')
+      return
+    }
+    if (!confirm(`Diffuser cette notification à TOUS les utilisateurs inscrits sur MANG ?\n\nTitre : "${broadcastTitle}"`)) return
+
+    setProcessing(true)
+    try {
+      const { data, error } = await supabase.rpc('admin_broadcast_notification', {
+        p_title: broadcastTitle.trim(),
+        p_body: broadcastBody.trim(),
+        p_type: 'system',
+      })
+
+      if (error) {
+        const { data: profiles } = await supabase.from('profiles').select('id')
+        if (profiles && profiles.length > 0) {
+          const notifs = profiles.map(p => ({
+            user_id: p.id,
+            type: 'system',
+            title: broadcastTitle.trim(),
+            body: broadcastBody.trim(),
+          }))
+          await supabase.from('notifications').insert(notifs)
+        }
+      }
+
+      await recordAuditLog('broadcast_notification_sent', 'all_users', null, {
+        title: broadcastTitle.trim(),
+      })
+
+      toast.success('Notification diffusée avec succès à toute la communauté !')
+      setBroadcastTitle('')
+      setBroadcastBody('')
+    } catch (err) {
+      toast.error('Erreur lors de la diffusion : ' + (err.message || ''))
     } finally {
       setProcessing(false)
     }
@@ -456,6 +790,9 @@ export default function AdminVerificationPage() {
         p_reference_id: req.shop_id,
         p_reference_type: 'shop',
       })
+
+      await recordAuditLog('shop_verified', 'shop', req.shop_id, { shop_name: req.shop?.name })
+
       toast.success(`"${req.shop?.name}" vérifiée !`)
       setSelectedRequest(null)
       loadRequests()
@@ -491,6 +828,8 @@ export default function AdminVerificationPage() {
         p_reference_type: 'shop',
       })
 
+      await recordAuditLog('shop_verification_rejected', 'shop', req.shop_id, { reason: adminNote })
+
       toast.success('Demande refusée — vendeur notifié')
       setRejectOpen(false)
       setSelectedRequest(null)
@@ -510,12 +849,14 @@ export default function AdminVerificationPage() {
     if (!confirm(`ACTION CRITIQUE : Supprimer définitivement le compte de @${u.username} (${u.full_name || u.phone || u.id}) ?\n\nCette action supprimera également ses boutiques, ses annonces, son portefeuille et ses données comme dans le dashboard Supabase.`)) return
     setProcessing(true)
     try {
-      // Tenter la fonction RPC dédiée si présente, sinon suppression directe de profil
       const { error: rpcErr } = await supabase.rpc('admin_delete_user', { p_target_user_id: u.id })
       if (rpcErr) {
         const { error: delErr } = await supabase.from('profiles').delete().eq('id', u.id)
         if (delErr) throw delErr
       }
+
+      await recordAuditLog('user_deleted', 'profile', u.id, { username: u.username, phone: u.phone })
+
       toast.success(`Compte @${u.username} supprimé avec succès !`)
       setSelectedUser(null)
       loadUsers()
@@ -539,6 +880,9 @@ export default function AdminVerificationPage() {
         .update({ is_banned: willBan })
         .eq('id', u.id)
       if (error) throw error
+
+      await recordAuditLog(willBan ? 'user_banned' : 'user_unbanned', 'profile', u.id, { username: u.username })
+
       toast.success(`Compte @${u.username} ${willBan ? 'banni' : 'réactivé'} avec succès`)
       setUsersList(prev => prev.map(item => item.id === u.id ? { ...item, is_banned: willBan } : item))
       if (selectedUser?.id === u.id) {
@@ -560,6 +904,9 @@ export default function AdminVerificationPage() {
     try {
       const { error } = await supabase.from('posts').delete().eq('id', post.id)
       if (error) throw error
+
+      await recordAuditLog('post_deleted', 'post', post.id, { author: post.user?.username })
+
       toast.success('Publication supprimée !')
       loadPosts()
       loadBadgeCounts()
@@ -576,6 +923,9 @@ export default function AdminVerificationPage() {
     try {
       const { error } = await supabase.from('posts').update({ status: nextStatus }).eq('id', post.id)
       if (error) throw error
+
+      await recordAuditLog('post_status_changed', 'post', post.id, { status: nextStatus })
+
       toast.success(nextStatus === 'quarantined' ? 'Publication mise en quarantaine' : 'Publication rétablie en ligne')
       loadPosts()
       loadBadgeCounts()
@@ -601,6 +951,11 @@ export default function AdminVerificationPage() {
       })
       if (error) throw error
       if (data?.success) {
+        await recordAuditLog('dispute_resolved', 'dispute', resolvingDispute.id, {
+          decision: resDecision,
+          note: resNote.trim(),
+        })
+
         toast.success('Litige résolu avec succès !')
         setResolvingDispute(null)
         setResNote('')
@@ -618,12 +973,13 @@ export default function AdminVerificationPage() {
   }
 
   // ==========================================
-  // ACTIONS CATALOGUE (Boutiques & Produits)
+  // ACTIONS CATALOGUE
   // ==========================================
   const handleDeleteProduct = async (product) => {
     if (!confirm(`Supprimer définitivement le produit "${product.name}" ?`)) return
     try {
       await supabase.from('products').delete().eq('id', product.id)
+      await recordAuditLog('product_deleted', 'product', product.id, { name: product.name })
       toast.success('Produit supprimé !')
       loadCatalog()
     } catch {
@@ -635,12 +991,29 @@ export default function AdminVerificationPage() {
     if (!confirm(`Supprimer définitivement la boutique "${shop.name}" ?`)) return
     try {
       await supabase.from('shops').delete().eq('id', shop.id)
+      await recordAuditLog('shop_deleted', 'shop', shop.id, { name: shop.name })
       toast.success('Boutique supprimée !')
       loadCatalog()
     } catch {
       toast.error('Erreur de suppression')
     }
   }
+
+  // ==========================================
+  // DÉTECTION MULTI-COMPTES (NUMÉROS PARTAGÉS)
+  // ==========================================
+  const sharedPhoneMap = useMemo(() => {
+    const map = {}
+    usersList.forEach(u => {
+      if (u.phone) {
+        const clean = u.phone.replace(/[^\d]/g, '')
+        if (clean.length >= 8) {
+          map[clean] = (map[clean] || 0) + 1
+        }
+      }
+    })
+    return map
+  }, [usersList])
 
   // ==========================================
   // LISTES FILTRÉES EN MÉMOIRE
@@ -666,6 +1039,14 @@ export default function AdminVerificationPage() {
   const filteredUsers = useMemo(() => {
     let list = usersList
     if (userRoleFilter === 'banned') list = list.filter(u => u.is_banned)
+    if (userRoleFilter === 'suspicious') {
+      list = list.filter(u => {
+        if (!u.phone) return false
+        const clean = u.phone.replace(/[^\d]/g, '')
+        return sharedPhoneMap[clean] > 1
+      })
+    }
+
     if (!userSearch.trim()) return list
     const q = userSearch.toLowerCase()
     return list.filter(u =>
@@ -675,7 +1056,7 @@ export default function AdminVerificationPage() {
       (u.phone && u.phone.toLowerCase().includes(q)) ||
       (u.city && u.city.toLowerCase().includes(q))
     )
-  }, [usersList, userRoleFilter, userSearch])
+  }, [usersList, userRoleFilter, userSearch, sharedPhoneMap])
 
   const filteredPosts = useMemo(() => {
     if (!postSearch.trim()) return postsList
@@ -730,30 +1111,34 @@ export default function AdminVerificationPage() {
                   ROOT
                 </span>
               </div>
-              <p className="text-blue-200/80 text-xs mt-0.5">MANG E-Commerce — Command Center</p>
+              <p className="text-blue-200/80 text-xs mt-0.5">MANG Command Center Pro</p>
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              loadBadgeCounts()
-              if (activeTab === 'withdrawals') loadWithdrawals()
-              else if (activeTab === 'verifications') loadRequests()
-              else if (activeTab === 'stats') loadStats()
-              else if (activeTab === 'users') loadUsers()
-              else if (activeTab === 'posts') loadPosts()
-              else if (activeTab === 'disputes') loadDisputes()
-              else if (activeTab === 'catalog') loadCatalog()
-              toast.success('Données actualisées')
-            }}
-            className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition-all"
-            title="Actualiser"
-          >
-            <RefreshCw size={15} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                loadBadgeCounts()
+                if (activeTab === 'withdrawals') loadWithdrawals()
+                else if (activeTab === 'verifications') loadRequests()
+                else if (activeTab === 'stats') loadStats()
+                else if (activeTab === 'escrow') loadEscrowOrders()
+                else if (activeTab === 'users') loadUsers()
+                else if (activeTab === 'posts') loadPosts()
+                else if (activeTab === 'disputes') loadDisputes()
+                else if (activeTab === 'catalog') loadCatalog()
+                else if (activeTab === 'audit') loadAuditLogs()
+                toast.success('Données actualisées')
+              }}
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-90 transition-all"
+              title="Actualiser"
+            >
+              <RefreshCw size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* TABS SELECTOR SCROLLABLE HORIZONTALEMENT AVEC BADGES NOTIFICATIONS */}
+        {/* TABS SELECTOR SCROLLABLE HORIZONTALEMENT */}
         <div className="flex bg-black/25 backdrop-blur-md rounded-2xl p-1.5 border border-white/10 mt-3 text-xs font-bold text-white overflow-x-auto no-scrollbar gap-1.5">
           <button
             onClick={() => setActiveTab('withdrawals')}
@@ -772,17 +1157,17 @@ export default function AdminVerificationPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('verifications')}
+            onClick={() => setActiveTab('escrow')}
             className={clsx(
               'flex items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all whitespace-nowrap active:scale-95',
-              activeTab === 'verifications' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
+              activeTab === 'escrow' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
             )}
           >
-            <ShieldCheck size={15} />
-            <span>Vérification</span>
-            {badgeCounts.verifications > 0 && (
-              <span className="bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
-                {badgeCounts.verifications}
+            <Truck size={15} />
+            <span>Séquestre Live</span>
+            {badgeCounts.escrowOrders > 0 && (
+              <span className="bg-emerald-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
+                {badgeCounts.escrowOrders}
               </span>
             )}
           </button>
@@ -813,6 +1198,33 @@ export default function AdminVerificationPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('broadcast')}
+            className={clsx(
+              'flex items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all whitespace-nowrap active:scale-95',
+              activeTab === 'broadcast' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
+            )}
+          >
+            <Bell size={15} />
+            <span>Diffusion Push</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('verifications')}
+            className={clsx(
+              'flex items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all whitespace-nowrap active:scale-95',
+              activeTab === 'verifications' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
+            )}
+          >
+            <ShieldCheck size={15} />
+            <span>Vérification</span>
+            {badgeCounts.verifications > 0 && (
+              <span className="bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
+                {badgeCounts.verifications}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('posts')}
             className={clsx(
               'flex items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all whitespace-nowrap active:scale-95',
@@ -826,6 +1238,17 @@ export default function AdminVerificationPage() {
                 {badgeCounts.posts}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={clsx(
+              'flex items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all whitespace-nowrap active:scale-95',
+              activeTab === 'audit' ? 'bg-white text-dark-900 shadow-md font-black' : 'text-blue-100/90 hover:bg-white/10'
+            )}
+          >
+            <History size={15} />
+            <span>Journal d'Audit</span>
           </button>
 
           <button
@@ -864,7 +1287,6 @@ export default function AdminVerificationPage() {
         {/* ========================================================= */}
         {activeTab === 'withdrawals' && (
           <div className="space-y-4">
-            {/* Barre de recherche & Filtres */}
             <div className="bg-white rounded-2xl p-3 shadow-card space-y-3">
               <div className="relative">
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
@@ -1075,89 +1497,147 @@ export default function AdminVerificationPage() {
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 2 : VERIFICATIONS DES BOUTIQUES */}
+        {/* ONGLET 2 : SÉQUESTRE LIVE & SUIVI COMMANDES EN TRANSIT */}
         {/* ========================================================= */}
-        {activeTab === 'verifications' && (
+        {activeTab === 'escrow' && (
           <div className="space-y-4">
-            <div className="flex gap-2">
-              {Object.keys(STATUS_CONFIG).map(st => (
-                <button
-                  key={st}
-                  onClick={() => setFilter(st)}
-                  className={clsx(
-                    'flex-1 py-2.5 rounded-2xl font-bold text-xs border-2 transition-all active:scale-95',
-                    filter === st ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
-                  )}
-                >
-                  {STATUS_CONFIG[st].label}
-                </button>
-              ))}
+            <div className="bg-gradient-to-r from-emerald-800 to-teal-800 rounded-3xl p-5 text-white shadow-card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-200">Moniteur des Séquestres</p>
+                  <h2 className="font-black text-xl mt-0.5">Commandes payées en attente de livraison</h2>
+                </div>
+                <span className="bg-white/20 text-white font-bold text-xs px-2.5 py-1 rounded-full">
+                  {escrowOrders.length} en transit
+                </span>
+              </div>
+              <p className="text-xs text-emerald-100/80 mt-2 leading-relaxed">
+                Les fonds restent bloqués jusqu'à ce que l'acheteur confirme la réception. En cas de retard excessif (+48h/72h), l'administrateur peut libérer d'office le séquestre pour rémunérer le vendeur.
+              </p>
             </div>
 
-            {requestsLoading ? (
+            {escrowLoading ? (
               <div className="space-y-3">
-                {[1, 2].map(i => <div key={i} className="h-32 skeleton rounded-3xl" />)}
+                {[1, 2, 3].map(i => <div key={i} className="h-28 skeleton rounded-3xl" />)}
               </div>
-            ) : requests.length === 0 ? (
+            ) : escrowOrders.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
-                <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400">
-                  <FileText size={28} />
-                </div>
-                <p className="font-bold">Aucune demande</p>
-                <p className="text-xs text-dark-600/40 mt-1">Aucune demande trouvée avec ce statut.</p>
+                <Truck size={32} className="mx-auto mb-2 text-dark-400" />
+                <p className="font-bold">Aucune commande en attente de livraison</p>
+                <p className="text-xs text-dark-400 mt-1">Tous les séquestres ont été débloqués et payés aux vendeurs.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {requests.map(req => (
-                  <div
-                    key={req.id}
-                    onClick={() => setSelectedRequest(req)}
-                    className="bg-white rounded-3xl p-4 shadow-card hover:border-blue-300 border-2 border-transparent transition-all cursor-pointer flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar src={null} name={req.shop_name || req.shop?.name} size="md" />
-                      <div>
-                        <p className="font-bold text-dark-800 text-sm">{req.shop_name || req.shop?.name}</p>
-                        <p className="text-dark-600/40 text-xs">Par @{req.user?.username || 'Vendeur'}</p>
+                {escrowOrders.map(order => {
+                  const daysElapsed = Math.floor((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                  const isDelayed = daysElapsed >= 2
+
+                  return (
+                    <div key={order.id} className="bg-white rounded-3xl p-4 shadow-card border-2 border-transparent hover:border-emerald-200 transition-all space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-xs text-dark-600">Commande #{order.id.slice(0, 8)}</span>
+                            {isDelayed && (
+                              <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <AlertTriangle size={10} /> +{daysElapsed} jours
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-bold text-dark-900 text-sm mt-0.5">{order.product?.name || 'Produit commandé'}</p>
+                          <p className="text-xs text-dark-500 mt-0.5">
+                            Payée le {new Date(order.created_at).toLocaleDateString('fr-FR')} à {new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="font-black text-emerald-600 text-base leading-tight">
+                            {Number(order.total_amount).toLocaleString('fr-FR')} FCFA
+                          </p>
+                          <p className="text-[10px] text-dark-400 mt-0.5">
+                            Net Vendeur : {Number(order.net_amount || order.total_amount * 0.95).toLocaleString('fr-FR')} F
+                          </p>
+                        </div>
                       </div>
+
+                      {/* Participants */}
+                      <div className="p-3 bg-surface-50 rounded-2xl text-xs space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-dark-500">Acheteur :</span>
+                          <span className="font-bold text-dark-800">
+                            {order.buyer?.full_name || order.buyer?.username} ({order.delivery_phone || order.buyer?.phone || 'Pas de numéro'})
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-dark-500">Vendeur :</span>
+                          <span className="font-bold text-dark-800">
+                            @{order.seller?.username} ({order.seller?.phone || 'Pas de numéro'})
+                          </span>
+                        </div>
+                        {order.delivery_address && (
+                          <div className="flex justify-between border-t border-surface-200/50 pt-1 text-[11px]">
+                            <span className="text-dark-500">Lieu livraison :</span>
+                            <span className="text-dark-700 truncate max-w-[200px]">{order.delivery_address}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Super-Admin */}
+                      <button
+                        onClick={() => handleReleaseEscrow(order)}
+                        disabled={processing}
+                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1.5"
+                      >
+                        <CheckCircle2 size={14} />
+                        <span>Libérer le séquestre d'office (Payer le vendeur)</span>
+                      </button>
                     </div>
-                    <span className={clsx('text-[10px] font-bold px-2 py-1 rounded-lg', STATUS_CONFIG[req.status].color)}>
-                      {STATUS_CONFIG[req.status].label}
-                    </span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 3 : TABLEAU DE BORD TRÉSORERIE & FINANCIER */}
+        {/* ONGLET 3 : TABLEAU DE BORD TRÉSORERIE & EXPORT COMPTABLE */}
         {/* ========================================================= */}
         {activeTab === 'stats' && (
           <div className="space-y-4">
-            {/* Filtres de période temporelle */}
-            <div className="bg-white rounded-2xl p-1.5 shadow-card flex gap-1 text-xs font-bold">
-              {[
-                { id: 'today', label: "Aujourd'hui" },
-                { id: '7d',    label: '7 jours' },
-                { id: 'month', label: 'Ce mois' },
-                { id: 'all',   label: 'Tout' },
-              ].map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setDateFilter(p.id)
-                    loadStats(p.id)
-                  }}
-                  className={clsx(
-                    'flex-1 py-2 rounded-xl transition-all text-center',
-                    dateFilter === p.id ? 'bg-blue-600 text-white shadow-sm' : 'text-dark-600 hover:bg-surface-100'
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
+            {/* Filtres de période temporelle & Bouton Export CSV */}
+            <div className="bg-white rounded-2xl p-2 shadow-card flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex gap-1 text-xs font-bold flex-1 min-w-[200px]">
+                {[
+                  { id: 'today', label: "Aujourd'hui" },
+                  { id: '7d',    label: '7 jours' },
+                  { id: 'month', label: 'Ce mois' },
+                  { id: 'all',   label: 'Tout' },
+                ].map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setDateFilter(p.id)
+                      loadStats(p.id)
+                    }}
+                    className={clsx(
+                      'flex-1 py-2 rounded-xl transition-all text-center',
+                      dateFilter === p.id ? 'bg-blue-600 text-white shadow-sm' : 'text-dark-600 hover:bg-surface-100'
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Bouton Export Excel / CSV */}
+              <button
+                onClick={exportFinancialReportCSV}
+                className="px-3.5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all"
+                title="Exporter le rapport comptable (CSV/Excel)"
+              >
+                <Download size={14} />
+                <span>Export Comptable (CSV/Excel)</span>
+              </button>
             </div>
 
             {statsLoading ? (
@@ -1244,32 +1724,16 @@ export default function AdminVerificationPage() {
                     </div>
                   </div>
                 </div>
-
-                {stats.disputesCount > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-3xl p-4 flex items-center justify-between text-red-800 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="text-red-600" size={18} />
-                      <span className="font-bold text-xs">{stats.disputesCount} litige(s) ouvert(s) à arbitrer</span>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('disputes')}
-                      className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all"
-                    >
-                      Arbitrer
-                    </button>
-                  </div>
-                )}
               </div>
             ) : null}
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 4 : GESTION COMPLÈTE DES UTILISATEURS (SUPABASE STYLE) */}
+        {/* ONGLET 4 : UTILISATEURS & DÉTECTION MULTI-COMPTES */}
         {/* ========================================================= */}
         {activeTab === 'users' && (
           <div className="space-y-4">
-            {/* Barre de recherche & Filtres */}
             <div className="bg-white rounded-2xl p-3 shadow-card space-y-3">
               <div className="relative">
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
@@ -1289,14 +1753,15 @@ export default function AdminVerificationPage() {
 
               <div className="flex gap-2">
                 {[
-                  { id: 'all',    label: `Tous (${usersList.length})` },
-                  { id: 'banned', label: `Bannis / Suspendus (${usersList.filter(u => u.is_banned).length})` },
+                  { id: 'all',        label: `Tous (${usersList.length})` },
+                  { id: 'banned',     label: `Bannis (${usersList.filter(u => u.is_banned).length})` },
+                  { id: 'suspicious', label: `Numéros partagés (${usersList.filter(u => u.phone && sharedPhoneMap[u.phone.replace(/[^\d]/g, '')] > 1).length})` },
                 ].map(f => (
                   <button
                     key={f.id}
                     onClick={() => setUserRoleFilter(f.id)}
                     className={clsx(
-                      'flex-1 py-2 rounded-xl font-bold text-xs border transition-all text-center',
+                      'flex-1 py-2 px-1 rounded-xl font-bold text-xs border transition-all text-center whitespace-nowrap',
                       userRoleFilter === f.id ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
                     )}
                   >
@@ -1320,6 +1785,10 @@ export default function AdminVerificationPage() {
                 {filteredUsers.map(u => {
                   const wallet = userWalletsMap[u.id]
                   const isSuperAdmin = u.id === ADMIN_ID
+                  const cleanPhone = u.phone ? u.phone.replace(/[^\d]/g, '') : ''
+                  const sharedCount = sharedPhoneMap[cleanPhone] || 0
+                  const isShared = sharedCount > 1
+
                   return (
                     <div
                       key={u.id}
@@ -1343,6 +1812,11 @@ export default function AdminVerificationPage() {
                             {u.is_banned && (
                               <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.2 rounded">
                                 BANNI
+                              </span>
+                            )}
+                            {isShared && (
+                              <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                <AlertTriangle size={9} /> Numéro partagé ({sharedCount})
                               </span>
                             )}
                           </div>
@@ -1391,11 +1865,119 @@ export default function AdminVerificationPage() {
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 5 : MODÉRATION DES POSTS COMMUNAUTAIRES */}
+        {/* ONGLET 5 : DIFFUSION NOTIFICATIONS PUSH GLOBALE */}
+        {/* ========================================================= */}
+        {activeTab === 'broadcast' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Bell size={20} />
+                </div>
+                <div>
+                  <h2 className="font-black text-dark-900 text-base">Diffusion Push Générale (Broadcast)</h2>
+                  <p className="text-xs text-dark-500">Envoyer une alerte en temps réel à tous les utilisateurs enregistrés sur MANG</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-dark-700 pl-0.5">Titre de la notification *</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Arrivage frais d'ananas de saison !"
+                    value={broadcastTitle}
+                    onChange={e => setBroadcastTitle(e.target.value)}
+                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl px-4 py-3 text-xs outline-none focus:border-blue-500 font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-dark-700 pl-0.5">Message / Contenu *</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Rédigez le message qui s'affichera dans les notifications des utilisateurs..."
+                    value={broadcastBody}
+                    onChange={e => setBroadcastBody(e.target.value)}
+                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none font-medium"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSendBroadcast}
+                  disabled={processing || !broadcastTitle.trim() || !broadcastBody.trim()}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Send size={16} />
+                  <span>Diffuser la notification à tous ({usersList.length} membres)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* ONGLET 6 : VERIFICATIONS DES BOUTIQUES */}
+        {/* ========================================================= */}
+        {activeTab === 'verifications' && (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              {Object.keys(STATUS_CONFIG).map(st => (
+                <button
+                  key={st}
+                  onClick={() => setFilter(st)}
+                  className={clsx(
+                    'flex-1 py-2.5 rounded-2xl font-bold text-xs border-2 transition-all active:scale-95',
+                    filter === st ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-surface-200 bg-white text-dark-600'
+                  )}
+                >
+                  {STATUS_CONFIG[st].label}
+                </button>
+              ))}
+            </div>
+
+            {requestsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => <div key={i} className="h-32 skeleton rounded-3xl" />)}
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
+                <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400">
+                  <FileText size={28} />
+                </div>
+                <p className="font-bold">Aucune demande</p>
+                <p className="text-xs text-dark-600/40 mt-1">Aucune demande trouvée avec ce statut.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {requests.map(req => (
+                  <div
+                    key={req.id}
+                    onClick={() => setSelectedRequest(req)}
+                    className="bg-white rounded-3xl p-4 shadow-card hover:border-blue-300 border-2 border-transparent transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar src={null} name={req.shop_name || req.shop?.name} size="md" />
+                      <div>
+                        <p className="font-bold text-dark-800 text-sm">{req.shop_name || req.shop?.name}</p>
+                        <p className="text-dark-600/40 text-xs">Par @{req.user?.username || 'Vendeur'}</p>
+                      </div>
+                    </div>
+                    <span className={clsx('text-[10px] font-bold px-2 py-1 rounded-lg', STATUS_CONFIG[req.status].color)}>
+                      {STATUS_CONFIG[req.status].label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* ONGLET 7 : MODÉRATION DES POSTS COMMUNAUTAIRES */}
         {/* ========================================================= */}
         {activeTab === 'posts' && (
           <div className="space-y-4">
-            {/* Barre de recherche & Filtres */}
             <div className="bg-white rounded-2xl p-3 shadow-card space-y-3">
               <div className="relative">
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
@@ -1472,7 +2054,6 @@ export default function AdminVerificationPage() {
                         </span>
                       </div>
 
-                      {/* Contenu de la publication */}
                       <p className="text-xs text-dark-800 whitespace-pre-line leading-relaxed font-normal">
                         {p.content}
                       </p>
@@ -1483,7 +2064,6 @@ export default function AdminVerificationPage() {
                         </div>
                       )}
 
-                      {/* Statistiques & Actions de modération */}
                       <div className="flex items-center justify-between pt-2 border-t border-surface-100 text-xs">
                         <div className="flex items-center gap-3 text-dark-400 text-[11px]">
                           <span className="flex items-center gap-1">
@@ -1529,7 +2109,65 @@ export default function AdminVerificationPage() {
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 6 : ARBITRAGE DES LITIGES */}
+        {/* ONGLET 8 : JOURNAL D'AUDIT (AUDIT LOGS) */}
+        {/* ========================================================= */}
+        {activeTab === 'audit' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-3xl p-4 shadow-card flex items-center justify-between">
+              <div>
+                <h2 className="font-black text-dark-900 text-base">Journal d'Audit & Traçabilité</h2>
+                <p className="text-xs text-dark-500">Historique sécurisé des actions sensibles effectuées par l'administration</p>
+              </div>
+              <button
+                onClick={loadAuditLogs}
+                className="p-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-600 active:scale-90"
+                title="Actualiser les logs"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </div>
+
+            {auditLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <div key={i} className="h-20 skeleton rounded-3xl" />)}
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center shadow-card text-dark-500">
+                <History size={28} className="mx-auto mb-2 text-dark-400" />
+                <p className="font-bold">Aucun événement enregistré</p>
+                <p className="text-xs text-dark-400 mt-1">Les futures actions administratives apparaîtront ici.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {auditLogs.map(log => (
+                  <div key={log.id} className="bg-white rounded-2xl p-3.5 shadow-card border border-surface-100 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black font-mono uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-[10px]">
+                        {log.action}
+                      </span>
+                      <span className="text-[10px] text-dark-400">
+                        {new Date(log.created_at).toLocaleDateString('fr-FR')} {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {log.target_type && (
+                      <p className="text-dark-700 font-medium">
+                        Cible : <strong className="font-mono">{log.target_type}</strong> {log.target_id ? `(#${log.target_id.slice(0, 8)})` : ''}
+                      </p>
+                    )}
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <p className="text-[11px] text-dark-500 bg-surface-50 p-2 rounded-xl font-mono">
+                        {JSON.stringify(log.details)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* ONGLET 9 : ARBITRAGE DES LITIGES */}
         {/* ========================================================= */}
         {activeTab === 'disputes' && (
           <div className="space-y-4">
@@ -1590,7 +2228,7 @@ export default function AdminVerificationPage() {
         )}
 
         {/* ========================================================= */}
-        {/* ONGLET 7 : MODÉRATION CATALOGUE (Boutiques & Produits) */}
+        {/* ONGLET 10 : MODÉRATION CATALOGUE */}
         {/* ========================================================= */}
         {activeTab === 'catalog' && (
           <div className="space-y-4">
@@ -1723,8 +2361,22 @@ export default function AdminVerificationPage() {
 
             {/* Solde Portefeuille si disponible */}
             {userWalletsMap[selectedUser.id] && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs space-y-1">
-                <p className="font-black text-emerald-900 uppercase text-[10px]">Portefeuille MANG PAY associé</p>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-black text-emerald-900 uppercase text-[10px]">Portefeuille MANG PAY associé</p>
+                  <button
+                    onClick={() => {
+                      setAdjOperation('credit')
+                      setAdjAmount('')
+                      setAdjReason('')
+                      setAdjustWalletModal(true)
+                    }}
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                  >
+                    <Wallet size={12} />
+                    <span>Ajuster Solde</span>
+                  </button>
+                </div>
                 <div className="flex justify-between pt-1">
                   <span className="text-emerald-700">Solde disponible :</span>
                   <span className="font-mono font-black text-emerald-900">
@@ -1771,6 +2423,78 @@ export default function AdminVerificationPage() {
         </BottomSheet>
       )}
 
+      {/* MODAL AJUSTEMENT PORTEFEUILLE */}
+      {adjustWalletModal && selectedUser && (
+        <BottomSheet
+          open={adjustWalletModal}
+          onClose={() => setAdjustWalletModal(false)}
+          title={`Ajuster le solde de @${selectedUser.username}`}
+        >
+          <div className="px-4 pt-2 pb-8 space-y-4">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 text-xs">
+              Action financière tracée dans le journal d'audit. L'utilisateur recevra une notification automatique.
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setAdjOperation('credit')}
+                className={clsx(
+                  'p-3 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all',
+                  adjOperation === 'credit' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-surface-200 text-dark-600'
+                )}
+              >
+                <PlusCircle size={15} />
+                <span>Créditer (+)</span>
+              </button>
+
+              <button
+                onClick={() => setAdjOperation('debit')}
+                className={clsx(
+                  'p-3 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all',
+                  adjOperation === 'debit' ? 'border-red-500 bg-red-50 text-red-800' : 'border-surface-200 text-dark-600'
+                )}
+              >
+                <MinusCircle size={15} />
+                <span>Débiter (-)</span>
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Montant en FCFA *</label>
+              <input
+                type="number"
+                placeholder="Ex : 5000"
+                value={adjAmount}
+                onChange={e => setAdjAmount(e.target.value)}
+                className="w-full bg-surface-50 border border-surface-200 rounded-2xl px-4 py-3 text-sm font-black outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Motif / Justification obligatoire *</label>
+              <textarea
+                rows={2}
+                placeholder="Ex : Geste commercial suite au litige #123 ou régularisation de compte"
+                value={adjReason}
+                onChange={e => setAdjReason(e.target.value)}
+                className="w-full bg-surface-50 border border-surface-200 rounded-2xl px-4 py-3 text-xs outline-none focus:border-blue-500 resize-none font-medium"
+              />
+            </div>
+
+            <Button
+              onClick={handleAdjustWallet}
+              disabled={processing}
+              className={clsx(
+                'w-full py-3.5 text-white font-bold rounded-2xl shadow-md',
+                adjOperation === 'credit' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
+              )}
+            >
+              {processing ? 'En cours...' : `Confirmer le ${adjOperation === 'credit' ? 'Crédit' : 'Débit'}`}
+            </Button>
+          </div>
+        </BottomSheet>
+      )}
+
       {/* DETAIL DEMANDE DE VERIFICATION SHEET */}
       {selectedRequest && (
         <BottomSheet open={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="Détail de la demande">
@@ -1786,7 +2510,6 @@ export default function AdminVerificationPage() {
               {selectedRequest.additional_info && <p><strong>Exigences/Notes :</strong> {selectedRequest.additional_info}</p>}
             </div>
 
-            {/* Photos ID */}
             <div className="grid grid-cols-2 gap-2">
               {selectedRequest.id_photo_url && (
                 <div className="space-y-1">
