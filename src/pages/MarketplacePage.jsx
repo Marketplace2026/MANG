@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
-  Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag
+  Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag,
+  LogIn, Eye
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -673,7 +674,16 @@ export default function MarketplacePage() {
             <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
             <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {!user && (
+              <button
+                onClick={() => navigate('/connexion')}
+                className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-dark-950 font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-sm transition active:scale-95"
+              >
+                <LogIn size={13} />
+                <span>Connexion</span>
+              </button>
+            )}
             <Link to="/vendeur">
               <Store className="w-7 h-7 text-white animate-bounce-gentle hover:scale-110 transition" />
             </Link>
@@ -897,6 +907,29 @@ export default function MarketplacePage() {
 
       {/* CONTENU PRINCIPAL */}
       <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '202px' : '164px' }}>
+        {/* CARTOUCHE MODE INVITÉ (DANS LE FLUX NATUREL, NE MASQUE AUCUN EN-TÊTE) */}
+        {!user && (
+          <div className="px-3 mb-3 mt-2">
+            <div className="bg-gradient-to-r from-amber-500 via-primary-600 to-amber-600 rounded-2xl p-3 text-white flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                  <Eye size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-none">Mode Invité (Lecture seule)</p>
+                  <p className="text-[10.5px] text-white/90 mt-0.5">Connectez-vous pour commander ou échanger</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/connexion')}
+                className="bg-white text-primary-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm hover:bg-surface-50 active:scale-95 transition shrink-0 ml-2"
+              >
+                Se connecter
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* CARROUSEL BANNIÈRES */}
         <div className="px-3 mb-5 mt-3">
           <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">

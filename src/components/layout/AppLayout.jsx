@@ -71,16 +71,16 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
 
   return (
     <div className="min-h-dvh flex flex-col bg-surface-50">
-      {/* BANNIÈRE MODE INVITÉ */}
+      {/* BANNIÈRE MODE INVITÉ (Desktop uniquement pour ne pas masquer les en-têtes mobiles fixes) */}
       {!user && (
-        <div className="sticky top-0 z-40 bg-gradient-to-r from-amber-500 via-primary-600 to-amber-600 text-white px-4 py-2 text-xs md:text-sm font-medium flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-2 mx-auto md:mx-0">
+        <div className="hidden md:flex sticky top-0 z-40 bg-gradient-to-r from-amber-500 via-primary-600 to-amber-600 text-white px-6 py-2 text-sm font-medium items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2">
             <Eye size={16} className="shrink-0" />
             <span>
               <strong>Mode Invité :</strong> Vous explorez le marché MANG en lecture seule.
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/connexion')}
               className="px-3 py-1 bg-white text-primary-700 font-bold rounded-lg text-xs hover:bg-surface-100 transition shadow-sm"
@@ -98,10 +98,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
       )}
 
       {/* HEADER DESKTOP */}
-      <header className={clsx(
-        "sticky left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6",
-        !user ? "top-9" : "top-0"
-      )}>
+      <header className="sticky top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
           <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" alt="MANG" />
           <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
