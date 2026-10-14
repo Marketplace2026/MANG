@@ -35,23 +35,29 @@ export default function PublicProfilePage() {
   const [followersSheet, setFollowersSheet] = useState(false)
   const [followingSheet, setFollowingSheet] = useState(false)
 
-  const isMe = myProfile?.username === username
+  const isMe = myProfile?.username === username || myProfile?.id === username || (profile && myProfile?.id === profile.id)
 
   const load = useCallback(async () => {
     if (!useCacheStore.getState().membersCache[username]) {
       setLoading(true)
     }
 
-    // Profil
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single()
+    // Profil : Supporte soit l'UUID (id), soit le pseudo (username)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)
+    let query = supabase.from('profiles').select('*')
+    if (isUuid) {
+      query = query.eq('id', username)
+    } else {
+      query = query.eq('username', username.toLowerCase())
+    }
+    const { data: prof } = await query.maybeSingle()
 
     if (!prof) { setLoading(false); return }
     setProfile(prof)
     useCacheStore.getState().setMembers(username, prof)
+    if (prof.username) {
+      useCacheStore.getState().setMembers(prof.username, prof)
+    }
 
     // Posts
     const { data: postsData } = await supabase
@@ -61,7 +67,7 @@ export default function PublicProfilePage() {
       .order('created_at', { ascending: false })
       .limit(30)
     setPosts(postsData || [])
-    useCacheStore.getState().setPosts("profile_" + username, postsData || [])
+    useCacheStore.getState().setPosts("profile_" + (prof.username || prof.id), postsData || [])
 
     // Boutiques
     const { data: shopsData } = await supabase
