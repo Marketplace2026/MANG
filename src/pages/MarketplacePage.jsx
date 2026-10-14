@@ -1257,6 +1257,7 @@ export default function MarketplacePage() {
 // TOP SHOP CARD
 // ============================================================
 function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, rank }) {
+  const navigate = useNavigate()
   const medalColor = { 1: 'bg-gold-400 text-gold-950', 2: 'bg-slate-300 text-slate-900', 3: 'bg-amber-600 text-amber-50' }[rank] || 'bg-primary-500 text-white'
   
   return (
@@ -1278,10 +1279,33 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
       <div className="p-2">
         {/* Avatar + Nom + username */}
         <div className="flex items-center gap-1.5 mb-2">
-          <Avatar src={shop.owner?.avatar_url} name={shop.name} size="xs" className="ring-1 ring-white shadow-sm flex-shrink-0"/>
+          <div
+            onClick={(e) => {
+              const target = shop.owner?.username || shop.owner_id
+              if (target) {
+                e.stopPropagation()
+                navigate(`/profil/${target}`)
+              }
+            }}
+            className="cursor-pointer hover:opacity-85 transition-opacity flex-shrink-0"
+            title="Voir le profil"
+          >
+            <Avatar src={shop.owner?.avatar_url} name={shop.name} size="xs" className="ring-1 ring-white shadow-sm"/>
+          </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-dark-800 text-[10px] leading-tight truncate">{shop.name}</h3>
-            <p className="text-dark-600/40 text-[9px] truncate">@{shop.owner?.username}</p>
+            <p
+              onClick={(e) => {
+                const target = shop.owner?.username || shop.owner_id
+                if (target) {
+                  e.stopPropagation()
+                  navigate(`/profil/${target}`)
+                }
+              }}
+              className="text-dark-600/40 text-[9px] truncate hover:text-emerald-700 hover:underline cursor-pointer"
+            >
+              @{shop.owner?.username}
+            </p>
           </div>
         </div>
 
@@ -1334,6 +1358,7 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
 // SHOP CARD
 // ============================================================
 function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNearby }) {
+  const navigate = useNavigate()
   const isOnline = shop.owner?.last_seen_at
     ? (new Date() - new Date(shop.owner.last_seen_at)) < 120000 : false
 
@@ -1378,14 +1403,35 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
 
         {/* Nom + username — sans avatar qui déborde */}
         <div className="flex items-center gap-2 mb-1">
-          <div className="relative flex-shrink-0">
+          <div
+            onClick={(e) => {
+              const target = shop.owner?.username || shop.owner_id
+              if (target) {
+                e.stopPropagation()
+                navigate(`/profil/${target}`)
+              }
+            }}
+            className="relative flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+            title="Voir le profil"
+          >
             <Avatar src={shop.owner?.avatar_url} name={shop.name} size="sm"
               className="ring-2 ring-white shadow-sm"/>
             {isOnline && <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-white"/>}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-dark-800 text-xs leading-tight truncate">{shop.name}</h3>
-            <p className="text-dark-600/40 text-[10px] truncate">@{shop.owner?.username}</p>
+            <p
+              onClick={(e) => {
+                const target = shop.owner?.username || shop.owner_id
+                if (target) {
+                  e.stopPropagation()
+                  navigate(`/profil/${target}`)
+                }
+              }}
+              className="text-dark-600/40 text-[10px] truncate hover:text-emerald-700 hover:underline cursor-pointer"
+            >
+              @{shop.owner?.username}
+            </p>
           </div>
         </div>
 

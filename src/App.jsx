@@ -165,6 +165,7 @@ export default function App() {
             <Route path="/communaute"    element={<CommunityPage />} />
             <Route path="/produit/:id"   element={<ProductDetailPage />} />
             <Route path="/profil/:username" element={<PublicProfilePage />} />
+            <Route path="/profile/:username" element={<PublicProfilePage />} />
 
             {/* Routes exigeant une connexion stricte (non accessibles aux invités) */}
             <Route path="/commandes"     element={<StrictAuthRoute><OrdersPage /></StrictAuthRoute>} />

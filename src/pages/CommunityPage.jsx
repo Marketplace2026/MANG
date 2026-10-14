@@ -289,13 +289,23 @@ function StoryViewer({
         </div>
 
         <div className="flex items-center justify-between text-white">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => {
+              const target = group.username || group.userId
+              if (target) {
+                onClose?.()
+                navigate(`/profil/${target}`)
+              }
+            }}
+            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <Avatar src={group.avatar} name={group.username} size="sm" className="border border-white/20 flex-shrink-0" />
             <span className="font-bold text-sm truncate">@{group.username}</span>
             <span className="text-white/50 text-xs flex-shrink-0">
               {formatDistanceToNow(new Date(story.createdAt || Date.now()), { addSuffix: true, locale: fr })}
             </span>
-          </div>
+          </button>
           <div className="flex items-center gap-2 flex-shrink-0">
             {isOwner && (
               <div className="relative">
@@ -403,6 +413,7 @@ function StoryViewer({
 // LISTE "VU PAR" D'UNE STORY
 // ============================================================
 function StoryViewersSheet({ open, onClose, storyId }) {
+  const navigate = useNavigate()
   const [viewers, setViewers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -436,9 +447,20 @@ function StoryViewersSheet({ open, onClose, storyId }) {
         ) : viewers.length === 0 ? (
           <p className="text-center text-dark-600/50 dark:text-dark-400 py-8">Personne n'a encore vu cette story</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {viewers.map((v, i) => (
-              <div key={i} className="flex items-center justify-between gap-3">
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  const target = v.viewer?.username || v.viewer?.id
+                  if (target) {
+                    onClose?.()
+                    navigate(`/profil/${target}`)
+                  }
+                }}
+                className="w-full flex items-center justify-between gap-3 p-2 rounded-2xl hover:bg-surface-100 dark:hover:bg-dark-800 text-left transition-colors cursor-pointer"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar src={v.viewer?.avatar_url} name={v.viewer?.username} size="md" />
                   <p className="font-semibold text-dark-800 dark:text-white text-sm truncate">@{v.viewer?.username}</p>
@@ -446,7 +468,7 @@ function StoryViewersSheet({ open, onClose, storyId }) {
                 <span className="text-xs text-dark-600/40 dark:text-dark-500 flex-shrink-0">
                   {formatDistanceToNow(new Date(v.viewed_at), { addSuffix: true, locale: fr })}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -1846,13 +1868,23 @@ function PostCard({
       {post.parent_post && (
         <div className="bg-surface-50 dark:bg-dark-800 border border-surface-150 dark:border-dark-700 rounded-2xl p-3.5 mb-3.5 flex flex-col gap-2 relative">
           <div className="flex items-center gap-2">
-            <Avatar src={post.parent_post.user?.avatar_url} name={post.parent_post.user?.username} size="xs"/>
-            <div>
-              <p className="font-bold text-dark-800 dark:text-white text-xs">@{post.parent_post.user?.username}</p>
-              <p className="text-[9px] text-dark-600/40 dark:text-dark-300 font-semibold">
-                {formatDistanceToNow(new Date(post.parent_post.created_at), { addSuffix: true, locale: fr })}
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                const target = post.parent_post.user?.username || post.parent_post.user_id
+                if (target) navigate(`/profil/${target}`)
+              }}
+              className="flex items-center gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <Avatar src={post.parent_post.user?.avatar_url} name={post.parent_post.user?.username} size="xs"/>
+              <div>
+                <p className="font-bold text-dark-800 dark:text-white text-xs">@{post.parent_post.user?.username}</p>
+                <p className="text-[9px] text-dark-600/40 dark:text-dark-300 font-semibold">
+                  {formatDistanceToNow(new Date(post.parent_post.created_at), { addSuffix: true, locale: fr })}
+                </p>
+              </div>
+            </button>
           </div>
           <p className="text-dark-700 dark:text-dark-200 text-xs leading-relaxed">
             {post.parent_post.content?.startsWith('{"is_poll"') 
@@ -2222,13 +2254,28 @@ function CommentsSheet({ open, onClose, post, user, profile }) {
 // ============================================================
 function CommentItem({ comment, userId, isReply, onReply, onDelete, isLiked, onLike }) {
   const isOwner = comment.user_id === userId
+  const navigate = useNavigate()
+  const authorTarget = comment.user?.username || comment.user_id
+
   return (
     <div className="flex gap-2">
-      <Avatar src={comment.user?.avatar_url} name={comment.user?.username}
-        size={isReply ? 'xs' : 'sm'} className="flex-shrink-0 mt-0.5"/>
+      <button
+        type="button"
+        onClick={() => authorTarget && navigate(`/profil/${authorTarget}`)}
+        className="cursor-pointer hover:opacity-80 transition-opacity self-start flex-shrink-0"
+      >
+        <Avatar src={comment.user?.avatar_url} name={comment.user?.username}
+          size={isReply ? 'xs' : 'sm'} className="mt-0.5"/>
+      </button>
       <div className="flex-1 min-w-0">
         <div className="bg-surface-100 dark:bg-dark-800 rounded-2xl rounded-tl-sm px-3 py-2">
-          <p className="font-bold text-dark-800 dark:text-white text-xs">@{comment.user?.username}</p>
+          <button
+            type="button"
+            onClick={() => authorTarget && navigate(`/profil/${authorTarget}`)}
+            className="text-left cursor-pointer hover:underline"
+          >
+            <p className="font-bold text-dark-800 dark:text-white text-xs">@{comment.user?.username}</p>
+          </button>
           <p className="text-dark-700 dark:text-dark-200 text-sm mt-0.5 leading-relaxed">{comment.content}</p>
         </div>
         <div className="flex items-center gap-3 mt-1 px-1">
@@ -2255,6 +2302,7 @@ function CommentItem({ comment, userId, isReply, onReply, onDelete, isLiked, onL
 // LIKERS SHEET
 // ============================================================
 function LikersSheet({ open, onClose, post }) {
+  const navigate = useNavigate()
   const [likers, setLikers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -2282,12 +2330,23 @@ function LikersSheet({ open, onClose, post }) {
         ) : likers.length === 0 ? (
           <p className="text-center text-dark-600/50 dark:text-dark-400 py-8">Aucun like pour l'instant</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {likers.map((l, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  const target = l.user?.username || l.user?.id
+                  if (target) {
+                    onClose?.()
+                    navigate(`/profil/${target}`)
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-surface-100 dark:hover:bg-dark-800 text-left transition-colors cursor-pointer"
+              >
                 <Avatar src={l.user?.avatar_url} name={l.user?.username} size="md"/>
                 <p className="font-semibold text-dark-800 dark:text-white text-sm">@{l.user?.username}</p>
-              </div>
+              </button>
             ))}
           </div>
         )}

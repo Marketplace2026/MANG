@@ -412,7 +412,19 @@ export default function ProductDetailPage() {
                   <BadgeCheck size={14} className="text-emerald-500 fill-emerald-50/50"/>
                 )}
               </div>
-              <p className="text-dark-600/50 text-xs">Propriétaire : @{product.shop?.owner?.username}</p>
+              <p className="text-dark-600/50 text-xs flex items-center gap-1 flex-wrap">
+                <span>Propriétaire :</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = product.shop?.owner?.username || product.shop?.owner_id
+                    if (target) navigate(`/profil/${target}`)
+                  }}
+                  className="font-bold text-primary-700 hover:underline cursor-pointer"
+                >
+                  @{product.shop?.owner?.username || 'vendeur'}
+                </button>
+              </p>
             </div>
             <button onClick={() => navigate(`/boutique/${product.shop?.slug || product.shop_id}`)}
               className="px-3.5 py-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-700 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1">
@@ -587,13 +599,20 @@ export default function ProductDetailPage() {
               {reviews.map(rev => (
                 <div key={rev.id} className="space-y-2 border-b border-surface-50 last:border-0 pb-3">
                   <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = rev.user?.username || rev.user_id
+                        if (target) navigate(`/profil/${target}`)
+                      }}
+                      className="flex items-center gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       <Avatar src={rev.user?.avatar_url} name={rev.user?.username} size="sm"/>
                       <div>
-                        <p className="font-bold text-xs text-dark-800">@{rev.user?.username}</p>
+                        <p className="font-bold text-xs text-dark-800 hover:text-emerald-750">@{rev.user?.username}</p>
                         <p className="text-dark-600/35 text-[9px]">{new Date(rev.created_at).toLocaleDateString('fr-FR')}</p>
                       </div>
-                    </div>
+                    </button>
                     <div className="flex text-gold-400">
                       {''.repeat(rev.rating)}{''.repeat(5 - rev.rating)}
                     </div>

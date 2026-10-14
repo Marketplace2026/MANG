@@ -52,7 +52,7 @@ export default function UserLink({
 
   return (
     <Link
-      to={`/profile/${username}`}
+      to={`/profil/${username}`}
       onClick={handleClick}
       className={clsx(
         'inline-flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-opacity',

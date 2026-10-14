@@ -7,7 +7,7 @@ import {
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
   ChevronDown, Info, Bell, BellOff, Archive,
-  MessageCircle, Users, Clock, Loader2, ZoomIn,
+  MessageCircle, Users, User, Clock, Loader2, ZoomIn,
   Lock, StopCircle, Play, Pause
 } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -431,6 +431,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 // CHAT WINDOW
 // ══════════════════════════════════════════════════════════
 function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
+  const navigate = useNavigate()
   const other = conv.buyer_id === user.id ? conv.seller : conv.buyer
   const [messages, setMessages]     = useState([])
   const [loading, setLoading]       = useState(true)
@@ -1265,13 +1266,32 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               <button onClick={() => setShowInfo(false)} className="absolute top-4 left-4 w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
                 <X size={16} className="text-white"/>
               </button>
-              <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
-              <p className="text-white font-bold text-lg mt-3">@{other?.username}</p>
+              <div
+                onClick={() => {
+                  const target = other?.username || other?.id
+                  if (target) {
+                    setShowInfo(false)
+                    navigate(`/profil/${target}`)
+                  }
+                }}
+                className="cursor-pointer hover:opacity-85 transition-opacity inline-flex flex-col items-center"
+                title="Voir le profil public"
+              >
+                <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
+                <p className="text-white font-bold text-lg mt-3 hover:underline">@{other?.username}</p>
+              </div>
               <p className="text-white/50 text-xs">{online ? '🟢 En ligne' : 'Hors ligne'}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {[
+                { icon: User,    label: 'Voir le profil public', action: () => {
+                    const target = other?.username || other?.id
+                    if (target) {
+                      setShowInfo(false)
+                      navigate(`/profil/${target}`)
+                    }
+                  } },
                 { icon: Bell,    label: (conv.muted_by || []).includes(user?.id) ? 'Activer les notifications' : 'Rendre silencieux', action: async () => {
                     const { supabase } = await import('@/lib/supabase');
                     await supabase.rpc('toggle_mute_conversation', { p_conv_id: conv.id, p_user_id: user?.id });

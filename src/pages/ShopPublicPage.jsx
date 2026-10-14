@@ -227,8 +227,15 @@ export default function ShopPublicPage() {
         <div className="bg-white px-4 pt-3 pb-4 shadow-sm">
           <div className="flex items-center gap-3 -mt-8 mb-3">
             {/* Avatar rond comme les cartes */}
-            <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-gray-100">
+            <div
+              onClick={() => {
+                const target = shop.owner?.username || shop.owner_id
+                if (target) navigate(`/profil/${target}`)
+              }}
+              title="Voir le profil du propriétaire"
+              className="relative flex-shrink-0 cursor-pointer group active:scale-95 transition-transform"
+            >
+              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-gray-100 group-hover:ring-emerald-400 transition-all">
                 {shop.owner?.avatar_url
                   ? <img src={shop.owner.avatar_url} className="w-full h-full object-cover"/>
                   : <div className="w-full h-full flex items-center justify-center font-black text-2xl text-white"
@@ -252,9 +259,17 @@ export default function ShopPublicPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-gray-400 text-xs">@{shop.owner?.username}
-                  {shop.city && <span className="text-gray-300 ml-1 flex items-center gap-0.5">· <MapPin size={10} />{shop.city}</span>}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = shop.owner?.username || shop.owner_id
+                    if (target) navigate(`/profil/${target}`)
+                  }}
+                  className="text-gray-500 hover:text-emerald-700 hover:underline text-xs font-semibold cursor-pointer text-left"
+                >
+                  @{shop.owner?.username}
+                  {shop.city && <span className="text-gray-400 ml-1 inline-flex items-center gap-0.5">· <MapPin size={10} />{shop.city}</span>}
+                </button>
                 {shop.reviews_count > 0 && (
                   <button onClick={() => setShowReviews(true)}
                     className="flex items-center gap-0.5 active:scale-95">
@@ -477,13 +492,22 @@ export default function ShopPublicPage() {
                   <div key={review.id} className={clsx('pb-4', idx < reviews.length - 1 && 'border-b border-gray-100')}>
                     {/* En-tête avis */}
                     <div className="flex items-center gap-2.5 mb-2">
-                      <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-bold text-dark-800 text-xs block">@{review.user?.username}</span>
-                        <span className="text-gray-400 text-[10px]">
-                          {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
-                        </span>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = review.user?.username || review.user_id
+                          if (target) navigate(`/profil/${target}`)
+                        }}
+                        className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                      >
+                        <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-bold text-dark-800 text-xs block hover:text-emerald-700">@{review.user?.username}</span>
+                          <span className="text-gray-400 text-[10px]">
+                            {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
+                          </span>
+                        </div>
+                      </button>
                       {/* Étoiles */}
                       <div className="flex gap-0.5 flex-shrink-0">
                         {[1,2,3,4,5].map(s => (
@@ -564,31 +588,53 @@ export default function ShopPublicPage() {
 
       {/* ══════ LIKERS SHEET ══════ */}
       <BottomSheet open={showLikers} onClose={() => setShowLikers(false)} title="Mentions J'aime">
-        <div className="px-4 pt-2 pb-8 space-y-3">
+        <div className="px-4 pt-2 pb-8 space-y-1">
           {likers.length === 0
             ? <p className="text-center text-gray-400 py-8">Soyez le premier à aimer !</p>
             : likers.map((l, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  const target = l.user?.username || l.user?.id
+                  if (target) {
+                    setShowLikers(false)
+                    navigate(`/profil/${target}`)
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 text-left transition-colors cursor-pointer"
+              >
                 <Avatar src={l.user?.avatar_url} name={l.user?.username} size="md"/>
                 <p className="font-semibold text-dark-800 text-sm">@{l.user?.username}</p>
-              </div>
+              </button>
             ))}
         </div>
       </BottomSheet>
 
       {/* ══════ FOLLOWERS SHEET ══════ */}
       <BottomSheet open={showFollowers} onClose={() => setShowFollowers(false)} title="Abonnés">
-        <div className="px-4 pt-2 pb-8 space-y-3">
+        <div className="px-4 pt-2 pb-8 space-y-1">
           {followers.length === 0
             ? <p className="text-center text-gray-400 py-8">Aucun abonné pour l'instant</p>
             : followers.map((f, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  const target = f.user?.username || f.user?.id
+                  if (target) {
+                    setShowFollowers(false)
+                    navigate(`/profil/${target}`)
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 text-left transition-colors cursor-pointer"
+              >
                 <Avatar src={f.user?.avatar_url} name={f.user?.username} size="md"/>
                 <div>
                   <p className="font-semibold text-dark-800 text-sm">@{f.user?.username}</p>
                   {f.user?.city && <p className="text-gray-400 text-xs flex items-center gap-0.5"><MapPin size={10} />{f.user.city}</p>}
                 </div>
-              </div>
+              </button>
             ))}
         </div>
       </BottomSheet>
@@ -826,13 +872,27 @@ function CommentsSection({ shop, user, profile }) {
 function CommentItem({ comment, userId, isReply, onReply, onDelete, onEdit, editingId, editText, setEditText, onSaveEdit, onCancelEdit }) {
   const isOwner = comment.user_id === userId
   const isEditing = editingId === comment.id
+  const navigate = useNavigate()
+  const authorTarget = comment.user?.username || comment.user_id
 
   return (
     <div className="flex gap-2.5">
-      <Avatar src={comment.user?.avatar_url} name={comment.user?.username} size={isReply ? 'xs' : 'sm'} className="flex-shrink-0 mt-0.5"/>
+      <button
+        type="button"
+        onClick={() => authorTarget && navigate(`/profil/${authorTarget}`)}
+        className="cursor-pointer hover:opacity-80 transition-opacity self-start flex-shrink-0"
+      >
+        <Avatar src={comment.user?.avatar_url} name={comment.user?.username} size={isReply ? 'xs' : 'sm'} className="mt-0.5"/>
+      </button>
       <div className="flex-1 min-w-0">
         <div className="bg-gray-50 rounded-2xl rounded-tl-sm px-3 py-2.5">
-          <p className="font-bold text-dark-800 text-xs">@{comment.user?.username}</p>
+          <button
+            type="button"
+            onClick={() => authorTarget && navigate(`/profil/${authorTarget}`)}
+            className="text-left cursor-pointer hover:underline"
+          >
+            <p className="font-bold text-dark-800 text-xs">@{comment.user?.username}</p>
+          </button>
           {isEditing ? (
             <div className="mt-1.5 space-y-1.5">
               <input type="text" value={editText} onChange={e => setEditText(e.target.value)}

@@ -726,7 +726,14 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
       onClick={() => navigate('/communaute', { state: { openPostId: post.id } })}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <div
+          onClick={(e) => {
+            e.stopPropagation()
+            const target = post.user?.username || post.user_id
+            if (target) navigate(`/profil/${target}`)
+          }}
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="w-8 h-8 rounded-full overflow-hidden border border-surface-200 flex-shrink-0">
             {post.user?.avatar_url ? (
               <img src={post.user.avatar_url} className="w-full h-full object-cover" />
@@ -737,7 +744,7 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-dark-800 text-xs truncate">@{post.user?.username}</p>
+            <p className="font-bold text-dark-800 text-xs truncate hover:text-emerald-700">@{post.user?.username}</p>
             <p className="text-[9px] text-dark-600/40 font-semibold">
               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
             </p>

@@ -298,13 +298,22 @@ export default function ReferralPage() {
                 const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.registered
                 return (
                   <div key={ref.id} className="bg-white dark:bg-dark-900 border border-surface-100 dark:border-dark-800 rounded-2xl shadow-card px-4 py-3 flex items-center gap-3">
-                    <Avatar src={ref.referred?.avatar_url} name={ref.referred?.username} size="md"/>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-dark-800 dark:text-white text-sm">@{ref.referred?.username}</p>
-                      <p className="text-dark-600/40 dark:text-white/40 text-xs">
-                        Inscrit le {new Date(ref.created_at).toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = ref.referred?.username || ref.referred?.id
+                        if (target) navigate(`/profil/${target}`)
+                      }}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <Avatar src={ref.referred?.avatar_url} name={ref.referred?.username} size="md"/>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-dark-800 dark:text-white text-sm hover:text-emerald-600 transition-colors">@{ref.referred?.username || 'utilisateur'}</p>
+                        <p className="text-dark-600/40 dark:text-white/40 text-xs">
+                          Inscrit le {new Date(ref.created_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                    </button>
                     <div className="text-right flex-shrink-0 space-y-1">
                       <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold', cfg.color)}>
                         {cfg.icon} {cfg.label}
