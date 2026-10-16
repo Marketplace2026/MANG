@@ -7,8 +7,8 @@ import {
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
   ChevronDown, Info, Bell, BellOff, Archive,
-  MessageCircle, Users, User, Clock, Loader2, ZoomIn,
-  Lock, StopCircle, Play, Pause
+  MessageCircle, MessageSquare, Users, User, Clock, Loader2, ZoomIn,
+  Lock, StopCircle, Play, Pause, ShoppingCart, Store, Mail, Radio, CircleDot
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -466,6 +466,40 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const analyserRef                 = useRef(null)
   const waveIntervalRef             = useRef(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline(other?.last_seen_at))
+  const [deletingConv, setDeletingConv] = useState(false)
+
+  const handlePhoneCall = () => {
+    const phone = other?.phone || conv.shop?.whatsapp_number || conv.shop?.phone
+    if (phone) {
+      const cleanPhone = phone.replace(/[^0-9+]/g, '')
+      window.location.href = `tel:${cleanPhone}`
+    } else {
+      toast.error('Aucun numéro de téléphone disponible pour ce contact')
+    }
+  }
+
+  const handleDeleteConversation = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette conversation ?')) return
+    setDeletingConv(true)
+    try {
+      const { error } = await supabase.rpc('delete_conversation', {
+        p_conv_id: conv.id,
+        p_user_id: user.id
+      })
+      if (error) {
+        const { error: delErr } = await supabase.from('conversations').delete().eq('id', conv.id)
+        if (delErr) throw delErr
+      }
+      toast.success('Conversation supprimée')
+      setShowInfo(false)
+      onBack?.()
+    } catch (err) {
+      console.error(err)
+      toast.error('Impossible de supprimer la conversation')
+    } finally {
+      setDeletingConv(false)
+    }
+  }
 
   // Fetch product context
   useEffect(() => {
@@ -525,11 +559,16 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     const ch = supabase.channel(`chat-${conv.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
         payload => {
+          const sender = payload.new.sender_id === user?.id
+            ? { id: user.id, username: user.user_metadata?.username, avatar_url: user.user_metadata?.avatar_url }
+            : other
+          const enrichedMsg = { ...payload.new, sender }
+
           setMessages(prev => {
             if (prev.some(m => m.id === payload.new.id)) return prev
-            return [...prev, payload.new]
+            return [...prev, enrichedMsg]
           })
-          if (payload.new.sender_id !== user.id) {
+          if (payload.new.sender_id !== user?.id) {
             // Update to read since chat is open
             supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('id', payload.new.id)
             markRead(conv.id)
@@ -669,7 +708,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           inputRef.current.style.height = '70px'
           inputRef.current.focus()
         }
-        toast.success('Brouillon rédigé par le Copilote IA ! ✨')
+        toast.success('Brouillon rédigé par le Copilote IA !')
       }
     } catch {
       toast.error('Erreur lors de la suggestion IA')
@@ -696,6 +735,18 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     setReplyTo(null)
     setSending(false)
 
+    // Notification in-app au destinataire
+    if (other?.id && other.id !== user.id) {
+      supabase.rpc('create_notification', {
+        p_user_id: other.id,
+        p_type: 'new_message',
+        p_title: `Message de @${user.user_metadata?.username || user.email?.split('@')[0] || 'Utilisateur'}`,
+        p_body: content.slice(0, 80),
+        p_reference_id: conv.id,
+        p_reference_type: 'conversation'
+      }).catch(() => {})
+    }
+
     // 🤖 Copilote Vendeur 24/7 Cloud : Si l'acheteur écrit au vendeur, déclencher la réponse automatique
     if (conv?.seller_id && conv.seller_id !== user.id) {
       setTimeout(() => {
@@ -719,14 +770,27 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     if (error) { toast.error('Erreur upload'); setUploading(false); return }
 
     const { data: urlData } = supabase.storage.from(MSG_BUCKET).getPublicUrl(path)
+    const defaultLabel = type === 'image' ? 'Photo' : type === 'video' ? 'Vidéo' : type === 'audio' ? 'Note vocale' : file.name
     await supabase.from('messages').insert({
       conversation_id: conv.id, sender_id: user.id, type,
       file_url: urlData.publicUrl, file_name: file.name,
-      file_size: file.size, content: type === 'image' ? '📷 Photo' : type === 'video' ? '🎥 Vidéo' : type === 'audio' ? '🎙️ Audio' : `📎 ${file.name}`,
+      file_size: file.size, content: defaultLabel,
       reply_to_id: replyTo?.id || null, reply_to_content: replyTo?.content || null,
     })
-    await supabase.from('conversations').update({ last_message: type === 'image' ? '📷 Photo' : '📎 Fichier', last_message_at: new Date().toISOString() }).eq('id', conv.id)
+    await supabase.from('conversations').update({ last_message: defaultLabel, last_message_at: new Date().toISOString() }).eq('id', conv.id)
     setReplyTo(null); setUploading(false)
+
+    // Notification in-app pour média
+    if (other?.id && other.id !== user.id) {
+      supabase.rpc('create_notification', {
+        p_user_id: other.id,
+        p_type: 'new_message',
+        p_title: `Message de @${user.user_metadata?.username || user.email?.split('@')[0] || 'Utilisateur'}`,
+        p_body: `Vous a envoyé un fichier (${defaultLabel})`,
+        p_reference_id: conv.id,
+        p_reference_type: 'conversation'
+      }).catch(() => {})
+    }
   }
 
   // Waveform live pendant l'enregistrement (Web Audio API)
@@ -769,8 +833,11 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
       chunksRef.current = []
-      const mr = new MediaRecorder(stream)
-      mr.ondataavailable = e => chunksRef.current.push(e.data)
+      const mimeType = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '')
+      const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+      mr.ondataavailable = e => { if (e.data?.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = async () => {
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(t => t.stop())
@@ -779,12 +846,14 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         const action = pendingActionRef.current
         if (action === 'cancel') { chunksRef.current = []; return }
 
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const chosenMime = mimeType || 'audio/webm'
+        const ext = chosenMime.includes('mp4') ? 'mp4' : 'webm'
+        const blob = new Blob(chunksRef.current, { type: chosenMime })
         if (action === 'preview') {
           setRecordedBlob(blob)
           setRecordedUrl(URL.createObjectURL(blob))
         } else {
-          const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
+          const file = new File([blob], `audio_${Date.now()}.${ext}`, { type: chosenMime })
           await uploadFile(file)
         }
       }
@@ -896,10 +965,10 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
     
     if (deltaY > 80) {
       setLocked(true)
-      toast.success('Enregistrement verrouillé 🔒')
+      toast.success('Enregistrement verrouillé')
     } else if (deltaX > 80) {
       setIsCancelled(true)
-      toast.error('Enregistrement annulé 🗑️')
+      toast.error('Enregistrement annulé')
       stopRecording('cancel')
     }
   }
@@ -952,13 +1021,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 bg-surface-50 flex flex-col" style={{ zIndex: 200 }}>
+    <div className="fixed inset-0 md:static md:inset-auto md:w-full md:h-full bg-surface-50 flex flex-col z-[200] md:z-auto">
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
 
       {/* ── HEADER ── */}
-      <div className="relative bg-primary-700 pt-12 pb-3 px-4 flex-shrink-0"
+      <div className="relative bg-primary-700 pt-12 md:pt-4 pb-3 px-4 flex-shrink-0"
         style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e)' }}>
 
         {/* Bandeau message épinglé */}
@@ -975,13 +1044,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             <ArrowLeft size={18} className="text-white"/>
           </button>
 
-          <div className="flex items-center gap-2.5 flex-1 min-w-0" onClick={() => setShowInfo(true)}>
+          <div className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer" onClick={() => setShowInfo(true)}>
             <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
             <div className="min-w-0">
               <p className="text-white font-bold text-base truncate leading-tight">@{other?.username}</p>
-              <p className="text-white/50 text-xs">
+              <p className="text-white/50 text-xs flex items-center gap-1.5">
                 {otherTyping ? <span className="text-green-300 animate-pulse">En train d'écrire...</span>
-                  : isOnlineState ? <span className="text-emerald-300">En ligne</span>
+                  : isOnlineState ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" /><span className="text-emerald-300">En ligne</span></>
                   : other?.last_seen_at ? `Vu à ${format(new Date(other.last_seen_at), 'HH:mm')}` : 'Hors ligne'}
               </p>
             </div>
@@ -989,15 +1058,18 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
           <div className="flex items-center gap-1">
             <button onClick={() => setShowSearch(!showSearch)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"
+              title="Rechercher dans les messages">
               <Search size={16} className="text-white"/>
             </button>
-            <button onClick={() => setMenuOpen(false)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+            <button onClick={handlePhoneCall}
+              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"
+              title="Appeler">
               <Phone size={16} className="text-white"/>
             </button>
             <button onClick={() => setShowInfo(true)}
-              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+              className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"
+              title="Détails de la conversation">
               <MoreVertical size={16} className="text-white"/>
             </button>
           </div>
@@ -1088,7 +1160,9 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           <Reply size={14} className="text-primary-600 flex-shrink-0"/>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-primary-700">Répondre à @{replyTo.sender?.username}</p>
-            <p className="text-xs text-dark-500 truncate">{replyTo.content || '📎 Fichier'}</p>
+            <p className="text-xs text-dark-500 truncate flex items-center gap-1">
+              {replyTo.content || <><Paperclip size={11} className="inline flex-shrink-0 text-primary-600"/> <span>Fichier</span></>}
+            </p>
           </div>
           <button onClick={() => setReplyTo(null)} className="w-6 h-6 rounded-full bg-primary-200 flex items-center justify-center">
             <X size={12} className="text-primary-700"/>
@@ -1119,7 +1193,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </div>
         )}
 
-                {/* Suggestion Copilote Vendeur IA */}
+        {/* Suggestion Copilote Vendeur IA */}
         {conv.seller_id === user?.id && messages.length > 0 && messages[messages.length - 1]?.sender_id !== user.id && (
           <div className="mb-2 p-2.5 bg-gradient-to-r from-emerald-50 via-primary-50 to-emerald-50 border border-primary-200/80 rounded-2xl flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
             <div className="flex items-center gap-2 min-w-0">
@@ -1139,7 +1213,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:scale-95 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all flex-shrink-0"
             >
               {suggestingAI ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-              Rédiger en 1 clic ✨
+              Rédiger en 1 clic
             </button>
           </div>
         )}
@@ -1159,7 +1233,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             {/* Badge verrou flottant — cliquable, verrouille immédiatement l'enregistrement */}
             {!locked && (
               <button
-                onClick={() => { setLocked(true); toast.success('Enregistrement verrouillé 🔒') }}
+                onClick={() => { setLocked(true); toast.success('Enregistrement verrouillé') }}
                 className="absolute -top-16 right-3 flex flex-col items-center gap-1 animate-bounce active:scale-90 transition-transform">
                 <div className="w-10 h-10 rounded-full bg-white shadow-lg border border-surface-200 flex items-center justify-center text-dark-500">
                   <Lock size={16}/>
@@ -1176,8 +1250,8 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             {/* Waveform en direct */}
             <div className="flex items-center gap-[2px] flex-1 h-6 overflow-hidden">
               {waveBars.length === 0 ? (
-                <span className="text-xs font-normal text-red-500 animate-pulse">
-                  {locked ? 'Verrouillé 🔒' : 'Glissez ↑ verrouiller · ← annuler'}
+                <span className="text-xs font-normal text-red-500 animate-pulse flex items-center gap-1">
+                  {locked ? <><Lock size={12} className="inline text-red-500"/> Verrouillé</> : 'Glissez ↑ verrouiller · ← annuler'}
                 </span>
               ) : waveBars.map((v, i) => (
                 <div key={i} className="w-[3px] bg-red-400 rounded-full flex-shrink-0"
@@ -1197,7 +1271,9 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 </button>
               </div>
             ) : (
-              <span className="text-[10px] text-red-400 flex-shrink-0">●REC</span>
+              <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 flex-shrink-0">
+                <CircleDot size={10} className="animate-pulse text-red-500" /> REC
+              </span>
             )}
           </div>
         ) : (
@@ -1280,7 +1356,16 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
                 <p className="text-white font-bold text-lg mt-3 hover:underline">@{other?.username}</p>
               </div>
-              <p className="text-white/50 text-xs">{online ? '🟢 En ligne' : 'Hors ligne'}</p>
+              <p className="text-white/50 text-xs flex items-center justify-center gap-1.5 mt-0.5">
+                {online ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                    <span className="text-emerald-300 font-medium">En ligne</span>
+                  </>
+                ) : (
+                  <span>Hors ligne</span>
+                )}
+              </p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1327,8 +1412,11 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 </div>
               </div>
 
-              <button className="w-full p-4 bg-red-50 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:bg-red-100">
-                <Trash2 size={15}/> Supprimer la conversation
+              <button 
+                onClick={handleDeleteConversation}
+                disabled={deletingConv}
+                className="w-full p-4 bg-red-50 hover:bg-red-100 rounded-2xl text-sm font-bold text-red-600 flex items-center justify-center gap-2 active:scale-98 transition-all disabled:opacity-50">
+                {deletingConv ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={15}/>} Supprimer la conversation
               </button>
             </div>
           </div>
@@ -1385,17 +1473,17 @@ function ConvItem({ conv, userId, onClick }) {
         <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
         {/* Badge achat/vente */}
         <span className={clsx(
-          'absolute -top-1 -left-1 text-[8px] font-black px-1 py-0.5 rounded-full',
-          isAchat ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'
-        )}>
-          {isAchat ? '🛒' : '🏪'}
+          'absolute -top-1 -left-1 p-1 rounded-full shadow-sm flex items-center justify-center',
+          isAchat ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
+        )} title={isAchat ? 'Achat' : 'Vente'}>
+          {isAchat ? <ShoppingCart size={9} /> : <Store size={9} />}
         </span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
           <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900' : 'font-bold text-dark-700')}>
-            @{other?.username}
+            @{other?.username || conv.shop?.name || 'Utilisateur'}
           </p>
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
             {conv.last_message_at && (
@@ -1413,7 +1501,8 @@ function ConvItem({ conv, userId, onClick }) {
 
         {conv.shop && (
           <p className="text-[10px] text-primary-600 font-semibold mb-0.5 flex items-center gap-1">
-            🏪 {conv.shop.name}
+            <Store size={11} className="shrink-0" />
+            <span className="truncate">{conv.shop.name}</span>
           </p>
         )}
 
@@ -1460,11 +1549,23 @@ export default function MessagesPage() {
   useEffect(() => { if (user) loadConvs() }, [user])
 
   useEffect(() => {
-    if (openConvId && convs.length > 0) {
-      const c = convs.find(c => c.id === openConvId)
-      if (c) setActive(c)
+    if (!openConvId || !user) return
+    const c = convs.find(item => item.id === openConvId)
+    if (c) {
+      setActive(c)
+    } else {
+      supabase
+        .from('conversations')
+        .select(`*, shop:shops(id, name, cover_url, slug, whatsapp_number, phone),
+          buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at, phone),
+          seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at, phone)`)
+        .eq('id', openConvId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setActive(data)
+        })
     }
-  }, [openConvId, convs])
+  }, [openConvId, convs, user])
 
   const activeRef = useRef(active)
   useEffect(() => { activeRef.current = active }, [active])
@@ -1503,9 +1604,9 @@ export default function MessagesPage() {
     setLoading(true)
     const { data } = await supabase
       .from('conversations')
-      .select(`*, shop:shops(id, name, cover_url, slug),
-        buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
-        seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
+      .select(`*, shop:shops(id, name, cover_url, slug, whatsapp_number, phone),
+        buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at, phone),
+        seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at, phone)`)
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false })
 
@@ -1617,24 +1718,28 @@ export default function MessagesPage() {
             {/* Onglets Achat / Vente / Tous / Non lus */}
             <div className="flex gap-2 overflow-x-auto pb-1">
               {[
-                { key: 'all',    label: 'Tous',    badge: unreadTotal },
-                { key: 'achat',  label: '🛒 Achat', badge: unreadAchat },
-                { key: 'vente',  label: '🏪 Vente', badge: unreadVente },
-                { key: 'unread', label: 'Non lus',  badge: unreadTotal },
-                  { key: 'archive', label: '🗄️ Archivés' },
-              ].map(t => (
-                <button key={t.key} onClick={() => setTab(t.key)}
-                  className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
-                    tab === t.key ? 'bg-white text-primary-700' : 'bg-white/10 text-white/60')}>
-                  {t.label}
-                  {t.badge > 0 && (
-                    <span className={clsx('w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center',
-                      tab === t.key ? 'bg-primary-600 text-white' : 'bg-red-500 text-white')}>
-                      {t.badge > 9 ? '9+' : t.badge}
-                    </span>
-                  )}
-                </button>
-              ))}
+                { key: 'all',     label: 'Tous',     icon: MessageSquare, badge: unreadTotal },
+                { key: 'achat',   label: 'Achat',    icon: ShoppingCart,  badge: unreadAchat },
+                { key: 'vente',   label: 'Vente',    icon: Store,         badge: unreadVente },
+                { key: 'unread',  label: 'Non lus',  icon: Mail,          badge: unreadTotal },
+                { key: 'archive', label: 'Archivés', icon: Archive },
+              ].map(t => {
+                const TabIcon = t.icon
+                return (
+                  <button key={t.key} onClick={() => setTab(t.key)}
+                    className={clsx('flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                      tab === t.key ? 'bg-white text-primary-700 shadow-sm' : 'bg-white/10 text-white/75 hover:bg-white/20')}>
+                    <TabIcon size={13} className={clsx(tab === t.key ? 'text-primary-700' : 'text-white/80')} />
+                    <span>{t.label}</span>
+                    {t.badge > 0 && (
+                      <span className={clsx('w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center',
+                        tab === t.key ? 'bg-primary-600 text-white' : 'bg-red-500 text-white')}>
+                        {t.badge > 9 ? '9+' : t.badge}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -1659,20 +1764,21 @@ export default function MessagesPage() {
             ) : (
               <div>
                 {filtered.map(conv => (
-                  <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={async () => {
-                    // 1) Badge à 0 immédiatement + protéger contre reload realtime
+                  <ConvItem key={conv.id} conv={conv} userId={user?.id} onClick={() => {
+                    // 1) Ouvrir la discussion IMMÉDIATEMENT sans attendre
+                    setActive(conv)
+                    // 2) Mettre le badge local à 0
                     readConvsSet.current.add(conv.id)
                     setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
-                    // 2) Marquer en DB via fonction SQL (contourne RLS)
-                    await supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('conversation_id', conv.id).neq('sender_id', user.id);
-                    await supabase.rpc('mark_conversation_read', {
-                      p_conversation_id: conv.id,
-                      p_user_id: user.id
-                    }).catch(() => {});
-                    if (user?.id) fetchUnreadCount(user.id);
-                    // 3) DB confirmée → nettoyer le verrou
-                    readConvsSet.current.delete(conv.id)
-                    setActive(conv)
+                    // 3) Marquer en DB en arrière-plan
+                    if (user?.id) {
+                      supabase.rpc('mark_conversation_read', {
+                        p_conversation_id: conv.id,
+                        p_user_id: user.id
+                      }).catch(() => {})
+                      fetchUnreadCount(user.id)
+                    }
+                    setTimeout(() => readConvsSet.current.delete(conv.id), 3000)
                   }}/>
                 ))}
               </div>

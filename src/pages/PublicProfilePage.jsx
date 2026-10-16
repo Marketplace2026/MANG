@@ -206,29 +206,48 @@ export default function PublicProfilePage() {
       navigate('/connexion')
       return
     }
+    if (user.id === profile?.id) {
+      toast('C’est votre propre profil', { icon: 'ℹ️' })
+      return
+    }
+    const toastId = toast.loading('Ouverture de la discussion...')
     try {
-      // Vérifier si une conversation existe déjà
+      // 1. Vérifier si une conversation existe déjà
       const { data: conv } = await supabase
         .from('conversations')
         .select('id')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${profile.id}),and(user1_id.eq.${profile.id},user2_id.eq.${user.id})`)
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${profile.id}),and(buyer_id.eq.${profile.id},seller_id.eq.${user.id})`)
         .maybeSingle()
 
       if (conv) {
+        toast.dismiss(toastId)
         navigate(`/messages?conv=${conv.id}`)
         return
       }
 
-      // Créer la conversation si inexistante
+      // 2. Trouver si l'un ou l'autre a une boutique (optionnel)
+      const { data: targetShop } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('owner_id', profile.id)
+        .maybeSingle()
+
+      // 3. Créer la conversation avec buyer_id et seller_id
       const { data: newConv, error } = await supabase
         .from('conversations')
-        .insert({ user1_id: user.id, user2_id: profile.id })
+        .insert({
+          buyer_id: user.id,
+          seller_id: profile.id,
+          shop_id: targetShop?.id || null
+        })
         .select('id')
         .single()
 
       if (error) throw error
+      toast.dismiss(toastId)
       navigate(`/messages?conv=${newConv.id}`)
     } catch (e) {
+      toast.dismiss(toastId)
       console.warn('[Profile] Redirection messagerie:', e)
       navigate('/messages')
     }
