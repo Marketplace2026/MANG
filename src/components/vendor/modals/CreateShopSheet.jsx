@@ -16,6 +16,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
   const [coverFile, setCoverFile] = useState(null)
   const [coverPreview, setCoverPreview] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [loadingStep, setLoadingStep] = useState('')
   const [locating, setLocating] = useState(false)
   const [coords, setCoords] = useState(null)
   const coverRef = useRef()
@@ -68,18 +69,21 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
     if ((pieces?.balance || 0) < 10) { toast.error('Pièces insuffisantes (10 🪙 requis)'); return }
 
     setLoading(true)
+    setLoadingStep('Optimisation photo...')
     try {
-      // 1. Upload cover avec gestion d'erreur dédiée
+      // 1. Upload cover avec compression mobile rapide et fallback placeholder
       let coverUrl = null
       try {
-        const compressed = await compressImage(coverFile, 900, 0.75)
+        const compressed = await compressImage(coverFile, 650, 0.65)
+        setLoadingStep('Envoi de la photo...')
         const path = `${user.id}/${Date.now()}.jpg`
         coverUrl = await uploadImage(BUCKETS.COVERS, compressed, path)
       } catch (uploadErr) {
-        console.error('[Upload cover error]', uploadErr)
-        throw new Error('Erreur image : ' + (uploadErr.message || 'problème de stockage'))
+        console.warn('[Upload cover failed, using fallback placeholder]', uploadErr)
+        coverUrl = 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?w=800&q=80'
       }
 
+      setLoadingStep('Création de la boutique...')
       // 2. Slug unique
       let slug = slugify(form.name)
       const { count } = await supabase.from('shops').select('id', { count: 'exact' }).eq('slug', slug)
@@ -154,6 +158,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
         }
       }
 
+      setLoadingStep('Finalisation...')
       toast.success('Boutique créée avec succès !')
       reset()
       if (refreshWallet) await refreshWallet()
@@ -168,7 +173,10 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
       } else {
         toast.error(msg || 'Erreur lors de la création')
       }
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+      setLoadingStep('')
+    }
   }
 
   // Groupement par group_name dynamique et filtrage de recherche
@@ -321,7 +329,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
         </div>
 
         <Button variant="primary" className="w-full" size="lg" loading={loading} onClick={handleCreate}>
-          Créer la boutique — 10 🪙
+          {loading ? (loadingStep || 'Création en cours...') : 'Créer la boutique — 10 🪙'}
         </Button>
       </div>
 
