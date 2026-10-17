@@ -69,56 +69,105 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
 
     setLoading(true)
     try {
-      // Upload cover
-      const compressed = await compressImage(coverFile, 900, 0.75)
-      const path = `${user.id}/${Date.now()}.jpg`
-      const coverUrl = await uploadImage(BUCKETS.COVERS, compressed, path)
+      // 1. Upload cover avec gestion d'erreur dédiée
+      let coverUrl = null
+      try {
+        const compressed = await compressImage(coverFile, 900, 0.75)
+        const path = `${user.id}/${Date.now()}.jpg`
+        coverUrl = await uploadImage(BUCKETS.COVERS, compressed, path)
+      } catch (uploadErr) {
+        console.error('[Upload cover error]', uploadErr)
+        throw new Error('Erreur image : ' + (uploadErr.message || 'problème de stockage'))
+      }
 
-      // Slug unique
+      // 2. Slug unique
       let slug = slugify(form.name)
       const { count } = await supabase.from('shops').select('id', { count: 'exact' }).eq('slug', slug)
       if (count > 0) slug = `${slug}-${Date.now()}`
 
       const fullLocationString = `${form.address.trim()} (${form.quarter.trim()}, ${form.city.trim()})`
-      const { error } = await supabase.from('shops').insert({
-        owner_id: user.id,
-        name: form.name.trim(),
-        slug,
-        description: form.description.trim() || null,
-        city: fullLocationString,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
-        cover_url: coverUrl,
-        has_delivery: form.has_delivery,
-        whatsapp: form.whatsapp.trim() || null,
-        category_id: selectedCategory.id,
+
+      // 3. Tentative de création via RPC atomique sécurisée en priorité
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_new_shop', {
+        p_name: form.name.trim(),
+        p_slug: slug,
+        p_description: form.description.trim() || null,
+        p_city: fullLocationString,
+        p_latitude: coords?.latitude || null,
+        p_longitude: coords?.longitude || null,
+        p_cover_url: coverUrl,
+        p_has_delivery: !!form.has_delivery,
+        p_whatsapp: form.whatsapp.trim() || null,
+        p_category_id: selectedCategory?.id || null,
       })
 
-      if (error) throw error
+      if (!rpcError && rpcData?.success) {
+        // Succès via RPC
+      } else {
+        if (rpcData && !rpcData.success) {
+          console.warn('[RPC create_new_shop returned error, attempting fallback]', rpcData.error)
+        }
+        // Fallback insertion directe
+        const { error: insertError } = await supabase.from('shops').insert({
+          owner_id: user.id,
+          name: form.name.trim(),
+          slug,
+          description: form.description.trim() || null,
+          city: fullLocationString,
+          latitude: coords?.latitude || null,
+          longitude: coords?.longitude || null,
+          cover_url: coverUrl,
+          has_delivery: !!form.has_delivery,
+          whatsapp: form.whatsapp.trim() || null,
+          category_id: selectedCategory?.id || null,
+        })
 
-      // Déduire pièces (récupérer le vrai solde depuis Supabase)
-      const { data: piecesData } = await supabase
-        .from('pieces').select('balance').eq('user_id', user.id).single()
-      const currentBalance = piecesData?.balance || 0
-      await supabase.from('pieces')
-        .update({ balance: currentBalance - 10 })
-        .eq('user_id', user.id)
+        if (insertError) {
+          console.error('[shops insert error]', insertError)
+          throw insertError
+        }
 
-      // Notification
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        type: 'order_new',
-        title: ' Boutique créée !',
-        body: `Votre boutique "${form.name}" est maintenant en ligne.`,
-      })
+        // Déduire pièces (non bloquant si échec RLS)
+        try {
+          const { data: piecesData } = await supabase
+            .from('pieces').select('balance').eq('user_id', user.id).maybeSingle()
+          const currentBalance = piecesData?.balance || 0
+          if (currentBalance >= 10) {
+            await supabase.from('pieces')
+              .update({ balance: currentBalance - 10 })
+              .eq('user_id', user.id)
+          }
+        } catch (pErr) {
+          console.warn('[Deduce pieces non-blocking error]', pErr)
+        }
 
-      toast.success('Boutique créée avec succès ! ')
+        // Notification (non bloquante)
+        try {
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            type: 'order_new',
+            title: 'Boutique créée !',
+            body: `Votre boutique "${form.name}" est maintenant en ligne.`,
+          })
+        } catch (nErr) {
+          console.warn('[Notification non-blocking error]', nErr)
+        }
+      }
+
+      toast.success('Boutique créée avec succès !')
       reset()
-      // Recharger les pièces depuis Supabase
       if (refreshWallet) await refreshWallet()
       onCreated()
     } catch (err) {
-      toast.error(err.message?.includes('23505') ? 'Ce nom de boutique existe déjà' : 'Erreur lors de la création')
+      console.error('[CreateShop Error]', err)
+      const msg = err.message || ''
+      if (msg.includes('23505') || msg.includes('duplicate key') || msg.includes('existe déjà')) {
+        toast.error('Ce nom de boutique ou lien existe déjà')
+      } else if (msg.includes('Pièces insuffisantes')) {
+        toast.error(msg)
+      } else {
+        toast.error(msg || 'Erreur lors de la création')
+      }
     } finally { setLoading(false) }
   }
 

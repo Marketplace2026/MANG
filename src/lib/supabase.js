@@ -28,15 +28,42 @@ export const BUCKETS = {
   MESSAGES: 'message-files',
 }
 
-// Upload avec compression automatique
+// Upload avec compression automatique et fallback de bucket
 export async function uploadImage(bucket, file, path) {
-  const { data, error } = await supabase.storage
+  let { data, error } = await supabase.storage
     .from(bucket)
     .upload(path, file, {
       cacheControl: '3600',
       upsert: true,
     })
-  if (error) throw error
+
+  // Fallback si le bucket porte un nom alternatif dans Supabase
+  if (error && (error.message?.includes('not found') || error.statusCode === '404' || error.status === 404)) {
+    const fallbackBuckets = {
+      'shop-covers': 'covers',
+      'covers': 'shop-covers',
+      'product-images': 'products',
+      'products': 'product-images',
+      'message-files': 'messages',
+      'messages': 'message-files'
+    }
+    const altBucket = fallbackBuckets[bucket]
+    if (altBucket) {
+      console.warn(`[Storage] Bucket '${bucket}' non trouvé, tentative sur '${altBucket}'...`)
+      const resAlt = await supabase.storage
+        .from(altBucket)
+        .upload(path, file, { cacheControl: '3600', upsert: true })
+      if (!resAlt.error && resAlt.data) {
+        const { data: { publicUrl } } = supabase.storage.from(altBucket).getPublicUrl(resAlt.data.path)
+        return publicUrl
+      }
+    }
+  }
+
+  if (error) {
+    console.error(`[UploadImage Error on ${bucket}]`, error)
+    throw error
+  }
 
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path)
   return publicUrl
