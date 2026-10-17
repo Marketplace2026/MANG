@@ -1,8 +1,11 @@
 -- ============================================================
--- MANG — Migration 30 : Correction Création de Boutique, Storage & Pièces
+-- MANG — Migration 30 : Correction Définitive Création Boutique & Notifications
 -- ============================================================
 
--- 1. Initialisation des buckets de stockage (au cas où ils n'existent pas)
+-- 1. Supprimer la contrainte restrictive sur le type de notifications
+ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+-- 2. Initialisation des buckets de stockage (au cas où ils n'existent pas)
 INSERT INTO storage.buckets (id, name, public)
 VALUES 
   ('shop-covers', 'shop-covers', true),
@@ -14,7 +17,7 @@ VALUES
   ('messages', 'messages', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- 2. Politiques RLS pour les buckets Storage
+-- 3. Politiques RLS pour les buckets Storage
 DROP POLICY IF EXISTS "Lecture publique des buckets MANG" ON storage.objects;
 CREATE POLICY "Lecture publique des buckets MANG" 
   ON storage.objects FOR SELECT 
@@ -35,7 +38,7 @@ CREATE POLICY "Suppression authentifiee dans les buckets MANG"
   ON storage.objects FOR DELETE TO authenticated 
   USING (bucket_id IN ('shop-covers', 'covers', 'product-images', 'products', 'avatars', 'message-files', 'messages', 'stories'));
 
--- 3. RLS sur la table shops
+-- 4. RLS sur la table shops
 ALTER TABLE public.shops ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Vendeur peut créer sa boutique" ON public.shops;
@@ -53,7 +56,7 @@ CREATE POLICY "Vendeur peut modifier sa boutique"
   ON public.shops FOR UPDATE TO authenticated
   USING (auth.uid() = owner_id);
 
--- 4. RLS sur la table pieces (autoriser l'utilisateur a mettre a jour son solde)
+-- 5. RLS sur la table pieces (autoriser l'utilisateur a mettre a jour son solde)
 ALTER TABLE public.pieces ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Utilisateur peut mettre à jour ses pièces" ON public.pieces;
@@ -67,7 +70,7 @@ CREATE POLICY "Utilisateur peut insérer ses propres pièces"
   ON public.pieces FOR INSERT TO authenticated 
   WITH CHECK (auth.uid() = user_id);
 
--- 5. RLS sur notifications pour insertion
+-- 6. RLS sur notifications pour insertion
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Utilisateur peut créer des notifications" ON public.notifications;
@@ -75,7 +78,55 @@ CREATE POLICY "Utilisateur peut créer des notifications"
   ON public.notifications FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
--- 6. Fonction RPC sécurisée pour créer une boutique (SECURITY DEFINER)
+-- 7. Trigger de parrainage sécurisé (ne bloque JAMAIS la création de boutique)
+CREATE OR REPLACE FUNCTION handle_referred_shop_creation()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_referral referrals%ROWTYPE;
+  v_referred_username TEXT;
+BEGIN
+  SELECT * INTO v_referral
+  FROM referrals
+  WHERE referred_id = NEW.owner_id AND status = 'registered';
+
+  IF FOUND THEN
+    UPDATE referrals
+    SET status = 'rewarded',
+        pieces_given = pieces_given + 50,
+        updated_at = NOW()
+    WHERE id = v_referral.id;
+
+    UPDATE pieces
+    SET balance = balance + 50
+    WHERE user_id = v_referral.referrer_id;
+
+    SELECT username INTO v_referred_username FROM profiles WHERE id = NEW.owner_id;
+
+    BEGIN
+      PERFORM create_notification(
+        v_referral.referrer_id,
+        'shop_like',
+        '🏪 Boutique filleul créée !',
+        'Votre filleul @' || COALESCE(v_referred_username, 'filleul') || ' a créé sa boutique. Vous recevez 50 pièces !',
+        NEW.id,
+        'shop'
+      );
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_referred_shop_created ON shops;
+CREATE TRIGGER trg_referred_shop_created
+  AFTER INSERT ON shops
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_referred_shop_creation();
+
+-- 8. Fonction RPC sécurisée pour créer une boutique (SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION create_new_shop(
   p_name TEXT,
   p_slug TEXT,
@@ -129,16 +180,20 @@ BEGIN
       updated_at = NOW()
   WHERE user_id = v_user_id;
 
-  -- 4. Notifier l'utilisateur
-  INSERT INTO public.notifications (user_id, type, title, body, reference_id, reference_type)
-  VALUES (
-    v_user_id,
-    'order_new',
-    'Boutique créée !',
-    'Votre boutique "' || p_name || '" est maintenant en ligne.',
-    v_new_shop.id,
-    'shop'
-  );
+  -- 4. Notifier l'utilisateur (sécurisé, ne bloque jamais la création de boutique)
+  BEGIN
+    INSERT INTO public.notifications (user_id, type, title, body, reference_id, reference_type)
+    VALUES (
+      v_user_id,
+      'order_new',
+      'Boutique créée !',
+      'Votre boutique "' || p_name || '" est maintenant en ligne.',
+      v_new_shop.id,
+      'shop'
+    );
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
 
   RETURN jsonb_build_object('success', true, 'shop', row_to_json(v_new_shop));
 EXCEPTION
