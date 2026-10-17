@@ -469,12 +469,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [deletingConv, setDeletingConv] = useState(false)
 
   const handlePhoneCall = () => {
-    const phone = other?.phone || conv.shop?.whatsapp_number || conv.shop?.phone
+    // Recherche d'un numéro dans la boutique (si conversation avec boutique)
+    const phone = conv.shop?.whatsapp_number || conv.shop?.phone
     if (phone) {
       const cleanPhone = phone.replace(/[^0-9+]/g, '')
       window.location.href = `tel:${cleanPhone}`
     } else {
-      toast.error('Aucun numéro de téléphone disponible pour ce contact')
+      toast('Aucun numéro de téléphone disponible pour ce contact', { icon: 'ℹ️' })
     }
   }
 
@@ -1556,9 +1557,9 @@ export default function MessagesPage() {
     } else {
       supabase
         .from('conversations')
-        .select(`*, shop:shops(id, name, cover_url, slug, whatsapp_number, phone),
-          buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at, phone),
-          seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at, phone)`)
+        .select(`*, shop:shops(id, name, cover_url, slug),
+          buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
+          seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
         .eq('id', openConvId)
         .maybeSingle()
         .then(({ data }) => {
@@ -1602,13 +1603,15 @@ export default function MessagesPage() {
 
   const loadConvs = async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('conversations')
-      .select(`*, shop:shops(id, name, cover_url, slug, whatsapp_number, phone),
-        buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at, phone),
-        seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at, phone)`)
+      .select(`*, shop:shops(id, name, cover_url, slug),
+        buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
+        seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false })
+
+    if (error) console.error('[loadConvs error]', error)
 
     if (data?.length) {
       // Mettre à jour delivery_status à delivered pour tous les messages reçus non lus/non distribués
