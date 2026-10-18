@@ -348,20 +348,49 @@ export default function RegisterPage() {
 
       <form onSubmit={handleRegister} className="space-y-4">
 
-        {/* Code de parrainage (si détecté ou optionnel) */}
-        {referralCode && (
-          <div className="bg-white/5 border border-gold-400/40 rounded-2xl p-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Gift size={15} className="text-gold-400" />
-              <span className="text-xs text-white/80">
-                Code Parrain : <strong className="text-gold-300 font-mono tracking-wider">{referralCode}</strong>
-              </span>
-            </div>
-            <span className="bg-gold-500/20 text-gold-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gold-400/30">
-              +10 pièces bonus
+        {/* Code de parrainage (Saisie manuelle ou pré-rempli) */}
+        <div>
+          <label className="block text-xs font-semibold text-white/80 mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Gift size={14} className="text-gold-400"/> Code parrain
             </span>
+            <span className="text-[11px] text-white/40 font-normal">Optionnel</span>
+          </label>
+          <div className="relative">
+            <Tag size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>
+            <input
+              type="text"
+              name="referralCode"
+              placeholder="Ex: MNG12345"
+              value={referralCode}
+              onChange={e => {
+                const clean = e.target.value.replace(/\s+/g, '').toUpperCase()
+                setReferralCode(clean)
+                if (clean) localStorage.setItem('mang_pending_referral', clean)
+                else localStorage.removeItem('mang_pending_referral')
+              }}
+              autoComplete="off"
+              className={clsx(
+                'w-full pl-10 pr-24 py-3.5 bg-white/10 border rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-mono tracking-wider transition-colors',
+                referralCode ? 'border-gold-400/60 bg-gold-500/10' : 'border-white/20'
+              )}
+            />
+            {referralCode ? (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-gold-500/30 text-gold-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-gold-400/40 flex items-center gap-1">
+                <CheckCircle2 size={11} className="text-gold-300"/> +10 pièces
+              </span>
+            ) : null}
           </div>
-        )}
+          {referralCode ? (
+            <p className="text-[11px] mt-1 pl-1 text-gold-300 font-medium">
+              Code appliqué ! Vous recevrez 10 pièces bonus offertes en plus des 20 pièces de bienvenue.
+            </p>
+          ) : (
+            <p className="text-[11px] mt-1 pl-1 text-white/40">
+              Entrez le code de votre parrain pour débloquer +10 pièces supplémentaires.
+            </p>
+          )}
+        </div>
 
         {/* Username */}
         <div>

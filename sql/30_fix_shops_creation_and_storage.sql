@@ -92,12 +92,12 @@ BEGIN
   IF FOUND THEN
     UPDATE referrals
     SET status = 'rewarded',
-        pieces_given = pieces_given + 50,
+        pieces_given = pieces_given + 20,
         updated_at = NOW()
     WHERE id = v_referral.id;
 
     UPDATE pieces
-    SET balance = balance + 50
+    SET balance = balance + 20
     WHERE user_id = v_referral.referrer_id;
 
     SELECT username INTO v_referred_username FROM profiles WHERE id = NEW.owner_id;
@@ -106,8 +106,8 @@ BEGIN
       PERFORM create_notification(
         v_referral.referrer_id,
         'shop_like',
-        '🏪 Boutique filleul créée !',
-        'Votre filleul @' || COALESCE(v_referred_username, 'filleul') || ' a créé sa boutique. Vous recevez 50 pièces !',
+        'Boutique filleul créée !',
+        'Votre filleul @' || COALESCE(v_referred_username, 'filleul') || ' a créé sa boutique. Vous recevez 20 pièces !',
         NEW.id,
         'shop'
       );
