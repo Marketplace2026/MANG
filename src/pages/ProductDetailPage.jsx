@@ -31,6 +31,14 @@ export default function ProductDetailPage() {
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [avgRating, setAvgRating] = useState(0)
 
+  // Avis & Badge Achat vérifié
+  const [userHasPurchased, setUserHasPurchased] = useState(false)
+  const [myReview, setMyReview] = useState(null)
+  const [reviewSheetOpen, setReviewSheetOpen] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+
   // Favoris & Partage
   const [isFav, setIsFav] = useState(false)
   const [favProcessing, setFavProcessing] = useState(false)
@@ -55,7 +63,7 @@ export default function ProductDetailPage() {
       loadProduct()
       loadReviews()
     }
-  }, [id])
+  }, [id, user?.id])
 
   const loadProduct = async () => {
     if (!useCacheStore.getState().productDetailsCache[id]) {
@@ -123,15 +131,86 @@ export default function ProductDetailPage() {
         .eq('product_id', id)
         .order('created_at', { ascending: false })
       
-      setReviews(data || [])
-      if (data?.length > 0) {
-        const sum = data.reduce((s, r) => s + r.rating, 0)
-        setAvgRating((sum / data.length).toFixed(1))
+      const revList = data || []
+      setReviews(revList)
+      if (revList.length > 0) {
+        const sum = revList.reduce((s, r) => s + (r.rating || 0), 0)
+        setAvgRating((sum / revList.length).toFixed(1))
       } else {
         setAvgRating(0)
       }
-    } catch {}
+
+      if (user?.id) {
+        const mine = revList.find(r => r.user_id === user.id)
+        if (mine) {
+          setMyReview(mine)
+          setReviewRating(mine.rating || 5)
+          setReviewComment(mine.comment || '')
+        } else {
+          setMyReview(null)
+        }
+
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('id, status, delivery_status')
+          .eq('buyer_id', user.id)
+          .eq('product_id', id)
+          .limit(1)
+
+        setUserHasPurchased(Boolean(orderData && orderData.length > 0))
+      }
+    } catch (err) {
+      console.error('Erreur chargement avis:', err)
+    }
     setReviewsLoading(false)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      toast.error('Veuillez vous connecter pour laisser un avis')
+      navigate('/connexion')
+      return
+    }
+    if (!reviewComment.trim()) {
+      toast.error('Veuillez écrire un commentaire')
+      return
+    }
+    setReviewSubmitting(true)
+    try {
+      if (myReview?.id) {
+        const { error } = await supabase
+          .from('product_reviews')
+          .update({
+            rating: reviewRating,
+            comment: reviewComment.trim(),
+            is_verified_purchase: userHasPurchased || myReview.is_verified_purchase
+          })
+          .eq('id', myReview.id)
+        if (error) throw error
+        toast.success('Votre avis a été mis à jour ! ⭐')
+      } else {
+        const { error } = await supabase
+          .from('product_reviews')
+          .insert({
+            product_id: id,
+            user_id: user.id,
+            rating: reviewRating,
+            comment: reviewComment.trim(),
+            is_verified_purchase: userHasPurchased
+          })
+        if (error) {
+          if (error.code === '23505') throw new Error('Vous avez déjà déposé un avis sur ce produit')
+          throw error
+        }
+        toast.success(userHasPurchased ? 'Avis publié avec badge Achat vérifié ! 🛡️' : 'Avis publié avec succès ! ⭐')
+      }
+      setReviewSheetOpen(false)
+      loadReviews()
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la publication')
+    } finally {
+      setReviewSubmitting(false)
+    }
   }
 
   // Gérer le clic Favoris
@@ -576,48 +655,165 @@ export default function ProductDetailPage() {
           </div>
         )}
 
-        {/* AVIS CLIENTS */}
+        {/* SECTION AVIS CLIENTS & BADGE ACHAT VÉRIFIÉ */}
         <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
           <div className="flex justify-between items-center border-b border-surface-100 pb-3">
-            <p className="font-bold text-dark-800 text-xs">Avis clients ({reviews.length})</p>
+            <div>
+              <h3 className="font-bold text-dark-800 text-sm">Avis & notes clients</h3>
+              <p className="text-[11px] text-dark-600/50">Expériences partagées et achats vérifiés</p>
+            </div>
             {avgRating > 0 && (
-              <div className="flex items-center gap-1 text-gold-500">
-                <Star size={13} className="fill-gold-500"/>
-                <span className="font-black text-xs text-dark-800">{avgRating}/5</span>
+              <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/60">
+                <Star size={13} className="fill-amber-500 text-amber-500"/>
+                <span className="font-black text-xs text-amber-900">{avgRating}/5</span>
+                <span className="text-[10px] text-amber-700">({reviews.length})</span>
               </div>
             )}
           </div>
 
+          {/* Synthèse note & barres de répartition */}
+          {reviews.length > 0 && (
+            <div className="bg-surface-50 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between border border-surface-100">
+              <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-dark-800">{avgRating}</span>
+                  <span className="text-xs font-bold text-dark-600/40">/ 5</span>
+                </div>
+                <div className="flex gap-1 text-amber-400 my-1.5">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star
+                      key={s}
+                      size={14}
+                      className={s <= Math.round(Number(avgRating)) ? "fill-amber-400 text-amber-400" : "fill-surface-200 text-surface-200"}
+                    />
+                  ))}
+                </div>
+                <p className="text-[11px] text-dark-600/60">
+                  {reviews.length} {reviews.length > 1 ? 'avis clients' : 'avis client'}
+                </p>
+                {reviews.filter(r => r.is_verified_purchase).length > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-full mt-1.5">
+                    <ShieldCheck size={11} className="text-emerald-600" />
+                    {reviews.filter(r => r.is_verified_purchase).length} achat(s) vérifié(s)
+                  </span>
+                )}
+              </div>
+
+              {/* Barres de répartition */}
+              <div className="w-full sm:w-48 space-y-1">
+                {[5, 4, 3, 2, 1].map(stars => {
+                  const count = reviews.filter(r => r.rating === stars).length
+                  const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0
+                  return (
+                    <div key={stars} className="flex items-center gap-2 text-[10px]">
+                      <span className="w-4 font-bold text-dark-600/70 text-right">{stars}★</span>
+                      <div className="flex-1 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-6 text-[9px] text-dark-600/40 text-right">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bouton Donner/Modifier un avis */}
+          <div className="flex items-center justify-between gap-3 bg-primary-50/60 p-3 rounded-2xl border border-primary-100">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {userHasPurchased ? (
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center flex-shrink-0">
+                  <Star size={18} />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-dark-800 truncate">
+                  {myReview ? 'Votre avis est en ligne' : userHasPurchased ? 'Achat confirmé' : 'Votre avis nous intéresse'}
+                </p>
+                <p className="text-[10px] text-dark-600/60 truncate">
+                  {userHasPurchased ? 'Votre avis portera le badge "Achat vérifié"' : 'Partagez votre expérience sur ce produit'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!user) {
+                  toast.error('Connectez-vous pour laisser un avis')
+                  navigate('/connexion')
+                  return
+                }
+                setReviewSheetOpen(true)
+              }}
+              className={clsx(
+                'px-3.5 py-2 rounded-xl text-xs font-bold transition-transform active:scale-95 flex-shrink-0 flex items-center gap-1.5 shadow-sm',
+                userHasPurchased
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                  : 'bg-primary-600 text-white hover:bg-primary-500'
+              )}
+            >
+              {userHasPurchased && <ShieldCheck size={13} />}
+              {myReview ? 'Modifier' : 'Donner mon avis'}
+            </button>
+          </div>
+
+          {/* Liste des avis */}
           {reviewsLoading ? (
-            <div className="space-y-2">
-              <div className="h-12 skeleton rounded-xl"/>
+            <div className="space-y-2 py-2">
+              <div className="h-14 skeleton rounded-2xl"/>
+              <div className="h-14 skeleton rounded-2xl"/>
             </div>
           ) : reviews.length === 0 ? (
-            <p className="text-center py-4 text-dark-600/40 text-xs">Aucun avis vérifié sur ce produit pour l'instant.</p>
+            <div className="text-center py-6 px-4 space-y-1">
+              <p className="text-dark-600/70 text-xs font-semibold">Aucun avis pour l'instant</p>
+              <p className="text-dark-600/40 text-[11px]">Soyez le premier à partager votre expérience sur ce produit !</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 divide-y divide-surface-100">
               {reviews.map(rev => (
-                <div key={rev.id} className="space-y-2 border-b border-surface-50 last:border-0 pb-3">
-                  <div className="flex items-center justify-between text-xs">
+                <div key={rev.id} className="pt-3 first:pt-0 space-y-2">
+                  <div className="flex items-center justify-between text-xs gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         const target = rev.user?.username || rev.user_id
                         if (target) navigate(`/profil/${target}`)
                       }}
-                      className="flex items-center gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                      className="flex items-center gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity min-w-0"
                     >
                       <Avatar src={rev.user?.avatar_url} name={rev.user?.username} size="sm"/>
-                      <div>
-                        <p className="font-bold text-xs text-dark-800 hover:text-emerald-750">@{rev.user?.username}</p>
-                        <p className="text-dark-600/35 text-[9px]">{new Date(rev.created_at).toLocaleDateString('fr-FR')}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-xs text-dark-800 hover:text-emerald-750 truncate">@{rev.user?.username || 'Client MANG'}</p>
+                        <p className="text-dark-600/35 text-[9px]">{new Date(rev.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                       </div>
                     </button>
-                    <div className="flex text-gold-400">
-                      {''.repeat(rev.rating)}{''.repeat(5 - rev.rating)}
+                    
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex gap-0.5 text-amber-400">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star
+                            key={s}
+                            size={12}
+                            className={s <= rev.rating ? "fill-amber-400 text-amber-400" : "fill-surface-200 text-surface-200"}
+                          />
+                        ))}
+                      </div>
+                      {rev.is_verified_purchase && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-xs">
+                          <ShieldCheck size={11} className="text-emerald-600" />
+                          Achat vérifié
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <p className="text-dark-700 text-xs leading-normal pl-8">{rev.comment}</p>
+                  <p className="text-dark-700 text-xs leading-relaxed pl-10 pr-2 whitespace-pre-line">{rev.comment}</p>
                 </div>
               ))}
             </div>
@@ -686,6 +882,77 @@ export default function ProductDetailPage() {
 
           <Button onClick={handleSendQuote} disabled={quoteSending} className="w-full py-3.5 bg-primary-600 text-white font-bold rounded-2xl flex items-center justify-center gap-1.5">
             {quoteSending ? 'Envoi...' : <><Send size={14}/> Envoyer la demande</>}
+          </Button>
+        </div>
+      </BottomSheet>
+
+      {/* SHEET AVIS PRODUIT & BADGE ACHAT VÉRIFIÉ */}
+      <BottomSheet open={reviewSheetOpen} onClose={() => setReviewSheetOpen(false)} title={myReview ? "Modifier votre avis" : "Laisser un avis client"}>
+        <div className="px-4 pt-2 pb-8 space-y-4">
+          {/* Badge Achat vérifié notice */}
+          {userHasPurchased ? (
+            <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800">
+              <ShieldCheck size={20} className="text-emerald-600 flex-shrink-0" />
+              <div>
+                <p className="font-bold">Achat vérifié confirmé</p>
+                <p className="text-[11px] text-emerald-700/85">Comme vous avez commandé cet article sur MANG, votre avis portera automatiquement le badge vert officiel "Achat vérifié".</p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-surface-100 border border-surface-200 rounded-2xl flex items-center gap-2 text-xs text-dark-600">
+              <Info size={16} className="text-dark-400 flex-shrink-0" />
+              <p className="text-[11px]">Partagez votre avis sincère sur le produit pour guider les acheteurs.</p>
+            </div>
+          )}
+
+          {/* Notation par étoiles */}
+          <div className="flex flex-col items-center gap-2 py-2">
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setReviewRating(val)}
+                  className="transition-transform active:scale-90 hover:scale-110 p-1"
+                >
+                  <Star
+                    size={32}
+                    className={val <= reviewRating ? "fill-amber-400 text-amber-400" : "fill-surface-200 text-surface-200"}
+                  />
+                </button>
+              ))}
+            </div>
+            <span className="text-xs font-bold text-dark-700">
+              {reviewRating === 5 && '⭐⭐⭐⭐⭐ Excellent !'}
+              {reviewRating === 4 && '⭐⭐⭐⭐ Très bien'}
+              {reviewRating === 3 && '⭐⭐⭐ Correct'}
+              {reviewRating === 2 && '⭐⭐ Déçu'}
+              {reviewRating === 1 && '⭐ Très déçu'}
+            </span>
+          </div>
+
+          {/* Commentaire */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-dark-700 pl-1">Votre commentaire</label>
+            <textarea
+              placeholder="Décrivez la qualité, conformité, livraison, vos impressions..."
+              value={reviewComment}
+              onChange={e => setReviewComment(e.target.value)}
+              rows={4}
+              className="w-full bg-surface-50 border border-surface-200 rounded-2xl px-4 py-3 text-xs outline-none focus:border-emerald-500 resize-none font-medium text-dark-800"
+            />
+          </div>
+
+          <Button
+            onClick={handleSubmitReview}
+            loading={reviewSubmitting}
+            className={clsx(
+              "w-full py-3.5 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md",
+              userHasPurchased ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-primary-600 hover:bg-primary-500 text-white"
+            )}
+          >
+            {userHasPurchased && <ShieldCheck size={16} />}
+            {myReview ? 'Mettre à jour mon avis' : 'Publier mon avis'}
           </Button>
         </div>
       </BottomSheet>

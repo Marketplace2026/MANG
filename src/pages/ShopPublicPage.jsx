@@ -5,7 +5,7 @@ import {
   MapPin, Truck, Phone, ChevronRight,
   Send, Trash2, Edit3, CornerDownRight, Copy,
   Check, X, ZoomIn, ShoppingCart, Package,
-  MoreHorizontal, ChevronDown, Bell, BellOff, Star, Search, Store
+  MoreHorizontal, ChevronDown, Bell, BellOff, Star, Search, Store, ShieldCheck
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -48,6 +48,7 @@ export default function ShopPublicPage() {
   const [showReviews, setShowReviews] = useState(false)
   const [reviewModal, setReviewModal] = useState(false)
   const [myReview, setMyReview] = useState(null)
+  const [userHasPurchased, setUserHasPurchased] = useState(false)
 
   const loadShop = useCallback(async () => {
     setLoading(true)
@@ -79,14 +80,16 @@ export default function ShopPublicPage() {
     setReviews(reviewData || [])
 
     if (user) {
-      const [fRes, lRes, myRevRes] = await Promise.all([
+      const [fRes, lRes, myRevRes, orderRes] = await Promise.all([
         supabase.from('shop_followers').select('id').eq('shop_id', data.id).eq('user_id', user.id).single(),
         supabase.from('shop_likes').select('id').eq('shop_id', data.id).eq('user_id', user.id).single(),
         supabase.from('shop_reviews').select('*').eq('shop_id', data.id).eq('user_id', user.id).single(),
+        supabase.from('orders').select('id').eq('shop_id', data.id).eq('buyer_id', user.id).limit(1),
       ])
       setIsFollowing(!!fRes.data)
       setIsLiked(!!lRes.data)
       setMyReview(myRevRes.data || null)
+      setUserHasPurchased(Boolean(orderRes.data && orderRes.data.length > 0))
     }
     setLoading(false)
   }, [slug, user])
@@ -519,8 +522,8 @@ export default function ShopPublicPage() {
                       </div>
                     </div>
 
-                    {/* Label note */}
-                    <div className="mb-1.5">
+                    {/* Label note & Badge Achat vérifié */}
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full',
                         review.rating >= 4 ? 'bg-green-50 text-green-700' :
                         review.rating === 3 ? 'bg-yellow-50 text-yellow-700' :
@@ -530,6 +533,12 @@ export default function ShopPublicPage() {
                          review.rating === 3 ? 'Correct' :
                          review.rating === 2 ? 'Mauvais' : 'Très mauvais'}
                       </span>
+                      {review.is_verified_purchase && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70">
+                          <ShieldCheck size={11} className="text-emerald-600" />
+                          Achat vérifié
+                        </span>
+                      )}
                     </div>
 
                     {/* Commentaire */}
@@ -646,6 +655,7 @@ export default function ShopPublicPage() {
         shop={shop}
         user={user}
         myReview={myReview}
+        userHasPurchased={userHasPurchased}
         onSaved={(rev) => {
           setMyReview(rev)
           setReviewModal(false)
@@ -1005,7 +1015,7 @@ function OrderModal({ open, product, shop, user, onClose }) {
 // ══════════════════════════════════════
 // REVIEW MODAL
 // ══════════════════════════════════════
-function ReviewModal({ open, onClose, shop, user, myReview, onSaved }) {
+function ReviewModal({ open, onClose, shop, user, myReview, userHasPurchased, onSaved }) {
   const [rating, setRating] = useState(myReview?.rating || 0)
   const [hovered, setHovered] = useState(0)
   const [comment, setComment] = useState(myReview?.comment || '')
@@ -1023,13 +1033,23 @@ function ReviewModal({ open, onClose, shop, user, myReview, onSaved }) {
     setSaving(true)
     if (myReview?.id) {
       const { error } = await supabase.from('shop_reviews')
-        .update({ rating, comment: comment.trim() || null })
+        .update({
+          rating,
+          comment: comment.trim() || null,
+          is_verified_purchase: userHasPurchased || myReview.is_verified_purchase
+        })
         .eq('id', myReview.id)
       setSaving(false)
       if (error) { toast.error('Erreur'); return }
     } else {
       const { error } = await supabase.from('shop_reviews')
-        .insert({ shop_id: shop.id, user_id: user.id, rating, comment: comment.trim() || null })
+        .insert({
+          shop_id: shop.id,
+          user_id: user.id,
+          rating,
+          comment: comment.trim() || null,
+          is_verified_purchase: userHasPurchased
+        })
       setSaving(false)
       if (error) { toast.error('Vous avez déjà laissé un avis'); return }
     }
@@ -1041,6 +1061,21 @@ function ReviewModal({ open, onClose, shop, user, myReview, onSaved }) {
   return (
     <BottomSheet open={open} onClose={onClose} title={myReview ? 'Modifier votre avis' : 'Donner un avis'}>
       <div className="px-5 pt-2 pb-8 space-y-5">
+        {/* Badge Achat Vérifié notice */}
+        {userHasPurchased ? (
+          <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800">
+            <ShieldCheck size={18} className="text-emerald-600 flex-shrink-0" />
+            <div>
+              <p className="font-bold">Achat vérifié dans cette boutique</p>
+              <p className="text-[11px] text-emerald-700/85">Comme vous avez déjà commandé dans cette boutique, votre avis portera le badge officiel "Achat vérifié".</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-2xl flex items-center gap-2 text-xs text-gray-600">
+            <p className="text-[11px]">Partagez votre avis sur l'accueil, la qualité de service et les produits de cette boutique.</p>
+          </div>
+        )}
+
         {/* Stars */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex gap-2">

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Package, CheckCircle, CheckCircle2, XCircle, Clock, CreditCard,
   ChevronRight, RefreshCw, Truck, MapPin, Phone,
-  Hash, AlertCircle, Shield, X, Loader2, User, Search
+  Hash, AlertCircle, Shield, X, Loader2, User, Search, ShieldCheck, Star
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -1111,13 +1111,15 @@ function ReviewSheet({ open, onClose, order, user, onSubmitted }) {
         product_id: order.product_id,
         user_id: user.id,
         rating: rating,
-        comment: comment.trim()
+        comment: comment.trim(),
+        order_id: order.id,
+        is_verified_purchase: true
       })
       if (error) {
         if (error.code === '23505') throw new Error('Vous avez déjà laissé un avis sur ce produit')
         throw error
       }
-      toast.success('Avis publié avec succès ! ⭐')
+      toast.success('Avis publié avec succès avec badge Achat Vérifié ! 🛡️')
       setComment('')
       setRating(5)
       if (onSubmitted) onSubmitted()
@@ -1130,37 +1132,67 @@ function ReviewSheet({ open, onClose, order, user, onSubmitted }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="⭐ Laisser un avis">
+    <BottomSheet open={open} onClose={onClose} title="Donner un avis vérifié">
       <div className="px-4 pt-2 pb-8 space-y-4">
-        <p className="text-xs text-dark-600/50 leading-normal">
-          Partagez votre avis sur le produit <strong>{order.product?.name}</strong> pour aider la communauté.
+        {/* Badge Achat Vérifié Confirmed */}
+        <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800">
+          <ShieldCheck size={18} className="text-emerald-600 flex-shrink-0" />
+          <div>
+            <p className="font-bold">Achat vérifié garanti</p>
+            <p className="text-[11px] text-emerald-700/85">
+              Comme vous avez commandé ce produit, votre avis recevra automatiquement le badge officiel <strong>Achat vérifié</strong>.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-dark-600/70 leading-normal">
+          Partagez votre avis sur <strong>{order.product?.name}</strong> pour guider la communauté MANG.
         </p>
 
-        <div className="flex justify-center gap-2 text-3xl">
-          {[1,2,3,4,5].map(val => (
-            <button key={val} onClick={() => setRating(val)} className="transition-transform active:scale-75">
-              <span className={val <= rating ? 'text-gold-500 text-3xl' : 'text-surface-300 text-3xl'}>★</span>
-            </button>
-          ))}
+        {/* Étoiles SVG interactives */}
+        <div className="flex flex-col items-center gap-2 py-1">
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map(val => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setRating(val)}
+                className="transition-transform active:scale-90 hover:scale-110 p-1"
+              >
+                <Star
+                  size={30}
+                  className={val <= rating ? "fill-amber-400 text-amber-400" : "fill-surface-200 text-surface-200"}
+                />
+              </button>
+            ))}
+          </div>
+          <span className="text-xs font-bold text-dark-700">
+            {rating === 5 && '⭐⭐⭐⭐⭐ Excellent !'}
+            {rating === 4 && '⭐⭐⭐⭐ Très bien'}
+            {rating === 3 && '⭐⭐⭐ Correct'}
+            {rating === 2 && '⭐⭐ Déçu'}
+            {rating === 1 && '⭐ Très déçu'}
+          </span>
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-dark-700">Votre commentaire</label>
           <textarea
-            placeholder="Qualité du produit, fraîcheur..."
+            placeholder="Qualité du produit, fraîcheur, emballage, ponctualité..."
             value={comment}
             onChange={e => setComment(e.target.value)}
             rows={3}
-            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-gold-500 resize-none font-medium"
+            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-emerald-500 resize-none font-medium text-dark-800"
           />
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full py-3.5 bg-gold-500 text-white font-bold rounded-2xl text-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-gold disabled:opacity-40"
+          className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-sm active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-md disabled:opacity-40"
         >
-          {loading ? 'Publication...' : 'Publier l\'avis'}
+          <ShieldCheck size={16} />
+          {loading ? 'Publication...' : 'Publier l\'avis vérifié'}
         </button>
       </div>
     </BottomSheet>
