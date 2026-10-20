@@ -160,7 +160,7 @@ export default function App() {
   useEffect(() => {
     if (!user?.id) return
     const notifStore = useNotificationsStore.getState()
-    notifStore.fetchNotifications(user.id)
+    notifStore.fetchNotifications(user.id).catch(() => {})
     const unsubscribe = notifStore.subscribeToNotifications(user.id)
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe()

@@ -221,26 +221,53 @@ export const useNotificationsStore = create((set, get) => ({
       }
     })
   },
+  _notifChannel: null,
   subscribeToNotifications: (userId) => {
     if (!userId) return () => {}
+
+    // Nettoyer tout canal précédent éventuel
+    const prev = get()._notifChannel
+    if (prev) {
+      try { supabase.removeChannel(prev) } catch (e) {}
+    }
+
     const { addNotification } = get()
-    const channel = supabase
-      .channel(`notifications:user:${userId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        (payload) => {
-          if (payload?.new) {
-            addNotification(payload.new)
-            toast(payload.new.title || 'Nouvelle notification MANG', {
-              icon: '🔔',
-              duration: 4500,
-            })
+    // Identifiant de canal unique pour garantir qu'on n'appelle jamais .on() sur un canal déjà souscrit
+    const channelId = `user-notifs-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
+    let channel = null
+    try {
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+          (payload) => {
+            if (payload?.new) {
+              addNotification(payload.new)
+              toast(payload.new.title || 'Nouvelle notification MANG', {
+                icon: '🔔',
+                duration: 4500,
+              })
+            }
           }
-        }
-      )
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+        )
+        .subscribe()
+
+      set({ _notifChannel: channel })
+    } catch (err) {
+      console.warn('[Realtime Notifs] Erreur abonnement:', err)
+      return () => {}
+    }
+
+    return () => {
+      if (channel) {
+        try { supabase.removeChannel(channel) } catch (e) {}
+      }
+      if (get()._notifChannel === channel) {
+        set({ _notifChannel: null })
+      }
+    }
   },
 }))
 
