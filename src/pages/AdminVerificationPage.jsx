@@ -54,7 +54,8 @@ const cleanPhoneForWhatsApp = (phone) => {
 
 export default function AdminVerificationPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, profile } = useAuthStore()
+  const isSuperAdmin = user?.id === ADMIN_ID || profile?.is_admin || profile?.role === 'admin'
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('withdrawals') 
@@ -142,13 +143,18 @@ export default function AdminVerificationPage() {
   const [auditLogs, setAuditLogs] = useState([])
   const [auditLoading, setAuditLoading] = useState(false)
 
-  // Sécurité — seul le super-administrateur peut accéder
+  // Ban Modal state
+  const [banModalOpen, setBanModalOpen] = useState(false)
+  const [banReasonInput, setBanReasonInput] = useState('')
+  const [userToBan, setUserToBan] = useState(null)
+
+  // Sécurité — réservé aux administrateurs
   useEffect(() => {
-    if (user && user.id !== ADMIN_ID) {
+    if (user && !isSuperAdmin) {
       navigate('/')
       toast.error('Accès refusé : privilège administrateur requis')
     }
-  }, [user, navigate])
+  }, [user, isSuperAdmin, navigate])
 
   // Helper pour consigner les logs d'audit
   const recordAuditLog = useCallback(async (action, targetType = null, targetId = null, details = {}) => {
@@ -782,13 +788,11 @@ export default function AdminVerificationPage() {
     try {
       await supabase.from('shops').update({ is_verified: true }).eq('id', req.shop_id)
       await supabase.from('verification_requests').update({ status: 'approved' }).eq('id', req.id)
-      await supabase.rpc('create_notification', {
-        p_user_id: req.user_id,
-        p_type: 'shop_follow',
-        p_title: 'Boutique vérifiée !',
-        p_body: `Félicitations ! Votre boutique "${req.shop?.name}" a été vérifiée par l'administration. Le badge vérifié est maintenant visible.`,
-        p_reference_id: req.shop_id,
-        p_reference_type: 'shop',
+      await supabase.from('notifications').insert({
+        user_id: req.user_id,
+        type: 'system',
+        title: 'Boutique vérifiée !',
+        body: `Félicitations ! Votre boutique "${req.shop?.name}" a été vérifiée par l'administration. Le badge vérifié est maintenant visible.`,
       })
 
       await recordAuditLog('shop_verified', 'shop', req.shop_id, { shop_name: req.shop?.name })
@@ -819,13 +823,11 @@ export default function AdminVerificationPage() {
       await supabase.from('verification_requests')
         .update({ status: 'rejected', admin_note: adminNote }).eq('id', req.id)
 
-      await supabase.rpc('create_notification', {
-        p_user_id: req.user_id,
-        p_type: 'shop_follow',
-        p_title: 'Demande de vérification refusée',
-        p_body: `Votre demande pour "${req.shop?.name}" a été refusée. Raisons : ${adminNote}`,
-        p_reference_id: req.shop_id,
-        p_reference_type: 'shop',
+      await supabase.from('notifications').insert({
+        user_id: req.user_id,
+        type: 'system',
+        title: 'Demande de vérification refusée',
+        body: `Votre demande pour "${req.shop?.name}" a été refusée. Raisons : ${adminNote}`,
       })
 
       await recordAuditLog('shop_verification_rejected', 'shop', req.shop_id, { reason: adminNote })
@@ -870,26 +872,91 @@ export default function AdminVerificationPage() {
   }
 
   const handleToggleBanUser = async (u) => {
-    const willBan = !u.is_banned
-    const actionLabel = willBan ? 'suspendre / bannir' : 'débannir et réactiver'
-    if (!confirm(`Voulez-vous ${actionLabel} le compte @${u.username} ?`)) return
+    if (!u.is_banned) {
+      // Ouvrir la modal pour saisir le motif de suspension
+      setUserToBan(u)
+      setBanReasonInput('')
+      setBanModalOpen(true)
+    } else {
+      // Débannir
+      if (!confirm(`Confirmer la réactivation du compte @${u.username} ?`)) return
+      setProcessing(true)
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ is_banned: false, ban_reason: null })
+          .eq('id', u.id)
+        if (error) throw error
+
+        await recordAuditLog('user_unbanned', 'profile', u.id, { username: u.username })
+
+        toast.success(`Compte @${u.username} réactivé avec succès`)
+        setUsersList(prev => prev.map(item => item.id === u.id ? { ...item, is_banned: false, ban_reason: null } : item))
+        if (selectedUser?.id === u.id) {
+          setSelectedUser(prev => ({ ...prev, is_banned: false, ban_reason: null }))
+        }
+      } catch (err) {
+        toast.error('Erreur : ' + (err.message || 'Impossible de réactiver le compte'))
+      } finally {
+        setProcessing(false)
+      }
+    }
+  }
+
+  const handleConfirmBanUser = async () => {
+    if (!userToBan) return
+    const reason = banReasonInput.trim() || 'Non-respect des règles de la communauté MANG'
     setProcessing(true)
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_banned: willBan })
-        .eq('id', u.id)
+        .update({ is_banned: true, ban_reason: reason })
+        .eq('id', userToBan.id)
       if (error) throw error
 
-      await recordAuditLog(willBan ? 'user_banned' : 'user_unbanned', 'profile', u.id, { username: u.username })
+      await recordAuditLog('user_banned', 'profile', userToBan.id, { username: userToBan.username, reason })
 
-      toast.success(`Compte @${u.username} ${willBan ? 'banni' : 'réactivé'} avec succès`)
-      setUsersList(prev => prev.map(item => item.id === u.id ? { ...item, is_banned: willBan } : item))
-      if (selectedUser?.id === u.id) {
-        setSelectedUser(prev => ({ ...prev, is_banned: willBan }))
+      toast.success(`Compte @${userToBan.username} banni avec succès`)
+      setUsersList(prev => prev.map(item => item.id === userToBan.id ? { ...item, is_banned: true, ban_reason: reason } : item))
+      if (selectedUser?.id === userToBan.id) {
+        setSelectedUser(prev => ({ ...prev, is_banned: true, ban_reason: reason }))
+      }
+      setBanModalOpen(false)
+      setUserToBan(null)
+      setBanReasonInput('')
+    } catch (err) {
+      toast.error('Erreur : ' + (err.message || 'Impossible de bannir le compte'))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleToggleAdminRole = async (targetUser) => {
+    const willBeAdmin = !targetUser.is_admin
+    if (!confirm(`Confirmer ${willBeAdmin ? 'la promotion' : 'la révocation'} des droits Administrateur pour @${targetUser.username} ?`)) return
+    setProcessing(true)
+    try {
+      const { data, error } = await supabase.rpc('admin_toggle_admin_role', {
+        p_target_user_id: targetUser.id,
+        p_is_admin: willBeAdmin
+      })
+      if (error) {
+        const { error: directErr } = await supabase
+          .from('profiles')
+          .update({ is_admin: willBeAdmin, role: willBeAdmin ? 'admin' : 'user' })
+          .eq('id', targetUser.id)
+        if (directErr) throw directErr
+      }
+
+      await recordAuditLog(willBeAdmin ? 'admin_promoted' : 'admin_demoted', 'profile', targetUser.id, { username: targetUser.username })
+
+      toast.success(`Droits administrateur ${willBeAdmin ? 'accordés' : 'révoqués'} à @${targetUser.username}`)
+      setUsersList(prev => prev.map(item => item.id === targetUser.id ? { ...item, is_admin: willBeAdmin, role: willBeAdmin ? 'admin' : 'user' } : item))
+      if (selectedUser?.id === targetUser.id) {
+        setSelectedUser(prev => ({ ...prev, is_admin: willBeAdmin, role: willBeAdmin ? 'admin' : 'user' }))
       }
     } catch (err) {
-      toast.error('Erreur : ' + (err.message || 'Impossible de mettre à jour le statut'))
+      toast.error('Erreur : ' + (err.message || 'Impossible de modifier le rôle'))
     } finally {
       setProcessing(false)
     }
@@ -956,17 +1023,19 @@ export default function AdminVerificationPage() {
           note: resNote.trim(),
         })
 
-        toast.success('Litige résolu avec succès !')
+        toast.success(resDecision === 'refund_buyer' ? 'Litige résolu : Acheteur remboursé !' : 'Litige résolu : Vendeur payé !')
         setResolvingDispute(null)
         setResNote('')
         setResDecision('')
         loadDisputes()
         loadBadgeCounts()
+        loadStats()
+        loadEscrowOrders()
       } else {
-        throw new Error(data?.error || 'Erreur')
+        throw new Error(data?.error || 'Erreur lors de la résolution')
       }
     } catch (err) {
-      toast.error(err.message || 'Erreur')
+      toast.error(err.message || 'Erreur lors de l\'arbitrage')
     } finally {
       setProcessing(false)
     }
@@ -975,27 +1044,61 @@ export default function AdminVerificationPage() {
   // ==========================================
   // ACTIONS CATALOGUE
   // ==========================================
+  const handleToggleShopActive = async (shop) => {
+    const nextActive = shop.is_active === false
+    setProcessing(true)
+    try {
+      const { error } = await supabase.from('shops').update({ is_active: nextActive }).eq('id', shop.id)
+      if (error) throw error
+      await recordAuditLog(nextActive ? 'shop_activated' : 'shop_suspended', 'shop', shop.id, { name: shop.name })
+      toast.success(nextActive ? `Boutique "${shop.name}" réactivée` : `Boutique "${shop.name}" suspendue`)
+      setCatalogShops(prev => prev.map(s => s.id === shop.id ? { ...s, is_active: nextActive } : s))
+    } catch (err) {
+      toast.error('Erreur lors du changement de statut : ' + (err.message || ''))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleToggleProductAvailable = async (product) => {
+    const nextAvail = product.is_available === false
+    setProcessing(true)
+    try {
+      const { error } = await supabase.from('products').update({ is_available: nextAvail }).eq('id', product.id)
+      if (error) throw error
+      await recordAuditLog(nextAvail ? 'product_activated' : 'product_hidden', 'product', product.id, { name: product.name })
+      toast.success(nextAvail ? `Produit "${product.name}" visible en ligne` : `Produit "${product.name}" masqué`)
+      setCatalogProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_available: nextAvail } : p))
+    } catch (err) {
+      toast.error('Erreur lors du changement de statut : ' + (err.message || ''))
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const handleDeleteProduct = async (product) => {
     if (!confirm(`Supprimer définitivement le produit "${product.name}" ?`)) return
     try {
-      await supabase.from('products').delete().eq('id', product.id)
+      const { error } = await supabase.from('products').delete().eq('id', product.id)
+      if (error) throw error
       await recordAuditLog('product_deleted', 'product', product.id, { name: product.name })
       toast.success('Produit supprimé !')
       loadCatalog()
-    } catch {
-      toast.error('Erreur de suppression')
+    } catch (err) {
+      toast.error('Erreur de suppression (commandes existantes rattachées) : ' + (err.message || ''))
     }
   }
 
   const handleDeleteShop = async (shop) => {
     if (!confirm(`Supprimer définitivement la boutique "${shop.name}" ?`)) return
     try {
-      await supabase.from('shops').delete().eq('id', shop.id)
+      const { error } = await supabase.from('shops').delete().eq('id', shop.id)
+      if (error) throw error
       await recordAuditLog('shop_deleted', 'shop', shop.id, { name: shop.name })
       toast.success('Boutique supprimée !')
       loadCatalog()
-    } catch {
-      toast.error('Erreur de suppression')
+    } catch (err) {
+      toast.error('Erreur de suppression : ' + (err.message || ''))
     }
   }
 
@@ -1039,6 +1142,7 @@ export default function AdminVerificationPage() {
   const filteredUsers = useMemo(() => {
     let list = usersList
     if (userRoleFilter === 'banned') list = list.filter(u => u.is_banned)
+    if (userRoleFilter === 'admins') list = list.filter(u => u.is_admin || u.role === 'admin' || u.id === ADMIN_ID)
     if (userRoleFilter === 'suspicious') {
       list = list.filter(u => {
         if (!u.phone) return false
@@ -1751,9 +1855,10 @@ export default function AdminVerificationPage() {
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                 {[
                   { id: 'all',        label: `Tous (${usersList.length})` },
+                  { id: 'admins',     label: `Admins (${usersList.filter(u => u.is_admin || u.role === 'admin' || u.id === ADMIN_ID).length})` },
                   { id: 'banned',     label: `Bannis (${usersList.filter(u => u.is_banned).length})` },
                   { id: 'suspicious', label: `Numéros partagés (${usersList.filter(u => u.phone && sharedPhoneMap[u.phone.replace(/[^\d]/g, '')] > 1).length})` },
                 ].map(f => (
@@ -2256,26 +2361,41 @@ export default function AdminVerificationPage() {
                   </p>
                   <div className="max-h-72 overflow-y-auto space-y-2">
                     {filteredCatalogShops.map(sh => (
-                      <div key={sh.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
-                        <div className="flex items-center gap-2">
+                      <div key={sh.id} className="flex justify-between items-center py-2.5 border-b border-surface-50 last:border-0 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className={clsx(
-                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                            'text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0',
+                            sh.is_active === false ? 'bg-red-100 text-red-700' :
                             sh.is_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-surface-100 text-dark-500'
                           )}>
-                            {sh.is_verified ? 'Vérifiée' : 'Standard'}
+                            {sh.is_active === false ? 'Suspendue' : sh.is_verified ? 'Vérifiée' : 'Standard'}
                           </span>
-                          <div>
-                            <p className="font-bold text-xs text-dark-800">{sh.name}</p>
-                            <p className="text-dark-600/35 text-[9px]">Par @{sh.owner?.username || 'vendeur'}</p>
+                          <div className="min-w-0">
+                            <p className={clsx("font-bold text-xs truncate", sh.is_active === false ? "text-dark-400 line-through" : "text-dark-800")}>{sh.name}</p>
+                            <p className="text-dark-600/35 text-[9px] truncate">Par @{sh.owner?.username || 'vendeur'}</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteShop(sh)}
-                          className="text-red-500 p-2 hover:bg-red-50 rounded-xl active:scale-75 transition-all"
-                          title="Supprimer la boutique"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleToggleShopActive(sh)}
+                            disabled={processing}
+                            className={clsx(
+                              "px-2.5 py-1 rounded-lg text-[10px] font-bold active:scale-95 transition-all border",
+                              sh.is_active === false ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                            )}
+                            title={sh.is_active === false ? "Réactiver la boutique" : "Suspendre la boutique"}
+                          >
+                            {sh.is_active === false ? "Réactiver" : "Suspendre"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteShop(sh)}
+                            disabled={processing}
+                            className="text-red-500 p-1.5 hover:bg-red-50 rounded-lg active:scale-75 transition-all"
+                            title="Supprimer la boutique"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2288,25 +2408,44 @@ export default function AdminVerificationPage() {
                   </p>
                   <div className="max-h-72 overflow-y-auto space-y-2">
                     {filteredCatalogProducts.map(prod => (
-                      <div key={prod.id} className="flex justify-between items-center py-2 border-b border-surface-50 last:border-0">
-                        <div className="flex items-center gap-2">
+                      <div key={prod.id} className="flex justify-between items-center py-2.5 border-b border-surface-50 last:border-0 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <div className="w-9 h-9 rounded-lg bg-surface-100 overflow-hidden flex-shrink-0">
                             {prod.image_url ? (
                               <img src={prod.image_url} alt="" className="w-full h-full object-cover" />
                             ) : null}
                           </div>
-                          <div>
-                            <p className="font-bold text-xs text-dark-800 truncate max-w-[150px]">{prod.name}</p>
-                            <p className="text-dark-600/35 text-[9px]">Boutique : {prod.shop?.name}</p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className={clsx("font-bold text-xs truncate max-w-[140px]", prod.is_available === false ? "text-dark-400 line-through" : "text-dark-800")}>{prod.name}</p>
+                              {prod.is_available === false && (
+                                <span className="bg-red-100 text-red-700 text-[9px] font-black px-1 rounded">Masqué</span>
+                              )}
+                            </div>
+                            <p className="text-dark-600/35 text-[9px] truncate">Boutique : {prod.shop?.name}</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteProduct(prod)}
-                          className="text-red-500 p-2 hover:bg-red-50 rounded-xl active:scale-75 transition-all"
-                          title="Supprimer le produit"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleToggleProductAvailable(prod)}
+                            disabled={processing}
+                            className={clsx(
+                              "px-2.5 py-1 rounded-lg text-[10px] font-bold active:scale-95 transition-all border",
+                              prod.is_available === false ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-700 border-gray-200"
+                            )}
+                            title={prod.is_available === false ? "Rendre visible" : "Masquer le produit"}
+                          >
+                            {prod.is_available === false ? "Afficher" : "Masquer"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(prod)}
+                            disabled={processing}
+                            className="text-red-500 p-1.5 hover:bg-red-50 rounded-lg active:scale-75 transition-all"
+                            title="Supprimer le produit"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2357,6 +2496,11 @@ export default function AdminVerificationPage() {
                   {selectedUser.is_banned ? 'Banni / Suspendu' : 'Actif'}
                 </span>
               </div>
+              {selectedUser.is_banned && selectedUser.ban_reason && (
+                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                  <strong>Motif du bannissement :</strong> {selectedUser.ban_reason}
+                </div>
+              )}
             </div>
 
             {/* Solde Portefeuille si disponible */}
@@ -2392,9 +2536,24 @@ export default function AdminVerificationPage() {
               </div>
             )}
 
-            {/* Actions Super-Admin sur le compte */}
+            {/* Actions Administrateur sur le compte */}
             {selectedUser.id !== ADMIN_ID && (
               <div className="space-y-2 pt-2">
+                {/* Promouvoir / Révoquer Administrateur */}
+                <button
+                  onClick={() => handleToggleAdminRole(selectedUser)}
+                  disabled={processing}
+                  className={clsx(
+                    'w-full py-3.5 rounded-2xl font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2 border',
+                    selectedUser.is_admin
+                      ? 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                  )}
+                >
+                  <Shield size={16} />
+                  <span>{selectedUser.is_admin ? 'Révoquer les droits Administrateur' : 'Accorder les droits Administrateur'}</span>
+                </button>
+
                 <button
                   onClick={() => handleToggleBanUser(selectedUser)}
                   disabled={processing}
@@ -2687,6 +2846,84 @@ export default function AdminVerificationPage() {
           </div>
         </BottomSheet>
       )}
+
+      {/* BAN USER MODAL */}
+      {banModalOpen && userToBan && (
+        <BottomSheet
+          open={banModalOpen}
+          onClose={() => { setBanModalOpen(false); setUserToBan(null) }}
+          title={`Suspendre @${userToBan.username || 'l’utilisateur'}`}
+        >
+          <div className="px-4 pt-2 pb-8 space-y-4">
+            <div className="p-3.5 bg-red-500/10 border border-red-300/30 rounded-2xl text-red-800 text-xs leading-normal space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-red-700">
+                <AlertTriangle size={15} /> Suspension immédiate du compte
+              </p>
+              <p>
+                L'utilisateur sera immédiatement bloqué par l'écran de sécurité de MANG. Il ne pourra plus passer de commande, publier de contenu ni accéder à son portefeuille jusqu'à réactivation.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Motifs fréquents :</label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Fraude / Tentative d’escroquerie',
+                  'Non-respect des règles de la communauté',
+                  'Contenu inapproprié ou contrefaçon',
+                  'Comportement abusif / Harcèlement',
+                  'Commandes non honorées à répétition',
+                  'Suspicion d’usurpation d’identité'
+                ].map((reasonPreset) => (
+                  <button
+                    key={reasonPreset}
+                    type="button"
+                    onClick={() => setBanReasonInput(reasonPreset)}
+                    className={clsx(
+                      'text-[11px] px-2.5 py-1.5 rounded-lg border font-medium transition-all text-left',
+                      banReasonInput === reasonPreset
+                        ? 'bg-red-50 border-red-500 text-red-700 font-bold'
+                        : 'bg-white border-surface-200 text-dark-600 hover:border-surface-300'
+                    )}
+                  >
+                    {reasonPreset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-dark-700 pl-0.5">Motif personnalisé affiché à l'utilisateur :</label>
+              <textarea
+                placeholder="Indiquez clairement la raison du bannissement..."
+                value={banReasonInput}
+                onChange={e => setBanReasonInput(e.target.value)}
+                rows={3}
+                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none font-medium"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => { setBanModalOpen(false); setUserToBan(null) }}
+                className="flex-1 py-3 bg-surface-100 text-dark-700 font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+              >
+                Annuler
+              </button>
+              <Button
+                onClick={handleConfirmBanUser}
+                disabled={processing}
+                variant="danger"
+                className="flex-[2] py-3 text-xs font-bold shadow-md flex items-center justify-center gap-1.5"
+              >
+                {processing ? 'Suspension en cours...' : <><Ban size={14} /> Confirmer la suspension</>}
+              </Button>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   )
 }
+

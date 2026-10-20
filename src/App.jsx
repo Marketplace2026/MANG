@@ -53,6 +53,45 @@ function SplashScreen() {
   )
 }
 
+// ── Écran de verrouillage pour utilisateur banni ──────────
+function BannedScreen({ profile }) {
+  const { signOut } = useAuthStore()
+  return (
+    <div className="fixed inset-0 z-50 bg-dark-900 text-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-6 shadow-2xl">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <h1 className="text-2xl font-black text-white tracking-tight">Compte Suspendu</h1>
+      <p className="text-sm text-red-200/80 mt-2 max-w-sm">
+        Votre compte MANG a été suspendu par l'administration pour non-respect des règles de la plateforme.
+      </p>
+
+      {profile?.ban_reason && (
+        <div className="p-3.5 bg-red-950/60 border border-red-800/40 rounded-2xl text-xs text-red-300 mt-4 max-w-sm text-left">
+          <strong>Motif :</strong> {profile.ban_reason}
+        </div>
+      )}
+
+      <div className="mt-8 flex flex-col gap-3 w-full max-w-xs">
+        <a
+          href="https://wa.me/22997000000?text=Bonjour%20Support%20MANG%2C%20mon%20compte%20a%20%C3%A9t%C3%A9%20suspendu."
+          target="_blank"
+          rel="noreferrer"
+          className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
+        >
+          Contacter le support MANG
+        </a>
+        <button
+          onClick={() => signOut()}
+          className="w-full py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs transition-transform active:scale-95"
+        >
+          Se déconnecter
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Loader discret pour navigation secondaire ──────────────
 function PageLoader() {
   return (
@@ -94,7 +133,7 @@ function PublicRoute({ children }) {
 
 // ── App ───────────────────────────────────────────────────
 export default function App() {
-  const { initialize, loading, profile } = useAuthStore()
+  const { initialize, loading, profile, user } = useAuthStore()
   const [splashDone, setSplashDone] = useState(false)
 
   useGoogleReferral() // Traite le parrainage après retour OAuth Google
@@ -129,6 +168,11 @@ export default function App() {
 
   // Pendant le chargement initial OU splash pas fini → splash
   if (loading || !splashDone) return <SplashScreen />
+
+  // Si le compte de l'utilisateur est banni / suspendu par l'administration
+  if (user && profile?.is_banned) {
+    return <BannedScreen profile={profile} />
+  }
 
   return (
     <BrowserRouter>
@@ -176,6 +220,8 @@ export default function App() {
             <Route path="/messages"      element={<StrictAuthRoute><MessagesPage /></StrictAuthRoute>} />
             <Route path="/notifications" element={<StrictAuthRoute><NotificationsPage /></StrictAuthRoute>} />
             <Route path="/parrainage"    element={<StrictAuthRoute><ReferralPage /></StrictAuthRoute>} />
+            <Route path="/admin"         element={<Navigate to="/admin/verifications" replace />} />
+            <Route path="/admin/dashboard" element={<Navigate to="/admin/verifications" replace />} />
             <Route path="/admin/verifications" element={<StrictAuthRoute><AdminVerificationPage /></StrictAuthRoute>} />
             <Route path="/panier"        element={<StrictAuthRoute><CartPage /></StrictAuthRoute>} />
             <Route path="/checkout"      element={<StrictAuthRoute><CheckoutPage /></StrictAuthRoute>} />
