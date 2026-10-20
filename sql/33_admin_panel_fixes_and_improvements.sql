@@ -2,7 +2,21 @@
 -- MANG — Migration 33: Correction & Amélioration Complète du Panel Admin
 -- ============================================================
 
--- 1. Fonction centrale de vérification des privilèges administrateur
+-- 1. Colonnes requises sur profiles, shops et products (à exécuter en premier)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ban_reason TEXT;
+
+ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
+
+-- Marquer le super-admin par défaut
+UPDATE public.profiles 
+SET is_admin = TRUE, role = 'admin' 
+WHERE id = 'd9f97369-ae78-4da2-844c-1c9c97b12445'::uuid;
+
+-- 2. Fonction centrale de vérification des privilèges administrateur
 CREATE OR REPLACE FUNCTION public.is_admin_user(p_uid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -27,16 +41,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- 2. Colonnes requises sur profiles, shops et products
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ban_reason TEXT;
-
-ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
-
--- Marquer le super-admin par défaut
-UPDATE public.profiles SET is_admin = TRUE WHERE id = 'd9f97369-ae78-4da2-844c-1c9c97b12445'::uuid;
 
 -- 3. RLS : PROFILES
 DROP POLICY IF EXISTS "Admin peut modifier tout profil" ON public.profiles;
