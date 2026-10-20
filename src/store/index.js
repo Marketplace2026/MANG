@@ -211,11 +211,35 @@ export const useNotificationsStore = create((set, get) => ({
     set(state => ({ notifications: state.notifications.filter(n => n.id !== notificationId) }))
   },
   addNotification: (notification) => {
-    set(state => ({ notifications: [notification, ...state.notifications], unreadCount: state.unreadCount + 1 }))
+    if (!notification) return
+    set(state => {
+      // Éviter les doublons éventuels
+      if (state.notifications.some(n => n.id === notification.id)) return state
+      return {
+        notifications: [notification, ...state.notifications],
+        unreadCount: state.unreadCount + (notification.is_read ? 0 : 1)
+      }
+    })
   },
   subscribeToNotifications: (userId) => {
+    if (!userId) return () => {}
     const { addNotification } = get()
-    const channel = supabase.channel(`notifications:${userId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => { addNotification(payload.new) }).subscribe()
+    const channel = supabase
+      .channel(`notifications:user:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if (payload?.new) {
+            addNotification(payload.new)
+            toast(payload.new.title || 'Nouvelle notification MANG', {
+              icon: '🔔',
+              duration: 4500,
+            })
+          }
+        }
+      )
+      .subscribe()
     return () => supabase.removeChannel(channel)
   },
 }))

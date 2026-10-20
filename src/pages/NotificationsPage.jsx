@@ -32,19 +32,25 @@ const NOTIF_CONFIG = {
   order_paid:        { icon: Coins, color: 'bg-gold-100 text-gold-700',     label: 'Commande payée' },
   wallet_credit:     { icon: ArrowDownLeft, color: 'bg-emerald-100 text-emerald-600',label: 'Crédit wallet' },
   wallet_debit:      { icon: ArrowUpRight, color: 'bg-red-100 text-red-600',       label: 'Débit wallet' },
+  system:            { icon: Bell, color: 'bg-blue-600 text-white',           label: 'Annonce MANG' },
+  broadcast:         { icon: Bell, color: 'bg-blue-600 text-white',           label: 'Annonce MANG' },
+  order_refunded:    { icon: ArrowDownLeft, color: 'bg-emerald-100 text-emerald-600', label: 'Remboursement' },
+  payout_received:   { icon: Coins, color: 'bg-gold-100 text-gold-700',       label: 'Paiement reçu' },
 }
 
 const FILTER_TABS = [
   { key: 'all',     label: 'Toutes' },
   { key: 'unread',  label: 'Non lues' },
+  { key: 'system',  label: 'Annonces' },
   { key: 'orders',  label: 'Commandes' },
   { key: 'social',  label: 'Social' },
   { key: 'wallet',  label: 'Wallet' },
 ]
 
-const ORDER_TYPES   = ['order_new','order_accepted','order_refused','order_paid']
+const ORDER_TYPES   = ['order_new','order_accepted','order_refused','order_paid','order_refunded','payout_received']
 const SOCIAL_TYPES  = ['shop_follow','product_favorite','shop_comment','comment_reply','post_like','shop_like','comment_like','user_follow']
 const WALLET_TYPES  = ['wallet_credit','wallet_debit']
+const SYSTEM_TYPES  = ['system','broadcast']
 
 // ============================================================
 // PAGE PRINCIPALE
@@ -80,6 +86,7 @@ export default function NotificationsPage() {
   // Filtrage
   const filtered = notifications.filter(n => {
     if (filter === 'unread')  return !n.is_read
+    if (filter === 'system')  return SYSTEM_TYPES.includes(n.type)
     if (filter === 'orders')  return ORDER_TYPES.includes(n.type)
     if (filter === 'social')  return SOCIAL_TYPES.includes(n.type)
     if (filter === 'wallet')  return WALLET_TYPES.includes(n.type)
@@ -337,6 +344,7 @@ function EmptyNotifications({ filter }) {
   const config = {
     all:     { icon: Bell, title: 'Aucune notification', sub: 'Vos notifications apparaîtront ici' },
     unread:  { icon: CheckCircle2, title: 'Tout est lu !',        sub: 'Vous êtes à jour sur toutes vos notifications' },
+    system:  { icon: Bell, title: 'Aucune annonce',         sub: 'Les annonces officielles de MANG apparaîtront ici' },
     orders:  { icon: Package, title: 'Aucune commande',     sub: 'Vos notifications de commandes apparaîtront ici' },
     social:  { icon: Heart, title: 'Aucune interaction',  sub: 'Likes, commentaires et abonnements apparaîtront ici' },
     wallet:  { icon: Wallet, title: 'Aucune transaction',  sub: 'Vos mouvements wallet apparaîtront ici' },

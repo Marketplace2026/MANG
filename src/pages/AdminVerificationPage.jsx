@@ -738,41 +738,76 @@ export default function AdminVerificationPage() {
   // DIFFUSION NOTIFICATION GLOBALE (BROADCAST)
   // ==========================================
   const handleSendBroadcast = async () => {
-    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+    const title = broadcastTitle.trim()
+    const body = broadcastBody.trim()
+
+    if (!title || !body) {
       toast.error('Veuillez remplir le titre et le corps du message')
       return
     }
-    if (!confirm(`Diffuser cette notification à TOUS les utilisateurs inscrits sur MANG ?\n\nTitre : "${broadcastTitle}"`)) return
+    if (!confirm(`Diffuser cette notification à TOUS les utilisateurs inscrits sur MANG ?\n\nTitre : "${title}"`)) return
 
     setProcessing(true)
     try {
-      const { data, error } = await supabase.rpc('admin_broadcast_notification', {
-        p_title: broadcastTitle.trim(),
-        p_body: broadcastBody.trim(),
+      let sentCount = 0
+
+      // 1. Essai prioritaire via la fonction RPC sécurisée
+      const { data, error: rpcError } = await supabase.rpc('admin_broadcast_notification', {
+        p_title: title,
+        p_body: body,
         p_type: 'system',
       })
 
-      if (error) {
-        const { data: profiles } = await supabase.from('profiles').select('id')
-        if (profiles && profiles.length > 0) {
-          const notifs = profiles.map(p => ({
-            user_id: p.id,
-            type: 'system',
-            title: broadcastTitle.trim(),
-            body: broadcastBody.trim(),
-          }))
-          await supabase.from('notifications').insert(notifs)
+      if (!rpcError && (data?.sent_to !== undefined || data?.count !== undefined || data?.success)) {
+        sentCount = data.sent_to ?? data.count ?? 0
+      } else {
+        if (rpcError) {
+          console.warn('[Broadcast] RPC admin_broadcast_notification erreur/manquante:', rpcError)
         }
+
+        // 2. Fallback direct : Récupération des profils et insertion par lots (chunks)
+        const { data: profiles, error: profErr } = await supabase.from('profiles').select('id')
+        if (profErr) {
+          throw new Error('Erreur d’accès aux profils utilisateurs : ' + (profErr.message || 'accès refusé'))
+        }
+
+        if (!profiles || profiles.length === 0) {
+          throw new Error('Aucun profil utilisateur trouvé dans la base de données.')
+        }
+
+        const notifs = profiles.map(p => ({
+          user_id: p.id,
+          type: 'system',
+          title: title,
+          body: body,
+          is_read: false,
+          created_at: new Date().toISOString()
+        }))
+
+        // Insertion par blocs de 100
+        const BATCH_SIZE = 100
+        for (let i = 0; i < notifs.length; i += BATCH_SIZE) {
+          const chunk = notifs.slice(i, i + BATCH_SIZE)
+          const { error: insertErr } = await supabase.from('notifications').insert(chunk)
+          if (insertErr) {
+            console.error('[Broadcast] Erreur insertion lot:', insertErr)
+            throw new Error('Échec d’insertion des notifications : ' + insertErr.message)
+          }
+        }
+
+        sentCount = profiles.length
       }
 
       await recordAuditLog('broadcast_notification_sent', 'all_users', null, {
-        title: broadcastTitle.trim(),
+        title: title,
+        sent_to: sentCount,
       })
 
-      toast.success('Notification diffusée avec succès à toute la communauté !')
+      toast.success(`Notification diffusée avec succès à ${sentCount} membre(s) !`)
       setBroadcastTitle('')
       setBroadcastBody('')
     } catch (err) {
+      console.error('handleSendBroadcast error:', err)
       toast.error('Erreur lors de la diffusion : ' + (err.message || ''))
     } finally {
       setProcessing(false)
@@ -2014,7 +2049,7 @@ export default function AdminVerificationPage() {
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Send size={16} />
-                  <span>Diffuser la notification à tous ({usersList.length} membres)</span>
+                  <span>{processing ? 'Diffusion en cours...' : `Diffuser la notification (${badgeCounts.users || usersList.length || 'tous les'} membres)`}</span>
                 </button>
               </div>
             </div>

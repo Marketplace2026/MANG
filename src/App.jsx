@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster, ToastBar, toast } from 'react-hot-toast'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useNotificationsStore } from '@/store'
 import { useGoogleReferral } from '@/hooks/useGoogleReferral'
 import { useVendorCopilotResponder } from '@/hooks/useVendorCopilotResponder'
 
@@ -155,6 +155,17 @@ export default function App() {
       import('@/i18n').then(m => m.default.changeLanguage(profile.language))
     }
   }, [profile?.language])
+
+  // Synchronisation temps réel des notifications pour l'utilisateur connecté
+  useEffect(() => {
+    if (!user?.id) return
+    const notifStore = useNotificationsStore.getState()
+    notifStore.fetchNotifications(user.id)
+    const unsubscribe = notifStore.subscribeToNotifications(user.id)
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
+    }
+  }, [user?.id])
 
   // Dissoudre le splash screen dès que l'auth est prête (cold-start instantané)
   useEffect(() => {
