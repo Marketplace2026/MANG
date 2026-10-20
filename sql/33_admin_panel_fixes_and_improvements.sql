@@ -380,6 +380,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 14. RPC : Arbitrage de litige corrigé (resolve_dispute)
+DROP FUNCTION IF EXISTS public.resolve_dispute(UUID, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.resolve_dispute(
   p_dispute_id UUID,
   p_decision TEXT, -- 'refund_buyer' ou 'pay_seller'
