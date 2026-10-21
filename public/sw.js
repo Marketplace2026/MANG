@@ -1,5 +1,5 @@
-// MANG Service Worker v5.0.0 — Stratégie Network-First & Purge Automatique de Cache
-const CACHE_NAME = 'mang-cache-v5.0.0';
+// MANG Service Worker v5.0.1 — Stratégie Network-First & Purge Automatique de Cache
+const CACHE_NAME = 'mang-cache-v5.0.1';
 
 // Uniquement les ressources statiques publiques garanties (aucun bundle JS avec hash variable)
 const STATIC_ASSETS = [
