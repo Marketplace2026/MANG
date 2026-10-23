@@ -917,11 +917,22 @@ export default function AdminVerificationPage() {
       if (!confirm(`Confirmer la réactivation du compte @${u.username} ?`)) return
       setProcessing(true)
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ is_banned: false, ban_reason: null })
-          .eq('id', u.id)
-        if (error) throw error
+        const { error: rpcErr } = await supabase.rpc('admin_toggle_user_ban', {
+          p_user_id: u.id,
+          p_is_banned: false,
+          p_ban_reason: null
+        })
+        if (rpcErr) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .update({ is_banned: false, ban_reason: null })
+            .eq('id', u.id)
+            .select()
+          if (error) throw error
+          if (!data || data.length === 0) {
+            throw new Error("L'action a échoué (0 ligne modifiée par les règles de sécurité RLS). Exécutez le script SQL de migration admin 35.")
+          }
+        }
 
         await recordAuditLog('user_unbanned', 'profile', u.id, { username: u.username })
 
@@ -943,11 +954,22 @@ export default function AdminVerificationPage() {
     const reason = banReasonInput.trim() || 'Non-respect des règles de la communauté MANG'
     setProcessing(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_banned: true, ban_reason: reason })
-        .eq('id', userToBan.id)
-      if (error) throw error
+      const { error: rpcErr } = await supabase.rpc('admin_toggle_user_ban', {
+        p_user_id: userToBan.id,
+        p_is_banned: true,
+        p_ban_reason: reason
+      })
+      if (rpcErr) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({ is_banned: true, ban_reason: reason })
+          .eq('id', userToBan.id)
+          .select()
+        if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error("L'action a échoué (0 ligne modifiée par les règles de sécurité RLS). Exécutez le script SQL de migration admin 35.")
+        }
+      }
 
       await recordAuditLog('user_banned', 'profile', userToBan.id, { username: userToBan.username, reason })
 
@@ -1083,8 +1105,21 @@ export default function AdminVerificationPage() {
     const nextActive = shop.is_active === false
     setProcessing(true)
     try {
-      const { error } = await supabase.from('shops').update({ is_active: nextActive }).eq('id', shop.id)
-      if (error) throw error
+      const { error: rpcErr } = await supabase.rpc('admin_toggle_shop_active', {
+        p_shop_id: shop.id,
+        p_is_active: nextActive
+      })
+      if (rpcErr) {
+        const { data, error } = await supabase
+          .from('shops')
+          .update({ is_active: nextActive })
+          .eq('id', shop.id)
+          .select()
+        if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error("L'action a échoué (0 ligne affectée par les permissions RLS). Exécutez la migration SQL 35.")
+        }
+      }
       await recordAuditLog(nextActive ? 'shop_activated' : 'shop_suspended', 'shop', shop.id, { name: shop.name })
       toast.success(nextActive ? `Boutique "${shop.name}" réactivée` : `Boutique "${shop.name}" suspendue`)
       setCatalogShops(prev => prev.map(s => s.id === shop.id ? { ...s, is_active: nextActive } : s))
@@ -1099,8 +1134,21 @@ export default function AdminVerificationPage() {
     const nextAvail = product.is_available === false
     setProcessing(true)
     try {
-      const { error } = await supabase.from('products').update({ is_available: nextAvail }).eq('id', product.id)
-      if (error) throw error
+      const { error: rpcErr } = await supabase.rpc('admin_toggle_product_available', {
+        p_product_id: product.id,
+        p_is_available: nextAvail
+      })
+      if (rpcErr) {
+        const { data, error } = await supabase
+          .from('products')
+          .update({ is_available: nextAvail })
+          .eq('id', product.id)
+          .select()
+        if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error("L'action a échoué (0 ligne affectée par les permissions RLS). Exécutez la migration SQL 35.")
+        }
+      }
       await recordAuditLog(nextAvail ? 'product_activated' : 'product_hidden', 'product', product.id, { name: product.name })
       toast.success(nextAvail ? `Produit "${product.name}" visible en ligne` : `Produit "${product.name}" masqué`)
       setCatalogProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_available: nextAvail } : p))
@@ -1113,27 +1161,43 @@ export default function AdminVerificationPage() {
 
   const handleDeleteProduct = async (product) => {
     if (!confirm(`Supprimer définitivement le produit "${product.name}" ?`)) return
+    setProcessing(true)
     try {
-      const { error } = await supabase.from('products').delete().eq('id', product.id)
-      if (error) throw error
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('admin_delete_product', { p_product_id: product.id })
+      if (rpcErr) {
+        const { error } = await supabase.from('products').delete().eq('id', product.id)
+        if (error) throw error
+      } else if (rpcData?.message) {
+        toast(rpcData.message, { icon: 'ℹ️' })
+      }
       await recordAuditLog('product_deleted', 'product', product.id, { name: product.name })
-      toast.success('Produit supprimé !')
+      toast.success('Produit retiré du catalogue !')
       loadCatalog()
     } catch (err) {
-      toast.error('Erreur de suppression (commandes existantes rattachées) : ' + (err.message || ''))
+      toast.error('Erreur de suppression : ' + (err.message || ''))
+    } finally {
+      setProcessing(false)
     }
   }
 
   const handleDeleteShop = async (shop) => {
     if (!confirm(`Supprimer définitivement la boutique "${shop.name}" ?`)) return
+    setProcessing(true)
     try {
-      const { error } = await supabase.from('shops').delete().eq('id', shop.id)
-      if (error) throw error
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('admin_delete_shop', { p_shop_id: shop.id })
+      if (rpcErr) {
+        const { error } = await supabase.from('shops').delete().eq('id', shop.id)
+        if (error) throw error
+      } else if (rpcData?.message) {
+        toast(rpcData.message, { icon: 'ℹ️' })
+      }
       await recordAuditLog('shop_deleted', 'shop', shop.id, { name: shop.name })
-      toast.success('Boutique supprimée !')
+      toast.success('Boutique retirée !')
       loadCatalog()
     } catch (err) {
       toast.error('Erreur de suppression : ' + (err.message || ''))
+    } finally {
+      setProcessing(false)
     }
   }
 
