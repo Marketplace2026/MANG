@@ -274,8 +274,6 @@ export default function MarketplacePage() {
         .from('shops')
         .select('*, owner:profiles(id, username, avatar_url, last_seen_at)')
         .eq('is_active', true)
-        .order('premium_level', { ascending: false })
-        .order('created_at', { ascending: false })
 
       if (filters.hasDelivery) query = query.eq('has_delivery', true)
       if (filters.category) query = query.eq('category_id', filters.category)
@@ -290,9 +288,19 @@ export default function MarketplacePage() {
       if (verifiedOnly) query = query.eq('is_verified', true)
       if (topShopsOnly) query = query.gt('premium_level', 0)
       if (minRating) query = query.gte('rating_avg', minRating)
-      if (sortBy === 'rating') query = query.order('rating_avg', { ascending: false })
-      else if (sortBy === 'followers') query = query.order('followers_count', { ascending: false })
-      else if (sortBy === 'likes') query = query.order('likes_count', { ascending: false })
+
+      // Ordre de tri prioritaire selon le filtre sélectionné
+      if (sortBy === 'likes') {
+        query = query.order('likes_count', { ascending: false, nullsFirst: false })
+      } else if (sortBy === 'rating') {
+        query = query.order('rating_avg', { ascending: false, nullsFirst: false })
+      } else if (sortBy === 'followers') {
+        query = query.order('followers_count', { ascending: false, nullsFirst: false })
+      } else {
+        query = query
+          .order('premium_level', { ascending: false })
+          .order('created_at', { ascending: false })
+      }
 
       const { data } = await query
       let result = data || []
@@ -306,6 +314,15 @@ export default function MarketplacePage() {
       })
       if (topShopsOnly) {
         result = result.filter(s => s.premium_level > 0)
+      }
+
+      // Tri rigoureux en mémoire pour garantir l'ordre exact du plus grand au plus petit
+      if (sortBy === 'likes') {
+        result.sort((a, b) => (Number(b.likes_count) || 0) - (Number(a.likes_count) || 0))
+      } else if (sortBy === 'rating') {
+        result.sort((a, b) => (Number(b.rating_avg) || 0) - (Number(a.rating_avg) || 0))
+      } else if (sortBy === 'followers') {
+        result.sort((a, b) => (Number(b.followers_count) || 0) - (Number(a.followers_count) || 0))
       }
 
       // Calculer systématiquement la distance pour toutes les boutiques si la position de l'utilisateur est connue
@@ -655,7 +672,13 @@ export default function MarketplacePage() {
   }
 
   const handleTopBoutiquesToggle = () => {
-    setSortBy(prev => prev === 'likes' ? 'recent' : 'likes')
+    setSortBy(prev => {
+      const next = prev === 'likes' ? 'recent' : 'likes'
+      if (next === 'likes' && filters.nearby) {
+        setFilters(f => ({ ...f, nearby: false }))
+      }
+      return next
+    })
   }
 
   const activeFiltersCount = [
@@ -1142,6 +1165,7 @@ export default function MarketplacePage() {
                 onFollow={() => toggleFollow(shop.id)}
                 onOpen={() => navigate(`/boutique/${shop.slug || shop.id}`)}
                 isNearby={filters.nearby}
+                showLikesCount={sortBy === 'likes'}
               />
             ))}
           </div>
@@ -1456,7 +1480,7 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
 // ============================================================
 // SHOP CARD ULTRA-COMPACT & PRO
 // ============================================================
-function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNearby }) {
+function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNearby, showLikesCount = false }) {
   const navigate = useNavigate()
   const isOnline = shop.owner?.last_seen_at
     ? (new Date() - new Date(shop.owner.last_seen_at)) < 120000 : false
@@ -1533,9 +1557,9 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
           />
         </button>
 
-        {/* En bas de photo : Note ⭐ + Ville / Distance */}
+        {/* En bas de photo : Note ⭐ + J'aimes (mode populaire) / Ville / Distance */}
         <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between text-white text-[9px] font-bold z-10 pointer-events-none">
-          {/* Note ou Nouveau */}
+          {/* Gauche : Note ou Nouveau */}
           {Number(shop.rating_avg) > 0 ? (
             <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md">
               <Star size={9} className="fill-amber-400 text-amber-400" />
@@ -1548,8 +1572,13 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             </div>
           )}
 
-          {/* Localisation / Distance */}
-          {(shop.city || (isNearby && shop.distance != null)) && (
+          {/* Droite : Compteur J'aimes si mode populaire, sinon Ville/Distance */}
+          {showLikesCount ? (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-500/80 backdrop-blur-md text-white font-black">
+              <Heart size={8} className="fill-white" />
+              <span>{shop.likes_count || 0}</span>
+            </div>
+          ) : (shop.city || (isNearby && shop.distance != null)) && (
             <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md text-white/90 truncate max-w-[55%]">
               <MapPin size={8.5} className="text-primary-300 flex-shrink-0" />
               <span className="truncate">
