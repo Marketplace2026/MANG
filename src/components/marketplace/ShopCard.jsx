@@ -120,39 +120,43 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
           </p>
         )}
 
-        {/* Actions : Cloche abonnement + Pouce like — sans compteurs */}
+        {/* Actions : Cloche abonnement + Pouce like avec rebond */}
         <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
 
-          {/* Cloche — S'abonner */}
+          {/* Cloche — S'abonner avec rebond */}
           <button
             onClick={e => { e.stopPropagation(); onFollow?.() }}
             className={clsx(
-              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
-              isFollowing ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
+              'btn-bounce flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
+              'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
+              isFollowing ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop' : 'bg-surface-100 text-dark-400'
             )}
           >
             <svg width="13" height="13" viewBox="0 0 24 24"
               fill={isFollowing ? 'white' : 'none'}
               stroke={isFollowing ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              className={clsx('transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]', isFollowing ? 'scale-125' : '')}>
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
-          {/* Pouce — Liker */}
+          {/* Pouce — Liker avec rebond */}
           <button
             onClick={e => { e.stopPropagation(); onLike?.() }}
             className={clsx(
-              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
-              isLiked ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
+              'btn-bounce flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
+              'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
+              isLiked ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop' : 'bg-surface-100 text-dark-400'
             )}
           >
             <svg width="13" height="13" viewBox="0 0 24 24"
               fill={isLiked ? 'white' : 'none'}
               stroke={isLiked ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              className={clsx('transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]', isLiked ? 'scale-125' : '')}>
               <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
               <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
             </svg>

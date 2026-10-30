@@ -144,6 +144,26 @@ body {
   100% { background-position:  1000px 0; }
 }
 
+/* Animation Rebond / Pop Spring pour boutons interactifs */
+@keyframes bouncePop {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(0.72); }
+  55%  { transform: scale(1.32); }
+  75%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.animate-bounce-pop {
+  animation: bouncePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-bounce {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.btn-bounce:active {
+  transform: scale(0.78) !important;
+}
+
 /* Bottom nav height variable */
 :root {
   --bottom-nav-height: 64px;
