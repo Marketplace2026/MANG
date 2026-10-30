@@ -332,28 +332,46 @@ export default function ShopPublicPage() {
             </div>
           )}
 
-          {/* Stats */}
-          <div className="flex items-center gap-4 mb-3">
-            <button onClick={() => setShowLikers(true)} className="flex items-center gap-1.5 active:scale-95">
-              <span className="font-black text-dark-900 text-base">{shop.likes_count || 0}</span>
-              <span className="text-gray-400 text-xs">J'aimes</span>
-              <div className="flex -space-x-1 ml-0.5">
-                {likers.slice(0,3).map((l,i) => <Avatar key={i} src={l.user?.avatar_url} name={l.user?.username} size="xs" className="ring-1 ring-white"/>)}
-              </div>
+          {/* Stats Bar (Format 3 colonnes symétrique - Style Instagram) */}
+          <div className="grid grid-cols-3 divide-x divide-surface-200/80 rounded-2xl bg-surface-50/90 border border-surface-200/60 py-2.5 px-2 mb-3.5 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setShowLikers(true)}
+              className="flex flex-col items-center justify-center py-0.5 px-1 hover:bg-white/60 rounded-xl active:scale-95 transition-all"
+            >
+              <span className="font-black text-dark-950 text-base leading-none">
+                {shop.likes_count || 0}
+              </span>
+              <span className="text-dark-500 text-[11px] font-semibold mt-1">
+                J'aimes
+              </span>
             </button>
-            <span className="text-gray-200">|</span>
-            <button onClick={() => setShowFollowers(true)} className="flex items-center gap-1.5 active:scale-95">
-              <span className="font-black text-dark-900 text-base">{shop.followers_count || 0}</span>
-              <span className="text-gray-400 text-xs">Abonnés</span>
-              <div className="flex -space-x-1 ml-0.5">
-                {followers.slice(0,3).map((f,i) => <Avatar key={i} src={f.user?.avatar_url} name={f.user?.username} size="xs" className="ring-1 ring-white"/>)}
-              </div>
+
+            <button
+              type="button"
+              onClick={() => setShowFollowers(true)}
+              className="flex flex-col items-center justify-center py-0.5 px-1 hover:bg-white/60 rounded-xl active:scale-95 transition-all"
+            >
+              <span className="font-black text-dark-950 text-base leading-none">
+                {shop.followers_count || 0}
+              </span>
+              <span className="text-dark-500 text-[11px] font-semibold mt-1">
+                Abonnés
+              </span>
             </button>
-            <span className="text-gray-200">|</span>
-            <div className="flex items-center gap-1.5">
-              <span className="font-black text-dark-900 text-base">{products.length}</span>
-              <span className="text-gray-400 text-xs">Produits</span>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              className="flex flex-col items-center justify-center py-0.5 px-1 hover:bg-white/60 rounded-xl active:scale-95 transition-all"
+            >
+              <span className="font-black text-dark-950 text-base leading-none">
+                {products.length}
+              </span>
+              <span className="text-dark-500 text-[11px] font-semibold mt-1">
+                Produits
+              </span>
+            </button>
           </div>
 
           {/* Badges */}
