@@ -4,7 +4,7 @@ import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
   Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag,
-  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight
+  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight, Trophy
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -1030,10 +1030,12 @@ export default function MarketplacePage() {
           <div className="mb-6 pt-3">
             <div className="flex items-center justify-between px-3 mb-2.5">
               <div className="flex items-center gap-1.5">
-                <Flame size={16} className="text-amber-500" strokeWidth={2.5} />
-                <h2 className="font-display font-black text-dark-800 text-sm tracking-tight uppercase">Top 5 Boutiques MANG</h2>
+                <Trophy size={16} className="text-amber-500 fill-amber-400" />
+                <h2 className="font-display font-black text-dark-900 text-sm tracking-tight uppercase">Top 5 Boutiques MANG</h2>
               </div>
-              <span className="text-[10px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">VIP Partners</span>
+              <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                <span>👑</span> Podium d'Élite
+              </span>
             </div>
             
             <div className="flex gap-3 overflow-x-auto no-scrollbar px-3 pb-2.5">
@@ -1254,31 +1256,133 @@ export default function MarketplacePage() {
 }
 
 // ============================================================
-// TOP SHOP CARD
+// TOP SHOP CARD — PRESTIGE & PODIUM (OPTION A)
 // ============================================================
 function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, rank }) {
   const navigate = useNavigate()
-  const medalColor = { 1: 'bg-gold-400 text-gold-950', 2: 'bg-slate-300 text-slate-900', 3: 'bg-amber-600 text-amber-50' }[rank] || 'bg-primary-500 text-white'
-  
+
+  const rankConfig = {
+    1: {
+      badgeBg: 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 text-amber-950 shadow-md ring-1 ring-amber-200/70',
+      badgeIcon: '👑',
+      badgeLabel: '#1 Or',
+      cardRing: 'ring-2 ring-amber-400/90 shadow-[0_4px_18px_rgba(245,158,11,0.22)]',
+    },
+    2: {
+      badgeBg: 'bg-gradient-to-r from-slate-200 via-gray-200 to-slate-400 text-slate-900 shadow-sm ring-1 ring-white/80',
+      badgeIcon: '🥈',
+      badgeLabel: '#2 Argent',
+      cardRing: 'ring-1.5 ring-slate-300 shadow-card',
+    },
+    3: {
+      badgeBg: 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 text-amber-50 shadow-sm ring-1 ring-amber-500/40',
+      badgeIcon: '🥉',
+      badgeLabel: '#3 Bronze',
+      cardRing: 'ring-1.5 ring-amber-700/50 shadow-card',
+    },
+    4: {
+      badgeBg: 'bg-primary-700 text-white shadow-xs',
+      badgeIcon: '🎖️',
+      badgeLabel: '#4 Top',
+      cardRing: 'border border-surface-200/80 shadow-card',
+    },
+    5: {
+      badgeBg: 'bg-primary-600 text-white shadow-xs',
+      badgeIcon: '🎖️',
+      badgeLabel: '#5 Top',
+      cardRing: 'border border-surface-200/80 shadow-card',
+    }
+  }[rank] || {
+    badgeBg: 'bg-primary-600 text-white shadow-xs',
+    badgeIcon: '⭐',
+    badgeLabel: `#${rank}`,
+    cardRing: 'border border-surface-200/80 shadow-card',
+  }
+
   return (
-    <div className="relative w-44 flex-shrink-0 bg-white rounded-2xl shadow-card overflow-hidden active:scale-[0.97] transition-transform duration-150 cursor-pointer border border-surface-200" onClick={onOpen}>
-      {/* Badge de classement */}
-      <div className={`absolute top-2 left-2 z-20 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black shadow-md ${medalColor}`}>
-        <span>N°{rank}</span>
+    <div
+      onClick={onOpen}
+      className={clsx(
+        'group relative w-44 flex-shrink-0 bg-white rounded-2xl overflow-hidden cursor-pointer',
+        'transition-all duration-200 active:scale-[0.96] hover:shadow-md hover:-translate-y-0.5 flex flex-col',
+        rankConfig.cardRing
+      )}
+    >
+      {/* 1. Couverture (h-24) avec dégradé et badges */}
+      <div className="relative h-24 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden flex-shrink-0">
+        {shop.cover_url ? (
+          <img
+            src={shop.cover_url}
+            alt={shop.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-primary-600/40 bg-gradient-to-br from-primary-50 to-primary-100">
+            <Store size={26} className="text-primary-500/50" />
+          </div>
+        )}
+
+        {/* Dégradé sombre pour lisibilité des badges */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-black/35 pointer-events-none" />
+
+        {/* En haut à gauche : Médaille de classement podium */}
+        <div className={clsx('absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black', rankConfig.badgeBg)}>
+          <span>{rankConfig.badgeIcon}</span>
+          <span className="tracking-tight">{rankConfig.badgeLabel}</span>
+        </div>
+
+        {/* En haut à droite : Cœur Like flottant avec rebond continu automatique (même position que cartes du bas) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onLike()
+          }}
+          className={clsx(
+            'btn-bounce animate-continuous-heartbeat absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md shadow-sm',
+            'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-70 hover:scale-115',
+            isLiked
+              ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-white/60 animate-bounce-pop'
+              : 'bg-black/35 hover:bg-black/55 text-white/90 border border-white/20'
+          )}
+          title={isLiked ? "Retirer des favoris" : "Ajouter aux favoris"}
+        >
+          <Heart
+            size={13}
+            className={clsx(
+              'transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+              isLiked ? 'fill-current scale-110' : 'group-hover:scale-110'
+            )}
+          />
+        </button>
+
+        {/* En bas de photo : Note ⭐ + Ville */}
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between text-white text-[9px] font-bold z-10 pointer-events-none">
+          {Number(shop.rating_avg) > 0 ? (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md">
+              <Star size={9} className="fill-amber-400 text-amber-400" />
+              <span>{Number(shop.rating_avg).toFixed(1)}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/35 backdrop-blur-md text-[8.5px] text-emerald-300 font-black">
+              Nouveau
+            </div>
+          )}
+
+          {shop.city && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md text-white/90 truncate max-w-[60%]">
+              <MapPin size={8.5} className="text-primary-300 flex-shrink-0" />
+              <span className="truncate">{shop.city}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Image cover (petite photo de la boutique) */}
-      <div className="relative h-20 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
-        {shop.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
-        }
-      </div>
-
-      {/* Infos */}
-      <div className="p-2">
-        {/* Avatar + Nom + username */}
-        <div className="flex items-center gap-1.5 mb-2">
+      {/* 2. Infos Vendeur & Bouton Suivre en bas */}
+      <div className="p-2 flex flex-col justify-between flex-1">
+        {/* Avatar + Nom + Badge vérifié + Followers */}
+        <div className="flex items-center gap-1.5">
           <div
             onClick={(e) => {
               const target = shop.owner?.username || shop.owner_id
@@ -1287,69 +1391,62 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
                 navigate(`/profil/${target}`)
               }
             }}
-            className="cursor-pointer hover:opacity-85 transition-opacity flex-shrink-0"
+            className="relative flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
             title="Voir le profil"
           >
-            <Avatar src={shop.owner?.avatar_url} name={shop.name} size="xs" className="ring-1 ring-white shadow-sm"/>
+            <Avatar
+              src={shop.owner?.avatar_url}
+              name={shop.name}
+              size="xs"
+              className="w-6 h-6 ring-1.5 ring-white shadow-xs"
+            />
           </div>
+
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-dark-800 text-[10px] leading-tight truncate">{shop.name}</h3>
-            <p
-              onClick={(e) => {
-                const target = shop.owner?.username || shop.owner_id
-                if (target) {
-                  e.stopPropagation()
-                  navigate(`/profil/${target}`)
-                }
-              }}
-              className="text-dark-600/40 text-[9px] truncate hover:text-emerald-700 hover:underline cursor-pointer"
-            >
-              @{shop.owner?.username}
+            <div className="flex items-center gap-1">
+              <h3 className="font-extrabold text-dark-900 text-[11px] leading-tight truncate">
+                {shop.name}
+              </h3>
+              {shop.is_verified && (
+                <BadgeCheck size={12} className="text-blue-500 flex-shrink-0 fill-blue-500 text-white" />
+              )}
+            </div>
+            <p className="text-dark-500 text-[9px] truncate leading-none mt-0.5 flex items-center gap-1">
+              <span className="text-amber-600 font-bold">🔥 {shop.followers_count || 0}</span>
+              <span className="text-dark-400">abonnés</span>
             </p>
           </div>
         </div>
 
-        {/* Boutons d'action : icônes avec rebond continu automatique */}
-        <div className="flex gap-1.5 pt-1.5 border-t border-surface-100">
-          {/* Bell button avec effet rebond permanent */}
+        {/* Ligne d'action en bas : Mini-bouton S'abonner + Flèche (même position que cartes du bas) */}
+        <div className="mt-2 pt-1.5 border-t border-surface-100 flex items-center justify-between gap-1.5">
           <button
-            onClick={e => { e.stopPropagation(); onFollow() }}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onFollow()
+            }}
             className={clsx(
-              'btn-bounce animate-continuous-bounce flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
+              'btn-bounce animate-continuous-bounce animate-delay-400 flex-1 flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[10px] font-bold',
+              'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-80 hover:scale-[1.03]',
               isFollowing
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-400'
+                ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-xs'
+                : 'bg-surface-100 hover:bg-surface-200 text-dark-600'
             )}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24"
-              fill={isFollowing ? 'white' : 'none'}
-              stroke={isFollowing ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-              className={clsx('transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]', isFollowing ? 'scale-125' : '')}>
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
+            <BellIcon
+              size={10}
+              className={clsx(
+                'transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+                isFollowing ? 'fill-primary-700 scale-125' : ''
+              )}
+            />
+            <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
-          {/* Like button avec effet rebond permanent */}
-          <button
-            onClick={e => { e.stopPropagation(); onLike() }}
-            className={clsx(
-              'btn-bounce animate-continuous-heartbeat animate-delay-400 flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
-              isLiked
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-400'
-            )}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24"
-              fill={isLiked ? 'white' : 'none'}
-              stroke={isLiked ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-              className={clsx('transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]', isLiked ? 'scale-125' : '')}>
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-            </svg>
-          </button>
+          <div className="btn-bounce animate-nudge-right animate-delay-800 w-5 h-5 rounded-lg bg-surface-50 flex items-center justify-center text-dark-400 group-hover:text-primary-600 group-hover:bg-primary-50 group-hover:scale-110 active:scale-75 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex-shrink-0">
+            <ChevronRight size={12} />
+          </div>
         </div>
       </div>
     </div>
