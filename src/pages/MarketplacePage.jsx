@@ -4,7 +4,7 @@ import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
   Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag,
-  LogIn, Eye
+  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -1355,54 +1355,115 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
 }
 
 // ============================================================
-// SHOP CARD
+// SHOP CARD ULTRA-COMPACT & PRO
 // ============================================================
 function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNearby }) {
   const navigate = useNavigate()
   const isOnline = shop.owner?.last_seen_at
     ? (new Date() - new Date(shop.owner.last_seen_at)) < 120000 : false
 
-  const premiumRing = { 3: 'ring-2 ring-gold-400', 2: 'ring-2 ring-slate-400', 1: 'ring-2 ring-amber-700/50' }[shop.premium_level] || ''
+  const premiumRing = {
+    3: 'ring-2 ring-amber-400/90 shadow-[0_4px_16px_rgba(245,158,11,0.18)]',
+    2: 'ring-1.5 ring-slate-400',
+    1: 'ring-1 ring-amber-700/40'
+  }[shop.premium_level] || 'border border-surface-200/70'
 
   return (
-    <div className={clsx('bg-white rounded-2xl shadow-card overflow-hidden active:scale-[0.97] transition-transform duration-150 cursor-pointer', premiumRing)}
-      onClick={onOpen}>
-
-      {/* Image cover */}
-      <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
-        {shop.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={32} /></div>
-        }
-
-        {/* Badge premium */}
-        {shop.premium_level > 0 && (
-          <div className="absolute top-2 right-2">
-            <PremiumBadge level={shop.premium_level}/>
+    <div
+      className={clsx(
+        'group relative bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer transition-all duration-200 active:scale-[0.96] hover:shadow-md hover:-translate-y-0.5 flex flex-col',
+        premiumRing
+      )}
+      onClick={onOpen}
+    >
+      {/* 1. Couverture Compacte (h-24 = 96px) avec zoom fluide et badges incrustés */}
+      <div className="relative h-24 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden flex-shrink-0">
+        {shop.cover_url ? (
+          <img
+            src={shop.cover_url}
+            alt={shop.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-primary-600/40 bg-gradient-to-br from-primary-50 to-primary-100">
+            <Store size={26} className="text-primary-500/50" />
           </div>
         )}
 
-        {/* Livraison */}
-        {shop.has_delivery && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary-700/90 backdrop-blur-sm">
-            <Truck size={9} className="text-white"/>
-            <span className="text-white text-[9px] font-bold">Livraison</span>
-          </div>
-        )}
+        {/* Dégradé sombre pour lisibilité des badges */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25 pointer-events-none" />
 
-        {/* Distance si mode proche */}
-        {isNearby && shop.distance != null && (
-          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/50 backdrop-blur-sm">
-            <span className="text-white text-[10px] font-bold flex items-center gap-1"><MapPin size={10} /> {shop.distance < 1 ? (shop.distance*1000).toFixed(0)+'m' : shop.distance.toFixed(1)+'km'}</span>
-          </div>
-        )}
+        {/* En haut à gauche : Badges statut (Premium / Livraison) */}
+        <div className="absolute top-1.5 left-1.5 flex items-center gap-1 z-10 pointer-events-none">
+          {shop.premium_level > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/90 text-white font-black text-[8px] shadow-sm backdrop-blur-sm tracking-wide uppercase">
+              <Sparkles size={8} />
+              <span>{shop.premium_level === 3 ? 'Gold' : shop.premium_level === 2 ? 'Pro' : 'Plus'}</span>
+            </div>
+          )}
+          {shop.has_delivery && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-primary-700/90 text-white font-bold text-[8.5px] shadow-sm backdrop-blur-sm" title="Livraison disponible">
+              <Truck size={9} />
+            </div>
+          )}
+        </div>
+
+        {/* En haut à droite : Cœur Like flottant en verre dépoli avec micro-animation */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onLike()
+          }}
+          className={clsx(
+            'absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 active:scale-75 shadow-sm',
+            isLiked
+              ? 'bg-red-500 text-white scale-105 shadow-red-500/30 ring-2 ring-white/60'
+              : 'bg-black/35 hover:bg-black/55 text-white/90 border border-white/20'
+          )}
+          title={isLiked ? "Retirer des favoris" : "Ajouter aux favoris"}
+        >
+          <Heart
+            size={13}
+            className={clsx('transition-transform duration-200', isLiked ? 'fill-current scale-110' : '')}
+          />
+        </button>
+
+        {/* En bas de photo : Note ⭐ + Ville / Distance */}
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between text-white text-[9px] font-bold z-10 pointer-events-none">
+          {/* Note ou Nouveau */}
+          {Number(shop.rating_avg) > 0 ? (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md">
+              <Star size={9} className="fill-amber-400 text-amber-400" />
+              <span>{Number(shop.rating_avg).toFixed(1)}</span>
+              {shop.reviews_count > 0 && <span className="text-white/70 text-[8px]">({shop.reviews_count})</span>}
+            </div>
+          ) : (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/35 backdrop-blur-md text-[8.5px] text-emerald-300 font-black">
+              Nouveau
+            </div>
+          )}
+
+          {/* Localisation / Distance */}
+          {(shop.city || (isNearby && shop.distance != null)) && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/45 backdrop-blur-md text-white/90 truncate max-w-[55%]">
+              <MapPin size={8.5} className="text-primary-300 flex-shrink-0" />
+              <span className="truncate">
+                {isNearby && shop.distance != null
+                  ? (shop.distance < 1 ? Math.round(shop.distance * 1000) + 'm' : shop.distance.toFixed(1) + 'km')
+                  : (shop.city || 'Bénin')
+                }
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Infos */}
-      <div className="px-2.5 pt-2 pb-2.5">
-
-        {/* Nom + username — sans avatar qui déborde */}
-        <div className="flex items-center gap-2 mb-1">
+      {/* 2. Infos Vendeur & Micro-action (Corps ultra compact) */}
+      <div className="p-2 flex flex-col justify-between flex-1">
+        {/* Ligne 1 : Avatar + Nom + Badge vérifié */}
+        <div className="flex items-center gap-1.5">
           <div
             onClick={(e) => {
               const target = shop.owner?.username || shop.owner_id
@@ -1414,12 +1475,26 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             className="relative flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
             title="Voir le profil"
           >
-            <Avatar src={shop.owner?.avatar_url} name={shop.name} size="sm"
-              className="ring-2 ring-white shadow-sm"/>
-            {isOnline && <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-white"/>}
+            <Avatar
+              src={shop.owner?.avatar_url}
+              name={shop.name}
+              size="xs"
+              className="w-6 h-6 ring-1.5 ring-white shadow-xs"
+            />
+            {isOnline && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white animate-pulse" title="En ligne" />
+            )}
           </div>
+
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-dark-800 text-xs leading-tight truncate">{shop.name}</h3>
+            <div className="flex items-center gap-1">
+              <h3 className="font-extrabold text-dark-900 text-[11.5px] leading-tight truncate">
+                {shop.name}
+              </h3>
+              {shop.is_verified && (
+                <BadgeCheck size={12} className="text-blue-500 flex-shrink-0 fill-blue-500 text-white" />
+              )}
+            </div>
             <p
               onClick={(e) => {
                 const target = shop.owner?.username || shop.owner_id
@@ -1428,84 +1503,35 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
                   navigate(`/profil/${target}`)
                 }
               }}
-              className="text-dark-600/40 text-[10px] truncate hover:text-emerald-700 hover:underline cursor-pointer"
+              className="text-dark-600/50 text-[9.5px] truncate hover:text-emerald-700 cursor-pointer leading-none mt-0.5"
             >
-              @{shop.owner?.username}
+              @{shop.owner?.username || 'vendeur'}
             </p>
           </div>
         </div>
 
-        {/* Rating + Verified */}
-        {(shop.reviews_count > 0 || shop.is_verified) && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            {shop.reviews_count > 0 && (
-              <div className="flex items-center gap-0.5">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="none">
-                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                </svg>
-                <span className="text-[10px] font-bold text-amber-600">{Number(shop.rating_avg||0).toFixed(1)}</span>
-                <span className="text-[9px] text-dark-600/40">({shop.reviews_count})</span>
-              </div>
-            )}
-            {shop.is_verified && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-blue-50 rounded-full">
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span className="text-blue-600 text-[9px] font-bold">Vérifié</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Description */}
-        {shop.description && (
-          <p className="text-dark-600/60 text-[10px] leading-tight line-clamp-2 mb-2">{shop.description}</p>
-        )}
-
-        {/* Actions : cloche abonnement + pouce like — sans compteurs (les vrais chiffres sont dans la page boutique) */}
-        <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
-
-          {/* Bouton Abonnement — cloche */}
+        {/* Ligne 2 : Mini-bouton S'abonner + Flèche rapide */}
+        <div className="mt-2 pt-1.5 border-t border-surface-100 flex items-center justify-between gap-1.5">
           <button
-            onClick={e => { e.stopPropagation(); onFollow() }}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onFollow()
+            }}
             className={clsx(
-              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
+              'flex-1 flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all duration-150 active:scale-95',
               isFollowing
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-400'
+                ? 'bg-primary-50 text-primary-700 border border-primary-200/60'
+                : 'bg-surface-100 hover:bg-surface-200 text-dark-600'
             )}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24"
-              fill={isFollowing ? 'white' : 'none'}
-              stroke={isFollowing ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
+            <BellIcon size={10} className={isFollowing ? 'fill-primary-700' : ''} />
             <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
-          {/* Bouton Like — pouce */}
-          <button
-            onClick={e => { e.stopPropagation(); onLike() }}
-            className={clsx(
-              'flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95',
-              isLiked
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-surface-100 text-dark-400'
-            )}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24"
-              fill={isLiked ? 'white' : 'none'}
-              stroke={isLiked ? 'white' : 'currentColor'}
-              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-              <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-            </svg>
-            <span>{isLiked ? 'Aimé' : "J'aime"}</span>
-          </button>
-
+          <div className="w-5 h-5 rounded-lg bg-surface-50 flex items-center justify-center text-dark-400 group-hover:text-primary-600 group-hover:bg-primary-50 transition-colors flex-shrink-0">
+            <ChevronRight size={12} />
+          </div>
         </div>
       </div>
     </div>
@@ -1703,18 +1729,17 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
 // ============================================================
 function ShopSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-      <div className="h-36 skeleton"/>
-      <div className="p-2.5 space-y-2">
-        <div className="flex gap-2 -mt-4">
-          <div className="w-11 h-11 rounded-2xl skeleton flex-shrink-0"/>
-          <div className="flex-1 space-y-1 pt-1">
-            <div className="h-3 skeleton rounded-lg w-3/4"/>
-            <div className="h-2.5 skeleton rounded-lg w-1/2"/>
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-surface-200/60">
+      <div className="h-24 skeleton"/>
+      <div className="p-2 space-y-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-6 rounded-full skeleton flex-shrink-0"/>
+          <div className="flex-1 space-y-1">
+            <div className="h-2.5 skeleton rounded w-3/4"/>
+            <div className="h-2 skeleton rounded w-1/2"/>
           </div>
         </div>
-        <div className="h-2.5 skeleton rounded-lg"/>
-        <div className="h-2.5 skeleton rounded-lg w-2/3"/>
+        <div className="h-5 skeleton rounded-lg w-full mt-1"/>
       </div>
     </div>
   )
