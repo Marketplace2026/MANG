@@ -123,13 +123,13 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
         {/* Actions : Cloche abonnement + Pouce like avec rebond */}
         <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
 
-          {/* Cloche — S'abonner avec rebond */}
+          {/* Cloche — S'abonner avec rebond permanent */}
           <button
             onClick={e => { e.stopPropagation(); onFollow?.() }}
             className={clsx(
-              'btn-bounce flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
+              'btn-bounce animate-continuous-bounce flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
               'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
-              isFollowing ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop' : 'bg-surface-100 text-dark-400'
+              isFollowing ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
             )}
           >
             <svg width="13" height="13" viewBox="0 0 24 24"
@@ -143,13 +143,13 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
             <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
-          {/* Pouce — Liker avec rebond */}
+          {/* Pouce — Liker avec rebond permanent */}
           <button
             onClick={e => { e.stopPropagation(); onLike?.() }}
             className={clsx(
-              'btn-bounce flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
+              'btn-bounce animate-continuous-bounce animate-delay-400 flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[11px] font-bold',
               'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
-              isLiked ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop' : 'bg-surface-100 text-dark-400'
+              isLiked ? 'bg-primary-500 text-white shadow-sm' : 'bg-surface-100 text-dark-400'
             )}
           >
             <svg width="13" height="13" viewBox="0 0 24 24"

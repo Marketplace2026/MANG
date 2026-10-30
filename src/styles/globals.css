@@ -153,6 +153,75 @@ body {
   100% { transform: scale(1); }
 }
 
+/* Animations de rebond continu permanent (sans toucher) */
+@keyframes continuousBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    transform: translateY(-4px) scale(1.06);
+  }
+  40% {
+    transform: translateY(1px) scale(0.96);
+  }
+  60% {
+    transform: translateY(-2px) scale(1.03);
+  }
+  80% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes continuousHeartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.22);
+  }
+  40% {
+    transform: scale(0.94);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  80% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nudgeRight {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(3px) scale(1.1);
+  }
+  60% {
+    transform: translateX(0);
+  }
+}
+
+.animate-continuous-bounce {
+  animation: continuousBounce 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+.animate-continuous-heartbeat {
+  animation: continuousHeartbeat 2.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+.animate-nudge-right {
+  animation: nudgeRight 2.2s ease-in-out infinite;
+}
+
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animate-delay-800 {
+  animation-delay: 0.8s;
+}
+
 .animate-bounce-pop {
   animation: bouncePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

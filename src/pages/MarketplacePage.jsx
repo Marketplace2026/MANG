@@ -1309,15 +1309,15 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
           </div>
         </div>
 
-        {/* Boutons d'action : icônes uniquement, pas de texte avec rebond */}
+        {/* Boutons d'action : icônes avec rebond continu automatique */}
         <div className="flex gap-1.5 pt-1.5 border-t border-surface-100">
-          {/* Bell button avec effet rebond */}
+          {/* Bell button avec effet rebond permanent */}
           <button
             onClick={e => { e.stopPropagation(); onFollow() }}
             className={clsx(
-              'btn-bounce flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
+              'btn-bounce animate-continuous-bounce flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
               isFollowing
-                ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop'
+                ? 'bg-primary-500 text-white shadow-sm'
                 : 'bg-surface-100 text-dark-400'
             )}
           >
@@ -1331,13 +1331,13 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
             </svg>
           </button>
 
-          {/* Like button avec effet rebond */}
+          {/* Like button avec effet rebond permanent */}
           <button
             onClick={e => { e.stopPropagation(); onLike() }}
             className={clsx(
-              'btn-bounce flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
+              'btn-bounce animate-continuous-heartbeat animate-delay-400 flex items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-75 hover:scale-105',
               isLiked
-                ? 'bg-primary-500 text-white shadow-sm animate-bounce-pop'
+                ? 'bg-primary-500 text-white shadow-sm'
                 : 'bg-surface-100 text-dark-400'
             )}
           >
@@ -1411,7 +1411,7 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
           )}
         </div>
 
-        {/* En haut à droite : Cœur Like flottant avec effet rebond dynamique */}
+        {/* En haut à droite : Cœur Like flottant avec rebond continu automatique (permanent sans toucher) */}
         <button
           type="button"
           onClick={(e) => {
@@ -1419,10 +1419,10 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             onLike()
           }}
           className={clsx(
-            'btn-bounce absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md shadow-sm',
-            'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-70 hover:scale-110',
+            'btn-bounce animate-continuous-heartbeat absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md shadow-sm',
+            'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-70 hover:scale-115',
             isLiked
-              ? 'bg-red-500 text-white scale-105 shadow-red-500/30 ring-2 ring-white/60 animate-bounce-pop'
+              ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-white/60 animate-bounce-pop'
               : 'bg-black/35 hover:bg-black/55 text-white/90 border border-white/20'
           )}
           title={isLiked ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -1516,7 +1516,7 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
           </div>
         </div>
 
-        {/* Ligne 2 : Mini-bouton S'abonner + Flèche rapide avec effet rebond */}
+        {/* Ligne 2 : Mini-bouton S'abonner + Flèche rapide avec rebond permanent sans toucher */}
         <div className="mt-2 pt-1.5 border-t border-surface-100 flex items-center justify-between gap-1.5">
           <button
             type="button"
@@ -1525,10 +1525,10 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
               onFollow()
             }}
             className={clsx(
-              'btn-bounce flex-1 flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[10px] font-bold',
+              'btn-bounce animate-continuous-bounce animate-delay-400 flex-1 flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[10px] font-bold',
               'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-80 hover:scale-[1.03]',
               isFollowing
-                ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-xs animate-bounce-pop'
+                ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-xs'
                 : 'bg-surface-100 hover:bg-surface-200 text-dark-600'
             )}
           >
@@ -1542,7 +1542,7 @@ function ShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, isNear
             <span>{isFollowing ? 'Abonné' : 'Suivre'}</span>
           </button>
 
-          <div className="btn-bounce w-5 h-5 rounded-lg bg-surface-50 flex items-center justify-center text-dark-400 group-hover:text-primary-600 group-hover:bg-primary-50 group-hover:scale-110 active:scale-75 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex-shrink-0">
+          <div className="btn-bounce animate-nudge-right animate-delay-800 w-5 h-5 rounded-lg bg-surface-50 flex items-center justify-center text-dark-400 group-hover:text-primary-600 group-hover:bg-primary-50 group-hover:scale-110 active:scale-75 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex-shrink-0">
             <ChevronRight size={12} />
           </div>
         </div>
