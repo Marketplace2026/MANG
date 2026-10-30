@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Heart, Users, MessageCircle, Share2,
   MapPin, Truck, Phone, ChevronRight,
   Send, Trash2, Edit3, CornerDownRight, Copy,
   Check, X, ZoomIn, ShoppingCart, Package,
-  MoreHorizontal, ChevronDown, Bell, BellOff, Star, Search, Store, ShieldCheck
+  MoreHorizontal, ChevronDown, Bell, BellOff, Star, Search, Store, ShieldCheck,
+  Sparkles, Filter, Calendar, Award, CheckCircle2, SlidersHorizontal
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -31,6 +32,8 @@ export default function ShopPublicPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const { user, profile } = useAuthStore()
+  const cartItems = useCartStore(state => state.items)
+  const cartCount = cartItems.reduce((acc, item) => acc + (item.qty || 1), 0)
 
   const [shop, setShop] = useState(null)
   const [products, setProducts] = useState([])
@@ -49,6 +52,30 @@ export default function ShopPublicPage() {
   const [reviewModal, setReviewModal] = useState(false)
   const [myReview, setMyReview] = useState(null)
   const [userHasPurchased, setUserHasPurchased] = useState(false)
+
+  // NOUVEAUX ÉTATS D'ARCHITECTURE : ONGLETS, RECHERCHE & TRI
+  const [activeTab, setActiveTab] = useState('products') // 'products' | 'reviews' | 'about'
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('all') // 'all' | 'traceable' | 'price_asc' | 'price_desc'
+
+  const filteredProducts = useMemo(() => {
+    let list = [...products]
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      list = list.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+      )
+    }
+    if (sortBy === 'traceable') {
+      list = list.filter(p => p.production_cycles && p.production_cycles.length > 0)
+    } else if (sortBy === 'price_asc') {
+      list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+    } else if (sortBy === 'price_desc') {
+      list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
+    }
+    return list
+  }, [products, searchQuery, sortBy])
 
   const loadShop = useCallback(async () => {
     setLoading(true)
@@ -391,191 +418,454 @@ export default function ShopPublicPage() {
 
 
       {/* ══════════════════════════════════════
-          PRODUITS
+          SYSTÈME D'ONGLETS STICKY (PRODUITS / AVIS / À PROPOS)
       ══════════════════════════════════════ */}
-      <div className="mt-5 px-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-black text-dark-900 text-base">
-            Produits disponibles
-            <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{products.length}</span>
-          </h2>
-        </div>
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-surface-200/80 shadow-xs mt-3">
+        <div className="flex px-4">
+          {/* Onglet 1 : Produits */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('products')}
+            className={clsx(
+              'flex-1 py-3 text-xs font-black transition-all relative flex items-center justify-center gap-1.5',
+              activeTab === 'products' ? 'text-primary-700' : 'text-dark-400 hover:text-dark-600'
+            )}
+          >
+            <Package size={15} />
+            <span>Produits</span>
+            <span className={clsx(
+              'text-[10px] px-1.5 py-0.2 rounded-full font-bold',
+              activeTab === 'products' ? 'bg-primary-100 text-primary-800' : 'bg-surface-100 text-dark-500'
+            )}>
+              {products.length}
+            </span>
+            {activeTab === 'products' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full" />
+            )}
+          </button>
 
-        {products.length === 0 ? (
-          <div className="text-center py-10 bg-white rounded-3xl border border-gray-100">
-            <div className="w-14 h-14 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400"><Package size={28} /></div>
-            <p className="text-gray-400 text-sm">Aucun produit disponible</p>
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-            {products.map(product => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                user={user}
-                onZoom={() => product.image_url && setZoomImage(product.image_url)}
-                onOrder={() => setOrderModal(product)}
-                onFavorite={async () => {
-                  if (!user) { toast.error('Connectez-vous d\'abord'); return }
-                  const { data: existing } = await supabase.from('product_favorites')
-                    .select('id').eq('product_id', product.id).eq('user_id', user.id).single()
-                  if (existing) {
-                    await supabase.from('product_favorites').delete().eq('id', existing.id)
-                    toast.success('Retiré des favoris')
-                  } else {
-                    await supabase.from('product_favorites').insert({ product_id: product.id, user_id: user.id })
-                    toast.success('Ajouté aux favoris')
-                  }
-                }}
-              />
-            ))}
-          </div>
-        )}
+          {/* Onglet 2 : Avis */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('reviews')}
+            className={clsx(
+              'flex-1 py-3 text-xs font-black transition-all relative flex items-center justify-center gap-1.5',
+              activeTab === 'reviews' ? 'text-primary-700' : 'text-dark-400 hover:text-dark-600'
+            )}
+          >
+            <Star size={14} className={clsx(activeTab === 'reviews' ? 'fill-amber-400 text-amber-400' : 'text-dark-400')} />
+            <span>Avis</span>
+            <span className={clsx(
+              'text-[10px] px-1.5 py-0.2 rounded-full font-bold',
+              activeTab === 'reviews' ? 'bg-amber-100 text-amber-800' : 'bg-surface-100 text-dark-500'
+            )}>
+              {shop.reviews_count || 0}
+            </span>
+            {activeTab === 'reviews' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full" />
+            )}
+          </button>
+
+          {/* Onglet 3 : À propos */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('about')}
+            className={clsx(
+              'flex-1 py-3 text-xs font-black transition-all relative flex items-center justify-center gap-1.5',
+              activeTab === 'about' ? 'text-primary-700' : 'text-dark-400 hover:text-dark-600'
+            )}
+          >
+            <Store size={14} />
+            <span>À propos</span>
+            {activeTab === 'about' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* ══════ AVIS & NOTES — NIVEAU AMAZON ══════ */}
-      <div className="mt-4 mx-4">
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ══════════════════════════════════════
+          CONTENU DES ONGLETS
+      ══════════════════════════════════════ */}
 
-          {/* Header */}
-          <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-            <h3 className="font-black text-dark-900 text-base">Avis clients</h3>
-            {user && user.id !== shop.owner_id && (
-              <button onClick={() => setReviewModal(true)}
-                className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 shadow-sm transition-all',
-                  myReview ? 'bg-gray-100 text-gray-600' : 'bg-amber-500 text-white')}>
-                {myReview ? 'Modifier mon avis' : 'Donner un avis'}
-              </button>
-            )}
-          </div>
-
-          {/* Score global — style Amazon */}
-          {shop.reviews_count > 0 ? (
-            <div className="px-4 pb-4">
-              <div className="flex gap-5 items-center p-4 bg-amber-50 rounded-2xl mb-4">
-                {/* Note globale */}
-                <div className="flex flex-col items-center flex-shrink-0">
-                  <span className="text-5xl font-black text-amber-500 leading-none">{Number(shop.rating_avg).toFixed(1)}</span>
-                  <div className="flex mt-1">
-                    {[1,2,3,4,5].map(s => (
-                      <svg key={s} width="14" height="14" viewBox="0 0 24 24"
-                        fill={s <= Math.round(shop.rating_avg) ? '#f59e0b' : '#d1d5db'} stroke="none">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="text-gray-400 text-[10px] mt-0.5">{shop.reviews_count} avis</span>
-                </div>
-
-                {/* Barres de répartition */}
-                <div className="flex-1 space-y-1">
-                  {[5,4,3,2,1].map(star => {
-                    const count = reviews.filter(r => r.rating === star).length
-                    const pct = shop.reviews_count > 0 ? (count / shop.reviews_count) * 100 : 0
-                    return (
-                      <div key={star} className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 w-2 text-right flex-shrink-0">{star}</span>
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="none" className="flex-shrink-0">
-                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                        </svg>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%` }}/>
-                        </div>
-                        <span className="text-[10px] text-gray-400 w-4 flex-shrink-0">{count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Liste des avis */}
-              <div className="space-y-4">
-                {reviews.map((review, idx) => (
-                  <div key={review.id} className={clsx('pb-4', idx < reviews.length - 1 && 'border-b border-gray-100')}>
-                    {/* En-tête avis */}
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const target = review.user?.username || review.user_id
-                          if (target) navigate(`/profil/${target}`)
-                        }}
-                        className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
-                      >
-                        <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
-                        <div className="flex-1 min-w-0">
-                          <span className="font-bold text-dark-800 text-xs block hover:text-emerald-700">@{review.user?.username}</span>
-                          <span className="text-gray-400 text-[10px]">
-                            {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
-                          </span>
-                        </div>
-                      </button>
-                      {/* Étoiles */}
-                      <div className="flex gap-0.5 flex-shrink-0">
-                        {[1,2,3,4,5].map(s => (
-                          <svg key={s} width="12" height="12" viewBox="0 0 24 24"
-                            fill={s <= review.rating ? '#f59e0b' : '#e5e7eb'} stroke="none">
-                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                          </svg>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Label note & Badge Achat vérifié */}
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full',
-                        review.rating >= 4 ? 'bg-green-50 text-green-700' :
-                        review.rating === 3 ? 'bg-yellow-50 text-yellow-700' :
-                        'bg-red-50 text-red-600')}>
-                        {review.rating === 5 ? 'Excellent' :
-                         review.rating === 4 ? 'Bien' :
-                         review.rating === 3 ? 'Correct' :
-                         review.rating === 2 ? 'Mauvais' : 'Très mauvais'}
-                      </span>
-                      {review.is_verified_purchase && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70">
-                          <ShieldCheck size={11} className="text-emerald-600" />
-                          Achat vérifié
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Commentaire */}
-                    {review.comment && (
-                      <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
-                    )}
-
-                    {/* Utile ? */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-gray-400 text-[10px]">Cet avis vous a été utile ?</span>
-                      <button className="text-[10px] text-primary-600 font-semibold active:scale-95">Oui</button>
-                      <button className="text-[10px] text-gray-400 active:scale-95">Non</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-10 px-4">
-              <div className="flex justify-center gap-1 mb-3">
-                {[1,2,3,4,5].map(s => (
-                  <svg key={s} width="28" height="28" viewBox="0 0 24 24" fill="#e5e7eb" stroke="none">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="font-bold text-dark-800 text-sm">Pas encore d'avis</p>
-              <p className="text-gray-400 text-xs mt-1">Soyez le premier à partager votre expérience</p>
-              {user && user.id !== shop.owner_id && (
-                <button onClick={() => setReviewModal(true)}
-                  className="mt-4 px-5 py-2.5 rounded-2xl bg-amber-500 text-white text-sm font-bold active:scale-95 shadow-md">
-                  Écrire un avis
+      {/* ─── ONGLET 1 : PRODUITS (GRILLE 2 COLS + RECHERCHE INTERNE) ─── */}
+      {activeTab === 'products' && (
+        <div className="px-4 pt-3.5 space-y-3">
+          {/* Barre de recherche interne */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={`Rechercher parmi les ${products.length} produits...`}
+                className="w-full bg-white pl-8.5 pr-8 py-2 rounded-xl text-xs font-medium border border-surface-200/80 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 p-0.5"
+                >
+                  <X size={13} />
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Filtres & Tri */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            {[
+              { id: 'all', label: 'Tous' },
+              { id: 'traceable', label: '🌿 Traçabilité' },
+              { id: 'price_asc', label: 'Prix croissant' },
+              { id: 'price_desc', label: 'Prix décroissant' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSortBy(tab.id)}
+                className={clsx(
+                  'px-2.5 py-1 rounded-lg text-[10.5px] font-bold whitespace-nowrap transition-all active:scale-95 border flex-shrink-0',
+                  sortBy === tab.id
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
+                    : 'bg-white text-dark-600 border-surface-200 hover:bg-surface-50'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grille responsive 2 colonnes */}
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-3xl border border-surface-200/60 p-6">
+              <div className="w-12 h-12 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-2 text-dark-400">
+                <Package size={24} />
+              </div>
+              <p className="font-bold text-dark-800 text-sm">
+                {searchQuery ? 'Aucun produit ne correspond à votre recherche' : 'Aucun produit disponible pour le moment'}
+              </p>
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setSortBy('all'); }}
+                  className="mt-3 text-xs text-primary-600 font-bold hover:underline"
+                >
+                  Réinitialiser la recherche
+                </button>
+              ) : (
+                <p className="text-dark-400 text-xs mt-1">Le vendeur n'a pas encore ajouté de produit actif.</p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {filteredProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  user={user}
+                  onZoom={() => product.image_url && setZoomImage(product.image_url)}
+                  onOrder={() => setOrderModal(product)}
+                  onFavorite={async () => {
+                    if (!user) { toast.error('Connectez-vous d\'abord'); return }
+                    const { data: existing } = await supabase.from('product_favorites')
+                      .select('id').eq('product_id', product.id).eq('user_id', user.id).single()
+                    if (existing) {
+                      await supabase.from('product_favorites').delete().eq('id', existing.id)
+                      toast.success('Retiré des favoris')
+                    } else {
+                      await supabase.from('product_favorites').insert({ product_id: product.id, user_id: user.id })
+                      toast.success('Ajouté aux favoris')
+                    }
+                  }}
+                />
+              ))}
+            </div>
           )}
         </div>
+      )}
+
+      {/* ─── ONGLET 2 : AVIS CLIENTS (STYLE AMAZON REHAUSSÉ) ─── */}
+      {activeTab === 'reviews' && (
+        <div className="mt-3 px-4">
+          <div className="bg-white rounded-3xl border border-surface-200/70 shadow-xs overflow-hidden">
+            {/* Header Avis */}
+            <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-surface-100">
+              <div>
+                <h3 className="font-black text-dark-900 text-base">Avis clients vérifiés</h3>
+                <p className="text-dark-400 text-[11px]">Évaluations certifiées par les acheteurs MANG</p>
+              </div>
+              {user && user.id !== shop.owner_id && (
+                <button
+                  type="button"
+                  onClick={() => setReviewModal(true)}
+                  className={clsx(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 shadow-xs transition-all',
+                    myReview ? 'bg-surface-100 text-dark-700' : 'bg-amber-500 text-white'
+                  )}
+                >
+                  {myReview ? 'Modifier' : 'Écrire un avis'}
+                </button>
+              )}
+            </div>
+
+            {/* Score global */}
+            {shop.reviews_count > 0 ? (
+              <div className="p-4">
+                <div className="flex gap-5 items-center p-4 bg-amber-50/70 rounded-2xl mb-4 border border-amber-100/60">
+                  {/* Note globale */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <span className="text-5xl font-black text-amber-500 leading-none">{Number(shop.rating_avg).toFixed(1)}</span>
+                    <div className="flex mt-1.5 gap-0.5">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} width="13" height="13" viewBox="0 0 24 24"
+                          fill={s <= Math.round(shop.rating_avg) ? '#f59e0b' : '#d1d5db'} stroke="none">
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                        </svg>
+                      ))}
+                    </div>
+                    <span className="text-dark-400 text-[10px] mt-1 font-semibold">{shop.reviews_count} avis</span>
+                  </div>
+
+                  {/* Barres de répartition */}
+                  <div className="flex-1 space-y-1">
+                    {[5,4,3,2,1].map(star => {
+                      const count = reviews.filter(r => r.rating === star).length
+                      const pct = shop.reviews_count > 0 ? (count / shop.reviews_count) * 100 : 0
+                      return (
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-[10px] text-dark-500 w-2 text-right flex-shrink-0 font-bold">{star}</span>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="#f59e0b" stroke="none" className="flex-shrink-0">
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                          </svg>
+                          <div className="flex-1 h-2 bg-surface-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}/>
+                          </div>
+                          <span className="text-[10px] text-dark-400 w-4 flex-shrink-0">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Liste des avis */}
+                <div className="space-y-4">
+                  {reviews.map((review, idx) => (
+                    <div key={review.id} className={clsx('pb-4', idx < reviews.length - 1 && 'border-b border-surface-100')}>
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = review.user?.username || review.user_id
+                            if (target) navigate(`/profil/${target}`)
+                          }}
+                          className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          <Avatar src={review.user?.avatar_url} name={review.user?.username} size="sm" className="flex-shrink-0"/>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-bold text-dark-800 text-xs block hover:text-emerald-700">@{review.user?.username}</span>
+                            <span className="text-dark-400 text-[10px]">
+                              {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: fr })}
+                            </span>
+                          </div>
+                        </button>
+                        <div className="flex gap-0.5 flex-shrink-0">
+                          {[1,2,3,4,5].map(s => (
+                            <svg key={s} width="12" height="12" viewBox="0 0 24 24"
+                              fill={s <= review.rating ? '#f59e0b' : '#e5e7eb'} stroke="none">
+                              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full',
+                          review.rating >= 4 ? 'bg-green-50 text-green-700' :
+                          review.rating === 3 ? 'bg-yellow-50 text-yellow-700' :
+                          'bg-red-50 text-red-600')}>
+                          {review.rating === 5 ? 'Excellent' :
+                           review.rating === 4 ? 'Bien' :
+                           review.rating === 3 ? 'Correct' :
+                           review.rating === 2 ? 'Mauvais' : 'Très mauvais'}
+                        </span>
+                        {review.is_verified_purchase && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70">
+                            <ShieldCheck size={11} className="text-emerald-600" />
+                            Achat vérifié
+                          </span>
+                        )}
+                      </div>
+
+                      {review.comment && (
+                        <p className="text-dark-700 text-xs leading-relaxed">{review.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-10 px-4">
+                <div className="flex justify-center gap-1 mb-3">
+                  {[1,2,3,4,5].map(s => (
+                    <svg key={s} width="28" height="28" viewBox="0 0 24 24" fill="#e5e7eb" stroke="none">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                  ))}
+                </div>
+                <p className="font-bold text-dark-800 text-sm">Pas encore d'avis sur cette boutique</p>
+                <p className="text-dark-400 text-xs mt-1">Soyez le premier acheteur à partager votre expérience !</p>
+                {user && user.id !== shop.owner_id && (
+                  <button
+                    type="button"
+                    onClick={() => setReviewModal(true)}
+                    className="mt-4 px-5 py-2.5 rounded-2xl bg-amber-500 text-white text-xs font-bold active:scale-95 shadow-md"
+                  >
+                    Écrire un avis
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── ONGLET 3 : À PROPOS (INFORMATIONS, COORDONNÉES & SÉCURITÉ) ─── */}
+      {activeTab === 'about' && (
+        <div className="space-y-3.5 px-4 pt-3.5">
+          {/* Présentation */}
+          <div className="bg-white rounded-3xl p-4 border border-surface-200/70 shadow-xs">
+            <h3 className="font-black text-dark-900 text-sm mb-2 flex items-center gap-2">
+              <Store size={16} className="text-primary-600" />
+              <span>Présentation de la boutique</span>
+            </h3>
+            <p className="text-dark-600/80 text-xs leading-relaxed whitespace-pre-line">
+              {shop.description || "Bienvenue dans notre boutique sur MANG. Découvrez nos produits agricoles frais, locaux et de qualité supérieure."}
+            </p>
+          </div>
+
+          {/* Informations clés */}
+          <div className="bg-white rounded-3xl p-4 border border-surface-200/70 shadow-xs space-y-3">
+            <h3 className="font-black text-dark-900 text-sm mb-2 flex items-center gap-2">
+              <ShieldCheck size={16} className="text-primary-600" />
+              <span>Informations & Coordonnées</span>
+            </h3>
+
+            <div className="flex items-center gap-3 text-xs text-dark-700">
+              <div className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center text-dark-500 flex-shrink-0">
+                <MapPin size={15} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[10px] uppercase tracking-wider text-dark-400">Localisation</p>
+                <p className="font-semibold text-xs text-dark-800">{shop.city || 'Bénin'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs text-dark-700">
+              <div className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center text-dark-500 flex-shrink-0">
+                <Truck size={15} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[10px] uppercase tracking-wider text-dark-400">Livraison</p>
+                <p className="font-semibold text-xs text-dark-800">
+                  {shop.has_delivery ? 'Livraison disponible à domicile et en point relais' : 'Retrait direct chez le producteur'}
+                </p>
+              </div>
+            </div>
+
+            {shop.whatsapp && (
+              <div className="flex items-center gap-3 text-xs text-dark-700">
+                <div className="w-8 h-8 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                  <Phone size={15} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[10px] uppercase tracking-wider text-dark-400">Contact direct</p>
+                  <p className="font-semibold text-xs text-dark-800">{shop.whatsapp}</p>
+                </div>
+              </div>
+            )}
+
+            {shop.created_at && (
+              <div className="flex items-center gap-3 text-xs text-dark-700">
+                <div className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center text-dark-500 flex-shrink-0">
+                  <Calendar size={15} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[10px] uppercase tracking-wider text-dark-400">Membre depuis</p>
+                  <p className="font-semibold text-xs text-dark-800">
+                    {new Date(shop.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Garanties MANG */}
+          <div className="bg-gradient-to-br from-primary-50 to-emerald-50 rounded-3xl p-4 border border-primary-100 shadow-xs">
+            <h3 className="font-black text-primary-900 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-primary-600" />
+              <span>Garanties Sécurité MANG</span>
+            </h3>
+            <ul className="space-y-2 text-[11px] text-primary-950 font-medium">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />
+                <span>Paiements Mobile Money sécurisés avec séquestre jusqu'à livraison</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />
+                <span>Produits vérifiés & contrôle qualité agricole</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />
+                <span>Support et médiation en cas de litige</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════
+          STICKY BOTTOM BAR (ACTIONS RAPIDES AU POUCE)
+      ══════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-surface-200/80 px-4 py-2.5 shadow-lg flex items-center gap-2 max-w-lg mx-auto">
+        {shop.whatsapp && (
+          <a
+            href={`https://wa.me/${shop.whatsapp.replace(/\s+/g,'')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#25D366] text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            <span>WhatsApp</span>
+          </a>
+        )}
+
+        <button
+          type="button"
+          onClick={handleContact}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
+        >
+          <MessageCircle size={15} />
+          <span>Discuter</span>
+        </button>
+
+        {cartCount > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/panier')}
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-xl bg-dark-900 text-white font-bold text-xs shadow-md active:scale-95 transition-all relative"
+          >
+            <ShoppingCart size={15} />
+            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center">
+              {cartCount}
+            </span>
+          </button>
+        )}
       </div>
 
 
@@ -690,40 +980,79 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
   const isAvailable = product.availability === 'now'
 
   return (
-    <div className="flex-shrink-0 w-48 bg-white rounded-3xl overflow-hidden shadow-md border border-gray-100 active:scale-[0.96] transition-all duration-150 cursor-pointer"
-      onClick={() => navigate(`/produit/${product.id}`)}>
-      <div className="relative h-40 overflow-hidden bg-gray-100">
-        {product.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
-          : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={40} /></div>}
-        <span className={clsx(
-          'absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold',
-          isAvailable ? 'bg-emerald-500 text-white' : 'bg-orange-400 text-white'
-        )}>
+    <div
+      className="group w-full bg-white rounded-2xl overflow-hidden shadow-card border border-surface-200/70 active:scale-[0.97] hover:shadow-md transition-all duration-150 cursor-pointer flex flex-col justify-between"
+      onClick={() => navigate(`/produit/${product.id}`)}
+    >
+      <div className="relative h-36 overflow-hidden bg-surface-100">
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50">
+            <Store size={36} />
+          </div>
+        )}
+
+        {/* Badge Disponibilité */}
+        <span
+          className={clsx(
+            'absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-xs backdrop-blur-sm',
+            isAvailable ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+          )}
+        >
           {isAvailable ? 'Dispo' : 'Bientôt'}
         </span>
-        <button onClick={handleFav}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-90">
-          <Heart size={13} className={isFav ? 'text-red-500 fill-red-500' : 'text-gray-400'}/>
+
+        {/* Badge Traçabilité Bio */}
+        {product.production_cycles && product.production_cycles.length > 0 && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-700/90 text-white backdrop-blur-sm shadow-xs">
+            <ShieldCheck size={9} />
+            <span className="text-[8px] font-black uppercase tracking-wider">Bio</span>
+          </div>
+        )}
+
+        {/* Bouton Like flottant */}
+        <button
+          onClick={handleFav}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-xs active:scale-75 transition-all"
+          title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+        >
+          <Heart size={13} className={clsx('transition-transform', isFav ? 'text-red-500 fill-red-500 scale-110' : 'text-dark-400')} />
         </button>
       </div>
-      <div className="p-3">
-        <p className="font-bold text-dark-800 text-sm truncate">{product.name}</p>
-        {product.description && (
-          <p className="text-gray-400 text-[11px] leading-tight mt-0.5 line-clamp-2">{product.description}</p>
-        )}
-        <p className="text-[10px] text-primary-600 font-medium mt-1.5">
-          {AVAIL_LABELS[product.availability] || 'Disponible'}
-        </p>
-        <div className="flex items-center justify-between mt-2.5">
+
+      <div className="p-2.5 flex flex-col justify-between flex-1">
+        <div>
+          <h4 className="font-extrabold text-dark-900 text-xs truncate leading-snug">{product.name}</h4>
+          {product.description && (
+            <p className="text-dark-600/50 text-[10px] leading-tight mt-0.5 line-clamp-1">{product.description}</p>
+          )}
+          <p className="text-[9.5px] text-primary-600 font-bold mt-1">
+            {AVAIL_LABELS[product.availability] || 'Disponible'}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-surface-100">
           <div>
-            <span className="font-black text-primary-700 text-base">{product.price?.toLocaleString('fr-FR')}</span>
-            <span className="text-[10px] text-gray-400 ml-1">FCFA</span>
+            <span className="font-black text-primary-700 text-sm">{Number(product.price || 0).toLocaleString('fr-FR')}</span>
+            <span className="text-[9px] text-dark-400 ml-0.5 font-bold">F</span>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); addItem(product, 1); toast.success('Ajouté au panier !') }}
-            className="px-2.5 py-2 rounded-2xl bg-primary-600 flex items-center gap-1 shadow-md shadow-primary-100 active:scale-90 text-[10px] font-black text-white">
-            <ShoppingCart size={12} className="text-white"/>
-            Ajouter
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              addItem(product, 1)
+              toast.success('Ajouté au panier !')
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:scale-90 text-[10px] font-black text-white flex items-center gap-1 shadow-xs transition-all"
+            title="Ajouter au panier"
+          >
+            <ShoppingCart size={11} className="text-white" />
+            <span>Ajouter</span>
           </button>
         </div>
       </div>
