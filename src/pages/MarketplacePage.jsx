@@ -1010,28 +1010,6 @@ export default function MarketplacePage() {
 
         )}
 
-        {/* FILTRES RAPIDES ANCRÉS DANS LE HEADER */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 pb-2">
-          {[
-            { icon: Flame, color: 'text-amber-400', label: 'Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
-            { icon: ShieldCheck, color: 'text-emerald-400', label: 'Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
-            { icon: Truck, color: 'text-blue-300', label: 'Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
-            { icon: MapPin, color: 'text-rose-400', label: 'Proches', action: handleNearby, active: filters.nearby },
-            { icon: SlidersHorizontal, color: 'text-purple-300', label: 'Filtres', action: () => setAdvancedOpen(true), active: false },
-          ].map((btn, i) => (
-            <button key={i} onClick={btn.action}
-              className={clsx(
-                'flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1.5',
-                btn.active
-                  ? 'bg-yellow-400 text-dark-900 border-yellow-300 shadow-sm'
-                  : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-              )}>
-              <btn.icon size={11} strokeWidth={2.2} className={btn.active ? 'text-dark-900' : btn.color} />
-              <span>{btn.label}</span>
-            </button>
-          ))}
-        </div>
-
         {/* ONGLETS RECHERCHE HYBRIDE */}
         {search.trim() !== '' && (
           <div className="flex border-t border-white/10">
@@ -1058,7 +1036,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pb-24 transition-all duration-300" style={{ paddingTop: (showSearchBar || search.trim() !== '') ? (search.trim() !== '' ? '222px' : '188px') : '136px' }}>
+      <div className="pb-24 transition-all duration-300" style={{ paddingTop: (showSearchBar || search.trim() !== '') ? (search.trim() !== '' ? '178px' : '144px') : '96px' }}>
         {/* CARTOUCHE MODE INVITÉ (DANS LE FLUX NATUREL, NE MASQUE AUCUN EN-TÊTE) */}
         {!user && (
           <div className="px-3 mb-3 mt-2">
@@ -1237,6 +1215,29 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
+
+        
+        {/* FILTRES RAPIDES (ENTRE TOP 5 ET TOUTES LES BOUTIQUES) */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2 mb-2">
+          {[
+            { icon: Flame, color: 'text-amber-500', label: 'Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
+            { icon: ShieldCheck, color: 'text-emerald-600', label: 'Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
+            { icon: Truck, color: 'text-blue-600', label: 'Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
+            { icon: MapPin, color: 'text-rose-500', label: 'Proches', action: handleNearby, active: filters.nearby },
+            { icon: SlidersHorizontal, color: 'text-purple-600', label: 'Filtres', action: () => setAdvancedOpen(true), active: false },
+          ].map((btn, i) => (
+            <button key={i} onClick={btn.action}
+              className={clsx(
+                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1.5 shadow-card',
+                btn.active
+                  ? 'bg-primary-700 text-white border-primary-700 shadow-sm'
+                  : 'bg-white text-dark-700 border-surface-200/80 hover:border-primary-400'
+              )}>
+              <btn.icon size={12} strokeWidth={2.2} className={btn.active ? 'text-white' : btn.color} />
+              <span>{btn.label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* SECTION 6 : TOUTES LES BOUTIQUES OU PRODUITS */}
         <div className="px-3 mb-2.5 mt-2 flex items-center justify-between">
