@@ -690,15 +690,18 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER FIXE */}
-      <header className="fixed top-0 left-0 right-0 z-30 bg-green-700 shadow-lg max-w-[480px] mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-30 shadow-xl max-w-[480px] mx-auto" style={{background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)'}}>
         {/* LIGNE 1 : HEADER PRINCIPAL */}
-        <div className="bg-green-700 h-14 pl-0 pr-4 flex justify-between items-center">
+        <div className="h-14 pl-0 pr-3 flex justify-between items-center">
           <div className="flex items-center gap-1 cursor-pointer h-full py-1" onClick={() => navigate('/marketplace')}>
             <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
-            <span className="font-display font-black text-white text-[20px] tracking-wider leading-none">MANG</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-display font-black text-white text-[18px] tracking-wider leading-none">MANG</span>
+              <span className="text-green-300 text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5">Marché Agricole</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5">
-            {!user && (
+          <div className="flex items-center gap-2">
+            {!user ? (
               <button
                 onClick={() => navigate('/connexion')}
                 className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-dark-950 font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-sm transition active:scale-95"
@@ -706,68 +709,76 @@ export default function MarketplacePage() {
                 <LogIn size={13} />
                 <span>Connexion</span>
               </button>
-            )}
-            <Link to="/vendeur">
-              <Store className="w-7 h-7 text-white animate-bounce-gentle hover:scale-110 transition" />
-            </Link>
-            <Link to="/communaute">
-              <GlobeIcon className="w-7 h-7 text-white animate-bounce-gentle hover:text-yellow-300 transition-colors" />
-            </Link>
-            <Link to="/notifications">
-              <div className="relative">
-                <BellIcon className="w-7 h-7 text-white animate-bounce-gentle hover:scale-110 transition" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 min-h-5 flex items-center justify-center px-1">
-                    {unreadCount}
-                  </span>
+            ) : (
+              <button
+                onClick={() => navigate(`/profil/${profile?.username || user.id}`)}
+                className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-yellow-400/70 hover:ring-yellow-300 transition-all active:scale-90 shadow-sm"
+                title="Mon profil"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center text-dark-900 font-black text-xs">
+                    {(profile?.username || 'M')[0].toUpperCase()}
+                  </div>
                 )}
+              </button>
+            )}
+
+            <Link to="/vendeur" className="flex items-center gap-1 bg-yellow-400/15 hover:bg-yellow-400/25 border border-yellow-400/30 rounded-lg px-2 py-1 transition-all active:scale-95">
+              <Store size={13} className="text-yellow-300" />
+              <span className="text-yellow-200 font-black text-[10px] tracking-wide">Vendre</span>
+            </Link>
+
+            <Link to="/notifications" className="relative">
+              <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90">
+                <BellIcon className="w-5 h-5 text-white" />
               </div>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 animate-pulse shadow-sm">
+                  {unreadCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
-        {/* LIGNE 2 : BANDEAU TEXTE DÉROULANT ET LOCALISATION DYNAMIQUE */}
-        <div className="relative bg-green-600 h-9 flex items-center overflow-hidden border-t border-green-600/30" style={{fontFamily: 'Poppins'}}>
-          
-          {/* Localisation Fixe à gauche */}
-          <div 
-            className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-r from-green-600 via-green-600 to-transparent"
-            style={{ paddingRight: '32px' }}
+
+        {/* LIGNE 2 : LOCALISATION + STATUT CONTEXTUEL */}
+        <div className="flex items-center justify-between px-3 pb-1.5 gap-2">
+          <button
+            onClick={handleNearby}
+            className={clsx(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black transition-all active:scale-95 border',
+              filters.nearby
+                ? 'bg-yellow-400 text-dark-900 border-yellow-300 shadow-sm'
+                : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+            )}
           >
-            <button 
-              onClick={handleNearby}
-              className="flex items-center gap-1.5 px-2.5 bg-green-700 hover:bg-green-800 border border-green-500/20 rounded-lg text-white font-black text-[11.5px] active:scale-95 transition-all shadow-sm h-[30px]"
-            >
-              <MapPin size={11} className={userCity ? "text-yellow-300 animate-bounce-gentle" : "text-red-400 animate-pulse"} />
-              <span className="truncate max-w-[110px] leading-none">
-                {userCity ? `${userCity}` : "Définir position"}
-              </span>
-              {filters.nearby && (
-                <span className="bg-yellow-400 text-dark-950 text-[8px] font-black px-1.5 py-0.5 rounded leading-none flex-shrink-0">Proche</span>
-              )}
-            </button>
+            <MapPin size={11} className={filters.nearby ? 'text-dark-800' : (userCity ? 'text-yellow-300' : 'text-red-400 animate-pulse')} />
+            <span className="truncate max-w-[100px] leading-none">
+              {userCity || 'Définir position'}
+            </span>
+            {filters.nearby && <span className="text-[8px] font-black bg-dark-900/20 px-1 rounded">Actif</span>}
+          </button>
+
+          <div className="flex-1 text-center">
+            {activeFiltersCount > 0 ? (
+              <button onClick={resetFilters} className="inline-flex items-center gap-1 bg-yellow-400/20 border border-yellow-400/40 text-yellow-200 text-[9px] font-black px-2 py-0.5 rounded-full active:scale-95 transition-all">
+                <X size={8} />
+                {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}
+              </button>
+            ) : (
+              <span className="text-green-300/60 text-[9px] font-bold tracking-widest uppercase">Bénin 🌾</span>
+            )}
           </div>
 
-          {/* Texte Déroulant (défilement classique de droite à gauche, passant derrière la localisation) */}
-          <div className="animate-marquee whitespace-nowrap text-white font-medium tracking-wider text-sm pl-[180px]">
-            MARCHÉ AGRICOLE NOUVELLE GÉNÉRATION | VENDEURS DE PRODUITS AGRICOLES | LIVRAISON VRAIMENT MOBILE | ACHETEZ ET VENDEZ DIRECT PRODUCTEUR
-          </div>
-
-          {/* Filtres Actifs Fixes à droite */}
-          {activeFiltersCount > 0 && (
-            <div 
-              onClick={resetFilters}
-              className="absolute right-0 top-0 bottom-0 z-10 flex items-center px-3 bg-gradient-to-l from-green-600 via-green-600 to-transparent cursor-pointer active:scale-95 transition-all"
-              style={{ paddingLeft: '24px' }}
-            >
-              <span className="bg-yellow-400 text-dark-950 text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
+          <Link to="/communaute" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90">
+            <GlobeIcon className="w-4 h-4 text-green-200" />
+          </Link>
         </div>
 
         {/* Barre de recherche */}
-        <div className="px-3 py-2 relative bg-green-700">
+        <div className="px-3 pb-2 relative">
           <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
             <Search size={16} className="text-dark-600/40 flex-shrink-0" />
             <div className="flex-1 relative">
@@ -903,33 +914,55 @@ export default function MarketplacePage() {
           )}
         </div>
 
+        {/* FILTRES RAPIDES ANCRÉS DANS LE HEADER */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 pb-2">
+          {[
+            { icon: Flame, color: 'text-amber-400', label: 'Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
+            { icon: ShieldCheck, color: 'text-emerald-400', label: 'Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
+            { icon: Truck, color: 'text-blue-300', label: 'Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
+            { icon: MapPin, color: 'text-rose-400', label: 'Proches', action: handleNearby, active: filters.nearby },
+            { icon: SlidersHorizontal, color: 'text-purple-300', label: 'Filtres', action: () => setAdvancedOpen(true), active: false },
+          ].map((btn, i) => (
+            <button key={i} onClick={btn.action}
+              className={clsx(
+                'flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1.5',
+                btn.active
+                  ? 'bg-yellow-400 text-dark-900 border-yellow-300 shadow-sm'
+                  : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+              )}>
+              <btn.icon size={11} strokeWidth={2.2} className={btn.active ? 'text-dark-900' : btn.color} />
+              <span>{btn.label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* ONGLETS RECHERCHE HYBRIDE */}
         {search.trim() !== '' && (
-          <div className="flex bg-green-800 border-t border-green-600/30">
+          <div className="flex border-t border-white/10">
             <button 
               onClick={() => setSearchTab('shops')}
               className={clsx(
-                "flex-1 py-2 text-center text-xs font-bold transition-all border-b-2",
-                searchTab === 'shops' ? "text-yellow-300 border-yellow-300 bg-green-700/30" : "text-white/70 border-transparent hover:text-white"
+                "flex-1 py-1.5 text-center text-[11px] font-bold transition-all border-b-2",
+                searchTab === 'shops' ? "text-yellow-300 border-yellow-300 bg-white/5" : "text-white/60 border-transparent hover:text-white"
               )}
             >
-              Boutiques ({shops.length})
+              🏪 Boutiques ({shops.length})
             </button>
             <button 
               onClick={() => setSearchTab('products')}
               className={clsx(
-                "flex-1 py-2 text-center text-xs font-bold transition-all border-b-2",
-                searchTab === 'products' ? "text-yellow-300 border-yellow-300 bg-green-700/30" : "text-white/70 border-transparent hover:text-white"
+                "flex-1 py-1.5 text-center text-[11px] font-bold transition-all border-b-2",
+                searchTab === 'products' ? "text-yellow-300 border-yellow-300 bg-white/5" : "text-white/60 border-transparent hover:text-white"
               )}
             >
-              Produits ({filteredProducts.length})
+              📦 Produits ({filteredProducts.length})
             </button>
           </div>
         )}
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '202px' : '164px' }}>
+      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '222px' : '188px' }}>
         {/* CARTOUCHE MODE INVITÉ (DANS LE FLUX NATUREL, NE MASQUE AUCUN EN-TÊTE) */}
         {!user && (
           <div className="px-3 mb-3 mt-2">
@@ -980,26 +1013,6 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        {/* BARRE DES FILTRES RAPIDES */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2">
-          {[
-            { icon: Flame, color: 'text-amber-500', label: 'Populaire', action: handleTopBoutiquesToggle, active: sortBy === 'likes' },
-            { icon: ShieldCheck, color: 'text-emerald-600', label: 'Vérifiés', action: () => setVerifiedOnly(v => !v), active: verifiedOnly },
-            { icon: Truck, color: 'text-blue-600', label: 'Livraison', action: () => setFilters(f => ({ ...f, hasDelivery: !f.hasDelivery })), active: !!filters.hasDelivery },
-            { icon: MapPin, color: 'text-rose-500', label: 'Proches', action: handleNearby, active: filters.nearby },
-          ].map((btn, i) => (
-            <button key={i} onClick={btn.action}
-              className={clsx(
-                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border flex items-center gap-1.5',
-                btn.active
-                  ? 'bg-primary-600 text-white border-primary-600 shadow-green'
-                  : 'bg-white text-dark-700 border-surface-200/50 shadow-card'
-              )}>
-              <btn.icon size={13} strokeWidth={2.2} className={btn.active ? 'text-white' : btn.color} />
-              <span>{btn.label}</span>
-            </button>
-          ))}
-        </div>
 
         {/* FILTRE DU RAYON DE PROXIMITÉ SI PROCHES ACTIF */}
         {filters.nearby && (
