@@ -83,7 +83,7 @@ export default function TransactionListPro({ transactions, loading, onRefresh, o
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeTab === tab.id
-                  ? 'bg-[#004D00] text-white shadow-sm'
+                  ? 'bg-mang-header text-white shadow-sm'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}
             >

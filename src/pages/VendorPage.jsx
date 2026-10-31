@@ -185,7 +185,7 @@ export default function VendorPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* HEADER */}
-      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+      <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-white text-2xl font-bold">Espace Vendeur</h1>
@@ -204,7 +204,7 @@ export default function VendorPage() {
         </div>
       </header>
 
-      <div className="bg-[#004D00] pb-24 relative overflow-hidden">
+      <div className="bg-mang-header pb-24 relative overflow-hidden border-t border-white/10">
         <div className="absolute inset-0 opacity-5"
           style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>

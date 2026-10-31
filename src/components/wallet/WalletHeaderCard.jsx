@@ -63,7 +63,7 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#004D00] via-[#003300] to-[#002200] p-6 text-white shadow-2xl border border-white/10">
+    <div className="relative overflow-hidden rounded-3xl bg-mang-header p-6 text-white shadow-2xl border border-white/10">
       {/* Motifs géométriques d'arrière-plan */}
       <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
       <div className="absolute -left-12 -bottom-12 h-48 w-48 rounded-full bg-amber-500/10 blur-xl pointer-events-none" />

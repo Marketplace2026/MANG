@@ -90,7 +90,7 @@ export default function VendorCopilotPanel({ shop, products = [] }) {
     <div className="space-y-5 pb-8 font-sans">
       
       {/* ── CARTE PRINCIPALE DU COPILOTE ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003d00] via-[#004D00] to-dark-900 p-6 text-white shadow-xl border border-emerald-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-mang-header p-6 text-white shadow-xl border border-white/10">
         
         {/* Glow décoratif */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-gold-400/10 blur-3xl pointer-events-none" />

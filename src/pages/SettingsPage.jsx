@@ -233,7 +233,7 @@ function ToggleSwitch({ value, onChange, disabled }) {
       className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
         disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'
       }`}
-      style={{ background: value ? '#008000' : '#D1D5DB' }}
+      style={{ background: value ? '#166534' : '#D1D5DB' }}
     >
       <span
         className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200"
@@ -577,7 +577,7 @@ function EmailSheet({ open, onClose, user, t }) {
         </div>
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
-          style={{ background: '#008000' }}>
+          style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
           {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
@@ -627,7 +627,7 @@ function PhoneSheet({ open, onClose, profile, userId, onUpdated, t }) {
         )}
         <button onClick={handleSave} disabled={loading}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
-          style={{ background: '#008000' }}>
+          style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
           {loading ? 'Mise à jour...' : t.save}
         </button>
       </div>
@@ -713,7 +713,7 @@ function SecuritySheet({ open, onClose, t }) {
             ))}
             <button onClick={handleSave} disabled={loading}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-60"
-              style={{ background: '#008000' }}>
+              style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
               {loading ? 'Mise à jour...' : t.update}
             </button>
           </>
@@ -784,7 +784,7 @@ function TwoFASheet({ open, onClose, user, t }) {
     <BottomSheet open={open} onClose={onClose} title={t.twoFA}>
       <div className="px-5 pt-4 pb-6 space-y-4">
         <p className="text-center text-gray-600">L'authentification à deux facteurs n'est pas encore disponible.</p>
-        <button onClick={onClose} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{ background: '#008000' }}>
+        <button onClick={onClose} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
           {t.cancel}
         </button>
       </div>

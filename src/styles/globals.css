@@ -1,10 +1,16 @@
 :root {
-  --mang-green: #004D00;
+  --mang-green: #166534;
+  --mang-gradient: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%);
   --pwa-banner-offset: 0px;
 }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.bg-mang-header,
+.bg-mang-gradient {
+  background: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%) !important;
+}
 body { 
   padding-top: calc(env(safe-area-inset-top) + var(--pwa-banner-offset, 0px)); 
   background-color: white;

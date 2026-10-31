@@ -1029,7 +1029,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 
       {/* ── HEADER ── */}
       <div className="relative bg-primary-700 pt-12 md:pt-4 pb-3 px-4 flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e)' }}>
+        style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
 
         {/* Bandeau message épinglé */}
         {pinned && (
@@ -1339,7 +1339,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           <div className="fixed top-0 right-0 h-full w-80 bg-white z-30 flex flex-col shadow-2xl"
             style={{ animation: 'slideLeft 0.25s ease' }}>
             <div className="bg-primary-700 pt-14 pb-6 px-4 text-center"
-              style={{ background: 'linear-gradient(135deg, #0b3d2e, #1a5c2e)' }}>
+              style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
               <button onClick={() => setShowInfo(false)} className="absolute top-4 left-4 w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
                 <X size={16} className="text-white"/>
               </button>
@@ -1692,7 +1692,7 @@ export default function MessagesPage() {
           active ? "hidden md:flex" : "flex"
         )}>
           {/* Header */}
-          <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50 flex-shrink-0">
+          <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 flex-shrink-0 shadow-md">
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-white text-2xl font-bold">Messages</h1>
@@ -1709,7 +1709,7 @@ export default function MessagesPage() {
             </div>
           </header>
 
-          <div className="bg-[#004D00] px-4 pb-3 flex-shrink-0">
+          <div className="bg-mang-header px-4 pb-3 flex-shrink-0 border-t border-white/10">
             {/* Recherche */}
             <div className="relative mb-3">
               <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>

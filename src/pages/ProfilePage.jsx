@@ -137,8 +137,8 @@ export default function ProfilePage() {
 
       {/* ── HERO HEADER COMPACT V3.2 — Facebook Style ── */}
       <div
-        className="relative overflow-hidden"
-        style={{ background: '#008000', minHeight: '140px' }}
+        className="relative overflow-hidden bg-mang-header"
+        style={{ minHeight: '140px' }}
       >
         {/* Motif points subtil */}
         <div className="absolute inset-0 pointer-events-none"
@@ -1571,7 +1571,7 @@ function HelpSheet({ open, onClose }) {
 function ProfileSkeleton() {
   return (
     <div className="min-h-screen bg-surface-50">
-      <div className="bg-primary-800 pb-24 pt-16">
+      <div className="bg-mang-header pb-24 pt-16">
         <div className="flex flex-col items-center gap-3">
           <div className="w-24 h-24 rounded-full skeleton"/>
           <div className="w-40 h-6 skeleton rounded-xl"/>

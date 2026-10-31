@@ -599,7 +599,7 @@ export default function FavoritesPage() {
         )}
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary-800 to-primary-600 pt-3 pb-0 px-4 sticky top-0 z-20">
+        <div className="bg-mang-header shadow-md pt-3 pb-0 px-4 sticky top-0 z-20">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
               <Heart size={20} className="text-white fill-white" />

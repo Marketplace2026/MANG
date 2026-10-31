@@ -57,7 +57,7 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col transition-colors duration-300">
       {/* HEADER */}
-      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-50">
+      <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-white text-2xl font-bold">Communauté</h1>
@@ -71,7 +71,7 @@ export default function CommunityPage() {
         </div>
       </header>
 
-      <div className="bg-[#004D00] pb-0 px-4 flex-shrink-0">
+      <div className="bg-mang-header pb-0 px-4 flex-shrink-0 border-t border-white/10">
         {/* Tabs scrollables */}
         <div ref={tabsRef} className="flex gap-1 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
           {TABS.map(t => (

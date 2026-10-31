@@ -103,8 +103,7 @@ export default function ReferralPage() {
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-28 transition-colors duration-300">
       {/* HEADER PROFESSIONNEL */}
       <div
-        className="relative overflow-hidden pt-10 pb-20 px-4 md:px-8"
-        style={{ background: 'linear-gradient(135deg, #062b20 0%, #0d4a34 50%, #176b4a 100%)' }}
+        className="relative overflow-hidden pt-10 pb-20 px-4 md:px-8 bg-mang-header"
       >
         <div
           className="absolute inset-0 opacity-5 pointer-events-none"

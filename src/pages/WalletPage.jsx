@@ -1086,11 +1086,11 @@ function MiniChart({ transactions }) {
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H+18}`} className="w-full" style={{height:75}}>
-        <polyline points={last7.map((d,i)=>`${x(i)},${y(d.in)}`).join(' ')} fill="none" stroke="#004D00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points={last7.map((d,i)=>`${x(i)},${y(d.in)}`).join(' ')} fill="none" stroke="#166534" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         <polyline points={last7.map((d,i)=>`${x(i)},${y(d.out)}`).join(' ')} fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         {last7.map((d,i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(d.in)}  r="3" fill="#004D00"/>
+            <circle cx={x(i)} cy={y(d.in)}  r="3" fill="#166534"/>
             <circle cx={x(i)} cy={y(d.out)} r="3" fill="#f87171"/>
             <text x={x(i)} y={H+14} textAnchor="middle" fontSize="8" fill="#9ca3af">{d.day}</text>
           </g>
@@ -1189,7 +1189,7 @@ export default function WalletPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
       {/* Header Unifié (pt-4) */}
-      <header className="bg-[#004D00] pt-4 pb-3 px-4 sticky top-0 z-40">
+      <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-40 shadow-md">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-white text-2xl font-bold">MANG PAY</h1>

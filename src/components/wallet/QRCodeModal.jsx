@@ -42,7 +42,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
             <button
               onClick={() => setTab('my_qr')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                tab === 'my_qr' ? 'bg-[#004D00] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
+                tab === 'my_qr' ? 'bg-mang-header text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
               }`}
             >
                Mon QR Code
@@ -50,7 +50,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
             <button
               onClick={() => setTab('scan')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                tab === 'scan' ? 'bg-[#004D00] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
+                tab === 'scan' ? 'bg-mang-header text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
               }`}
             >
                Scan & Pay
@@ -74,7 +74,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
               <div className="w-56 h-56 mx-auto p-4 bg-white rounded-3xl border-2 border-emerald-500 shadow-xl flex items-center justify-center relative">
                 <img src={qrDataUrl} alt="QR Code MANG" className="w-full h-full object-contain" />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-10 h-10 rounded-xl bg-[#004D00] text-white font-black text-sm flex items-center justify-center shadow-lg border-2 border-white">
+                  <div className="w-10 h-10 rounded-xl bg-mang-header text-white font-black text-sm flex items-center justify-center shadow-lg border-2 border-white">
                     
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
                   />
                   <button
                     onClick={handleSimulateScan}
-                    className="px-4 py-3 bg-[#004D00] text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
+                    className="px-4 py-3 bg-mang-header text-white font-bold rounded-2xl text-xs active:scale-95 transition-transform"
                   >
                     Valider →
                   </button>
