@@ -4,7 +4,7 @@ import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
   Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag,
-  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight, Trophy
+  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight, Trophy, Zap, Gift, Award, Crown, Medal
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -46,7 +46,8 @@ const CATEGORIES = [
 const BANNERS = [
   {
     id: 1,
-    badge: '⚡ EXPRESS 24H',
+    badge: 'EXPRESS 24H',
+    badgeIcon: Zap,
     badgeBg: 'bg-yellow-400 text-dark-950',
     title: 'Livraison 24h & Direct Champ',
     desc: 'Commandez directement auprès des producteurs locaux prêts à livrer aujourd’hui.',
@@ -56,7 +57,8 @@ const BANNERS = [
   },
   {
     id: 2,
-    badge: '🛡️ PAIEMENT GARANTI',
+    badge: 'PAIEMENT GARANTI',
+    badgeIcon: ShieldCheck,
     badgeBg: 'bg-emerald-400 text-dark-950',
     title: 'Garantie MANG Pay Escrow',
     desc: 'Votre argent est sécurisé et versé au vendeur seulement après réception conforme.',
@@ -66,7 +68,8 @@ const BANNERS = [
   },
   {
     id: 3,
-    badge: '🎁 BONUS DU JOUR',
+    badge: 'BONUS DU JOUR',
+    badgeIcon: Gift,
     badgeBg: 'bg-amber-300 text-dark-950',
     title: 'Gagnez 50 Pièces Gratuites',
     desc: 'Invitez vos proches ou producteurs et recevez des récompenses immédiates.',
@@ -76,7 +79,8 @@ const BANNERS = [
   },
   {
     id: 4,
-    badge: '👑 CERTIFIÉ MANG',
+    badge: 'CERTIFIÉ MANG',
+    badgeIcon: Award,
     badgeBg: 'bg-yellow-300 text-dark-950',
     title: 'Vendeurs Vérifiés & Fiables',
     desc: 'Identité et conformité contrôlées pour acheter en toute sérénité.',
@@ -713,14 +717,14 @@ export default function MarketplacePage() {
     if (!b) return
     if (b.action === 'delivery') {
       setFilters(f => ({ ...f, hasDelivery: true }))
-      toast.success('Boutiques avec livraison disponibles filtrées !', { icon: '🚚' })
+      toast.success('Boutiques avec livraison disponibles filtrées !')
     } else if (b.action === 'wallet') {
       navigate('/portefeuille')
     } else if (b.action === 'referral') {
       navigate('/parrainage')
     } else if (b.action === 'verified') {
       setVerifiedOnly(true)
-      toast.success('Vendeurs certifiés affichés !', { icon: '✅' })
+      toast.success('Vendeurs certifiés affichés !')
     }
   }
 
@@ -821,7 +825,7 @@ export default function MarketplacePage() {
                 {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}
               </button>
             ) : (
-              <span className="text-green-300/60 text-[9px] font-bold tracking-widest uppercase">Bénin 🌾</span>
+              <span className="text-green-300/60 text-[9px] font-bold tracking-widest uppercase">Bénin</span>
             )}
           </div>
 
@@ -935,7 +939,7 @@ export default function MarketplacePage() {
                             onClick={() => { setSearch(term); applySearch(allShops, allProducts, term); setShowSuggestions(false) }}
                             className="flex-1 flex items-center gap-2.5 px-2.5 py-2 text-left text-sm font-semibold text-dark-800"
                           >
-                            <span className="text-dark-600/40">⏳</span>
+                            <Clock size={12} className="text-dark-600/40 flex-shrink-0" />
                             {term}
                           </button>
                           <button 
@@ -1038,7 +1042,7 @@ export default function MarketplacePage() {
                 searchTab === 'shops' ? "text-yellow-300 border-yellow-300 bg-white/5" : "text-white/60 border-transparent hover:text-white"
               )}
             >
-              🏪 Boutiques ({shops.length})
+              Boutiques ({shops.length})
             </button>
             <button 
               onClick={() => setSearchTab('products')}
@@ -1047,7 +1051,7 @@ export default function MarketplacePage() {
                 searchTab === 'products' ? "text-yellow-300 border-yellow-300 bg-white/5" : "text-white/60 border-transparent hover:text-white"
               )}
             >
-              📦 Produits ({filteredProducts.length})
+              Produits ({filteredProducts.length})
             </button>
           </div>
         )}
@@ -1103,10 +1107,14 @@ export default function MarketplacePage() {
               {/* Ligne 1 : Badge pill lumineux + Dots */}
               <div className="flex items-center justify-between">
                 <span className={clsx(
-                  "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm flex items-center gap-1 animate-pulse",
+                  "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm flex items-center gap-1.5 animate-pulse",
                   BANNERS[activeBanner].badgeBg
                 )}>
-                  {BANNERS[activeBanner].badge}
+                  {(() => {
+                    const IconComp = BANNERS[activeBanner].badgeIcon;
+                    return IconComp ? <IconComp size={11} strokeWidth={2.5} className="flex-shrink-0" /> : null;
+                  })()}
+                  <span>{BANNERS[activeBanner].badge}</span>
                 </span>
 
                 {/* Points de navigation cliquables */}
@@ -1209,7 +1217,7 @@ export default function MarketplacePage() {
                 <h2 className="font-display font-black text-dark-900 text-sm tracking-tight uppercase">Top 5 Boutiques MANG</h2>
               </div>
               <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                <span>👑</span> Podium d'Élite
+                <Crown size={11} className="inline text-amber-700 fill-amber-500 mr-1" /> Podium d'Élite
               </span>
             </div>
             
@@ -1440,37 +1448,37 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
   const rankConfig = {
     1: {
       badgeBg: 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 text-amber-950 shadow-md ring-1 ring-amber-200/70',
-      badgeIcon: '👑',
+      badgeIcon: Crown,
       badgeLabel: '#1 Or',
       cardRing: 'ring-2 ring-amber-400/90 shadow-[0_4px_18px_rgba(245,158,11,0.22)]',
     },
     2: {
       badgeBg: 'bg-gradient-to-r from-slate-200 via-gray-200 to-slate-400 text-slate-900 shadow-sm ring-1 ring-white/80',
-      badgeIcon: '🥈',
+      badgeIcon: Medal,
       badgeLabel: '#2 Argent',
       cardRing: 'ring-1.5 ring-slate-300 shadow-card',
     },
     3: {
       badgeBg: 'bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 text-amber-50 shadow-sm ring-1 ring-amber-500/40',
-      badgeIcon: '🥉',
+      badgeIcon: Award,
       badgeLabel: '#3 Bronze',
       cardRing: 'ring-1.5 ring-amber-700/50 shadow-card',
     },
     4: {
       badgeBg: 'bg-primary-700 text-white shadow-xs',
-      badgeIcon: '🎖️',
+      badgeIcon: Trophy,
       badgeLabel: '#4 Top',
       cardRing: 'border border-surface-200/80 shadow-card',
     },
     5: {
       badgeBg: 'bg-primary-600 text-white shadow-xs',
-      badgeIcon: '🎖️',
+      badgeIcon: Trophy,
       badgeLabel: '#5 Top',
       cardRing: 'border border-surface-200/80 shadow-card',
     }
   }[rank] || {
     badgeBg: 'bg-primary-600 text-white shadow-xs',
-    badgeIcon: '⭐',
+    badgeIcon: Star,
     badgeLabel: `#${rank}`,
     cardRing: 'border border-surface-200/80 shadow-card',
   }
@@ -1504,7 +1512,10 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
 
         {/* En haut à gauche : Médaille de classement podium */}
         <div className={clsx('absolute top-1.5 left-1.5 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black', rankConfig.badgeBg)}>
-          <span>{rankConfig.badgeIcon}</span>
+          {(() => {
+            const Icon = rankConfig.badgeIcon;
+            return Icon ? <Icon size={11} className="flex-shrink-0 fill-current" /> : null;
+          })()}
           <span className="tracking-tight">{rankConfig.badgeLabel}</span>
         </div>
 
@@ -1588,7 +1599,10 @@ function TopShopCard({ shop, isLiked, isFollowing, onLike, onFollow, onOpen, ran
               )}
             </div>
             <p className="text-dark-500 text-[9px] truncate leading-none mt-0.5 flex items-center gap-1">
-              <span className="text-amber-600 font-bold">🔥 {shop.followers_count || 0}</span>
+              <span className="text-amber-600 font-bold flex items-center gap-0.5">
+                <Flame size={10} className="fill-amber-500 text-amber-500" />
+                <span>{shop.followers_count || 0}</span>
+              </span>
               <span className="text-dark-400">abonnés</span>
             </p>
           </div>
