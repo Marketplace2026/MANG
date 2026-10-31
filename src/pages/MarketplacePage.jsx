@@ -94,6 +94,7 @@ export default function MarketplacePage() {
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1)
+  const [showSearchBar, setShowSearchBar] = useState(false)
   
   // États de recherche avancée
   const [allProducts, setAllProducts] = useState(() => cachedProds || [])
@@ -772,13 +773,34 @@ export default function MarketplacePage() {
             )}
           </div>
 
-          <Link to="/communaute" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90">
-            <GlobeIcon className="w-4 h-4 text-green-200" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                setShowSearchBar(prev => {
+                  const next = !prev;
+                  if (next) setTimeout(() => searchRef.current?.focus(), 150);
+                  return next;
+                });
+              }}
+              className={clsx(
+                'w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90',
+                (showSearchBar || search)
+                  ? 'bg-yellow-400 text-dark-900 shadow-sm'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              )}
+              title="Rechercher"
+            >
+              <Search size={13} strokeWidth={2.4} />
+            </button>
+
+            <Link to="/communaute" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90" title="Communauté">
+              <GlobeIcon className="w-4 h-4 text-green-200" />
+            </Link>
+          </div>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="px-3 pb-2 relative">
+        {(showSearchBar || search) && (
+        <div className="px-3 pb-2 relative animate-fadeIn">
           <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
             <Search size={16} className="text-dark-600/40 flex-shrink-0" />
             <div className="flex-1 relative">
@@ -822,6 +844,22 @@ export default function MarketplacePage() {
             <button onClick={() => { addToHistory(search); applySearch(allShops, allProducts, search); setShowSuggestions(false) }}
               className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-700 flex items-center justify-center active:scale-90 transition-all shadow-green">
               <Search size={14} className="text-white"/>
+            </button>
+
+            {/* Bouton fermer la recherche */}
+            <button
+              onClick={() => {
+                setShowSearchBar(false);
+                if (search) {
+                  setSearch('');
+                  applySearch(allShops, allProducts, '');
+                }
+                setShowSuggestions(false);
+              }}
+              className="flex-shrink-0 w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 text-dark-500 flex items-center justify-center active:scale-90 transition-all ml-0.5"
+              title="Fermer la recherche"
+            >
+              <X size={15} />
             </button>
           </div>
 
@@ -914,6 +952,8 @@ export default function MarketplacePage() {
           )}
         </div>
 
+        )}
+
         {/* FILTRES RAPIDES ANCRÉS DANS LE HEADER */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 pb-2">
           {[
@@ -962,7 +1002,7 @@ export default function MarketplacePage() {
       </header>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="pb-24 transition-all duration-300" style={{ paddingTop: search.trim() !== '' ? '222px' : '188px' }}>
+      <div className="pb-24 transition-all duration-300" style={{ paddingTop: (showSearchBar || search.trim() !== '') ? (search.trim() !== '' ? '222px' : '188px') : '136px' }}>
         {/* CARTOUCHE MODE INVITÉ (DANS LE FLUX NATUREL, NE MASQUE AUCUN EN-TÊTE) */}
         {!user && (
           <div className="px-3 mb-3 mt-2">
