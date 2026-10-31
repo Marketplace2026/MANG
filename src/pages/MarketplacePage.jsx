@@ -44,9 +44,46 @@ const CATEGORIES = [
 ]
 
 const BANNERS = [
-  { id: 1, title: 'Produits frais du Bénin', desc: 'Frais, Locaux, Livrés chez vous', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop' },
-  { id: 2, title: 'Livraison 24h partout', desc: 'Commandez en toute simplicité', image: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=500&auto=format&fit=crop' },
-  { id: 3, title: 'Vendeurs Vérifiés', desc: 'Des professionnels de confiance', image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=500&auto=format&fit=crop' }
+  {
+    id: 1,
+    badge: '⚡ EXPRESS 24H',
+    badgeBg: 'bg-yellow-400 text-dark-950',
+    title: 'Livraison 24h & Direct Champ',
+    desc: 'Commandez directement auprès des producteurs locaux prêts à livrer aujourd’hui.',
+    cta: 'Voir les boutiques',
+    action: 'delivery',
+    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop'
+  },
+  {
+    id: 2,
+    badge: '🛡️ PAIEMENT GARANTI',
+    badgeBg: 'bg-emerald-400 text-dark-950',
+    title: 'Garantie MANG Pay Escrow',
+    desc: 'Votre argent est sécurisé et versé au vendeur seulement après réception conforme.',
+    cta: 'Découvrir MANG Pay',
+    action: 'wallet',
+    image: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=800&auto=format&fit=crop'
+  },
+  {
+    id: 3,
+    badge: '🎁 BONUS DU JOUR',
+    badgeBg: 'bg-amber-300 text-dark-950',
+    title: 'Gagnez 50 Pièces Gratuites',
+    desc: 'Invitez vos proches ou producteurs et recevez des récompenses immédiates.',
+    cta: 'Inviter & Gagner',
+    action: 'referral',
+    image: 'https://images.unsplash.com/photo-1592417817098-8f3d69102657?w=800&auto=format&fit=crop'
+  },
+  {
+    id: 4,
+    badge: '👑 CERTIFIÉ MANG',
+    badgeBg: 'bg-yellow-300 text-dark-950',
+    title: 'Vendeurs Vérifiés & Fiables',
+    desc: 'Identité et conformité contrôlées pour acheter en toute sérénité.',
+    cta: 'Voir les certifiés',
+    action: 'verified',
+    image: 'https://images.unsplash.com/photo-1463121859909-073c417de9bc?w=800&auto=format&fit=crop'
+  }
 ]
 
 const QUICK_CATS = []
@@ -672,6 +709,21 @@ export default function MarketplacePage() {
     navigate('/marketplace', { replace: true, state: {} })
   }
 
+  const handleBannerClick = (b) => {
+    if (!b) return
+    if (b.action === 'delivery') {
+      setFilters(f => ({ ...f, hasDelivery: true }))
+      toast.success('Boutiques avec livraison disponibles filtrées !', { icon: '🚚' })
+    } else if (b.action === 'wallet') {
+      navigate('/portefeuille')
+    } else if (b.action === 'referral') {
+      navigate('/parrainage')
+    } else if (b.action === 'verified') {
+      setVerifiedOnly(true)
+      toast.success('Vendeurs certifiés affichés !', { icon: '✅' })
+    }
+  }
+
   const handleTopBoutiquesToggle = () => {
     setSortBy(prev => {
       const next = prev === 'likes' ? 'recent' : 'likes'
@@ -1026,33 +1078,80 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {/* CARROUSEL BANNIÈRES */}
-        <div className="px-3 mb-5 mt-3">
-          <div className="relative h-28 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-r from-primary-800 to-primary-600">
+        {/* CARROUSEL BANNIÈRES INTERACTIF (BONS PLANS & ACTIONS CLIQUEABLES) */}
+        <div className="px-3 mb-4 mt-3">
+          <div
+            onClick={() => handleBannerClick(BANNERS[activeBanner])}
+            className="group relative h-36 rounded-3xl overflow-hidden shadow-lg border border-emerald-500/20 cursor-pointer active:scale-[0.99] transition-all duration-300"
+            style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 50%, #0f3d21 100%)' }}
+          >
+            {/* Image de fond vibrante avec overlay subtil */}
             <img
               src={BANNERS[activeBanner].image}
               alt={BANNERS[activeBanner].title}
-              className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply"
+              key={BANNERS[activeBanner].id}
+              className="absolute inset-0 w-full h-full object-cover opacity-35 mix-blend-overlay group-hover:scale-105 transition-transform duration-700 ease-out"
             />
-            <div className="absolute inset-0 p-4 flex flex-col justify-end bg-gradient-to-t from-black/50 to-transparent">
-              <h4 className="text-white font-bold text-sm leading-tight">{BANNERS[activeBanner].title}</h4>
-              <p className="text-white/80 text-[10px] mt-0.5 line-clamp-1">{BANNERS[activeBanner].desc}</p>
-            </div>
-            {/* Points de navigation */}
-            <div className="absolute bottom-2.5 right-3 flex gap-1 z-10">
-              {BANNERS.map((_, i) => (
-                <span
-                  key={i}
-                  className={clsx(
-                    'w-1.5 h-1.5 rounded-full transition-all duration-300',
-                    activeBanner === i ? 'bg-gold-400 w-3' : 'bg-white/55'
-                  )}
-                />
-              ))}
+
+            {/* Gradient sombre pour lisibilité maximale */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent pointer-events-none" />
+
+            {/* Reflet lumineux décoratif */}
+            <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-yellow-400/10 blur-2xl pointer-events-none" />
+
+            <div className="relative h-full p-4 flex flex-col justify-between z-10">
+              {/* Ligne 1 : Badge pill lumineux + Dots */}
+              <div className="flex items-center justify-between">
+                <span className={clsx(
+                  "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm flex items-center gap-1 animate-pulse",
+                  BANNERS[activeBanner].badgeBg
+                )}>
+                  {BANNERS[activeBanner].badge}
+                </span>
+
+                {/* Points de navigation cliquables */}
+                <div className="flex gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10" onClick={(e) => e.stopPropagation()}>
+                  {BANNERS.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveBanner(i)}
+                      className={clsx(
+                        'h-1.5 rounded-full transition-all duration-300',
+                        activeBanner === i ? 'bg-yellow-400 w-4' : 'bg-white/40 w-1.5 hover:bg-white/70'
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Ligne 2 : Titre + Description */}
+              <div className="max-w-[270px]">
+                <h4 className="text-white font-black text-sm tracking-tight leading-tight drop-shadow-sm">
+                  {BANNERS[activeBanner].title}
+                </h4>
+                <p className="text-white/85 text-[10.5px] mt-0.5 line-clamp-2 leading-relaxed font-medium">
+                  {BANNERS[activeBanner].desc}
+                </p>
+              </div>
+
+              {/* Ligne 3 : Bouton d'action interactif */}
+              <div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleBannerClick(BANNERS[activeBanner])
+                  }}
+                  className="btn-bounce inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-dark-950 font-black text-[11px] shadow-md active:scale-95 transition-all"
+                >
+                  <span>{BANNERS[activeBanner].cta}</span>
+                  <ChevronRight size={13} strokeWidth={3} className="text-dark-950" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
 
         {/* FILTRE DU RAYON DE PROXIMITÉ SI PROCHES ACTIF */}
         {filters.nearby && (
