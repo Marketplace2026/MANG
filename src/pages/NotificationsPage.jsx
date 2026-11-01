@@ -138,80 +138,72 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-surface-50">
-      {/* HEADER */}
+      {/* HEADER COMPACT */}
       <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
-        <div className="flex justify-between items-center">
+
+        {/* Ligne 1 : Titre + Actions */}
+        <div className="flex justify-between items-center mb-2.5">
           <div>
-            <h1 className="text-white text-2xl font-bold">Notifications</h1>
-            <p className="text-white/80 text-sm">
-              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
+            <h1 className="text-white text-xl font-bold leading-tight">Notifications</h1>
+            <p className="text-white/60 text-[11px]">
+              {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour ✓'}
             </p>
           </div>
-          <div className="flex gap-3">
-            <button onClick={handleMarkAll}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
-              <CheckCheck size={16} className="text-white"/>
+          <div className="flex gap-2">
+            <button onClick={handleMarkAll} title="Tout marquer comme lu"
+              className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center active:scale-90 transition-transform">
+              <CheckCheck size={14} className="text-white"/>
             </button>
-            <button onClick={handleClearAll}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
-              <Trash2 size={16} className="text-white"/>
+            <button onClick={handleClearAll} title="Tout supprimer"
+              className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center active:scale-90 transition-transform">
+              <Trash2 size={14} className="text-white"/>
             </button>
           </div>
+        </div>
+
+        {/* Ligne 2 : Stats pills */}
+        <div className="flex items-center gap-2">
+          {[
+            { label: 'Total',     value: notifications?.length || 0,                                                  color: 'text-white' },
+            { label: 'Non lues',  value: unreadCount || 0,                                                            color: 'text-orange-300' },
+            { label: 'Commandes', value: (notifications || []).filter(n => ORDER_TYPES.includes(n.type)).length,      color: 'text-blue-300' },
+            { label: 'Social',    value: (notifications || []).filter(n => SOCIAL_TYPES.includes(n.type)).length,     color: 'text-pink-300' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1.5">
+              <span className={clsx('font-bold text-xs leading-none', s.color)}>{s.value}</span>
+              <span className="text-white/50 text-[9px]">{s.label}</span>
+            </div>
+          ))}
+
+          {/* Bannière Push — pill compact si pas encore activé */}
+          {'serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted' && (
+            <button
+              onClick={handleSubscribePush}
+              disabled={isSubscribing}
+              className="ml-auto flex items-center gap-1 bg-white/15 border border-white/20 px-2.5 py-1.5 rounded-lg active:scale-95 transition-transform">
+              <Bell size={11} className="text-gold-300"/>
+              <span className="text-white font-semibold text-[10px] whitespace-nowrap">
+                {isSubscribing ? '...' : 'Activer alertes'}
+              </span>
+            </button>
+          )}
         </div>
       </header>
 
-      <div className="bg-mang-header pb-20 px-4 relative overflow-hidden border-t border-white/10">
-        <div className="absolute inset-0 opacity-5"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
-        <div className="relative pt-2 space-y-4">
-          {/* Bannière Activer Web Push */}
-          {('serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted') && (
-            <div className="bg-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 border border-white/20">
-              <div className="flex-1">
-                <p className="text-white font-bold text-sm">Recevoir les alertes</p>
-                <p className="text-white/70 text-[10px] mt-0.5">Même quand l'app est fermée</p>
-              </div>
-              <button 
-                onClick={handleSubscribePush}
-                disabled={isSubscribing}
-                className="bg-white text-emerald-800 text-xs font-black px-4 py-2 rounded-xl active:scale-95 transition-transform whitespace-nowrap shadow-sm"
-              >
-                {isSubscribing ? 'Activation...' : 'Activer'}
-              </button>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: 'Total',     value: notifications?.length || 0,                        color: 'text-white' },
-              { label: 'Non lues',  value: unreadCount || 0,                                  color: 'text-orange-300' },
-              { label: 'Commandes', value: (notifications || []).filter(n => ORDER_TYPES.includes(n.type)).length,  color: 'text-blue-300' },
-              { label: 'Social',    value: (notifications || []).filter(n => SOCIAL_TYPES.includes(n.type)).length, color: 'text-pink-300' },
-            ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-2xl p-2.5 text-center">
-                <p className={clsx('font-display font-bold text-xl leading-none', s.color)}>{s.value}</p>
-                <p className="text-white/50 text-[9px] font-medium mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="relative -mt-10 px-4 pb-28 space-y-3">
+      <div className="px-4 pb-28 space-y-3 pt-4">
         {/* FILTRE TABS */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {FILTER_TABS.map(t => (
             <button key={t.key} onClick={() => setFilter(t.key)}
               className={clsx(
-                'flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border-2',
+                'flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all border',
                 filter === t.key
                   ? 'border-primary-600 bg-primary-600 text-white shadow-green'
                   : 'border-surface-200 bg-white text-dark-600'
               )}>
               {t.label}
               {t.key === 'unread' && unreadCount > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                <span className="ml-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
                   {unreadCount}
                 </span>
               )}
