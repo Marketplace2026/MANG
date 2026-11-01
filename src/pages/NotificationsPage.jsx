@@ -150,6 +150,12 @@ export default function NotificationsPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            {'serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted' && (
+              <button onClick={handleSubscribePush} disabled={isSubscribing} title="Activer les alertes"
+                className="w-8 h-8 rounded-xl bg-gold-500/20 border border-gold-400/30 flex items-center justify-center active:scale-90 transition-transform">
+                <Bell size={14} className="text-gold-300"/>
+              </button>
+            )}
             <button onClick={handleMarkAll} title="Tout marquer comme lu"
               className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center active:scale-90 transition-transform">
               <CheckCheck size={14} className="text-white"/>
@@ -162,31 +168,18 @@ export default function NotificationsPage() {
         </div>
 
         {/* Ligne 2 : Stats pills */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {[
-            { label: 'Total',     value: notifications?.length || 0,                                                  color: 'text-white' },
-            { label: 'Non lues',  value: unreadCount || 0,                                                            color: 'text-orange-300' },
-            { label: 'Commandes', value: (notifications || []).filter(n => ORDER_TYPES.includes(n.type)).length,      color: 'text-blue-300' },
-            { label: 'Social',    value: (notifications || []).filter(n => SOCIAL_TYPES.includes(n.type)).length,     color: 'text-pink-300' },
+            { label: 'Total',     value: notifications?.length || 0,                                              color: 'text-white' },
+            { label: 'Non lues',  value: unreadCount || 0,                                                        color: 'text-orange-300' },
+            { label: 'Cmds',      value: (notifications || []).filter(n => ORDER_TYPES.includes(n.type)).length,  color: 'text-blue-300' },
+            { label: 'Social',    value: (notifications || []).filter(n => SOCIAL_TYPES.includes(n.type)).length, color: 'text-pink-300' },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1.5">
               <span className={clsx('font-bold text-xs leading-none', s.color)}>{s.value}</span>
               <span className="text-white/50 text-[9px]">{s.label}</span>
             </div>
           ))}
-
-          {/* Bannière Push — pill compact si pas encore activé */}
-          {'serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted' && (
-            <button
-              onClick={handleSubscribePush}
-              disabled={isSubscribing}
-              className="ml-auto flex items-center gap-1 bg-white/15 border border-white/20 px-2.5 py-1.5 rounded-lg active:scale-95 transition-transform">
-              <Bell size={11} className="text-gold-300"/>
-              <span className="text-white font-semibold text-[10px] whitespace-nowrap">
-                {isSubscribing ? '...' : 'Activer alertes'}
-              </span>
-            </button>
-          )}
         </div>
       </header>
 
