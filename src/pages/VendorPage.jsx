@@ -184,86 +184,69 @@ export default function VendorPage() {
 
   return (
     <div className="min-h-screen bg-surface-50">
-      {/* HEADER */}
+      {/* HEADER COMPACT */}
       <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
-        <div className="flex justify-between items-center">
+        {/* Ligne 1 : Titre + Actions rapides */}
+        <div className="flex justify-between items-center mb-2.5">
           <div>
-            <h1 className="text-white text-2xl font-bold">Espace Vendeur</h1>
-            <p className="text-white/80 text-sm">Gérez vos boutiques & produits</p>
+            <h1 className="text-white text-xl font-bold leading-tight">Espace Vendeur</h1>
+            <p className="text-white/60 text-[11px]">Gérez vos boutiques & produits</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
+            {/* Pièces — compact */}
             <button onClick={() => setCoinsOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gold-500/20 border border-gold-400/30 active:scale-95 transition-transform">
-              <Coins size={20} className="text-gold-500" />
-              <div className="text-left">
-                <p className="text-gold-300 text-[10px] font-medium">Pièces</p>
-                <p className="text-white font-bold text-sm">{pieces?.balance || 0}</p>
-              </div>
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gold-500/15 border border-gold-400/25 active:scale-95 transition-transform">
+              <Coins size={14} className="text-gold-400" />
+              <span className="text-white font-bold text-xs">{pieces?.balance || 0}</span>
+            </button>
+            {/* Créer boutique — pill compact */}
+            <button onClick={() => setCreateShopOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/15 border border-white/20 active:scale-95 transition-transform">
+              <Plus size={13} className="text-white" />
+              <span className="text-white font-semibold text-xs">Boutique</span>
             </button>
           </div>
         </div>
-      </header>
 
-      <div className="bg-mang-header pb-24 relative overflow-hidden border-t border-white/10">
-        <div className="absolute inset-0 opacity-5"
-          style={{backgroundImage:'radial-gradient(circle,white 1px,transparent 1px)',backgroundSize:'20px 20px'}}/>
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-gold-400/10 blur-2xl"/>
+        {/* Ligne 2 : Stats pills + Badge Premium */}
+        <div className="flex items-center gap-2">
+          {[
+            { icon: Store,   val: shops.length,   label: 'Boutiques' },
+            { icon: Package, val: totalProducts,  label: 'Produits'  },
+            { icon: Users,   val: totalFollowers, label: 'Abonnés'   },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
+              <s.icon size={12} className="text-primary-300" />
+              <span className="text-white font-bold text-xs">{s.val}</span>
+              <span className="text-white/50 text-[10px] hidden sm:inline">{s.label}</span>
+            </div>
+          ))}
+          {/* Premium pill */}
+          <div className="ml-auto">
+            <button onClick={() => setPremiumOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gold-500/20 border border-gold-400/30 active:scale-95 transition-transform">
+              <Crown size={12} className="text-gold-400 animate-badge-glow" />
+              <span className="text-gold-300 font-bold text-[10px]">
+                {premiumStatus && daysLeft > 0 ? `PRO · J-${daysLeft}` : 'Premium'}
+              </span>
+            </button>
+          </div>
+        </div>
 
-        <div className="relative px-4 pt-2">
-
-          {/* Compteur interactif & Signaux d'alerte Premium */}
-          {(premiumStatus || shops.some(s => s.premium_level > 0)) && (
+        {/* Widget Premium countdown (si actif) */}
+        {(premiumStatus || shops.some(s => s.premium_level > 0)) && (
+          <div className="mt-2">
             <PremiumCountdownWidget
               shop={shops[0]}
               premiumStatus={premiumStatus}
               onRenew={() => setPremiumOpen(true)}
             />
-          )}
-
-          {/* Stats globales */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { icon: Store,   label: 'Boutiques', value: shops.length },
-              { icon: Package, label: 'Produits',  value: totalProducts },
-              { icon: Users,   label: 'Abonnés',   value: totalFollowers },
-            ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-2xl p-3 text-center">
-                <s.icon size={16} className="text-primary-300 mx-auto mb-1"/>
-                <p className="font-display font-bold text-white text-lg leading-none">{s.value}</p>
-                <p className="text-primary-300 text-[10px] font-medium mt-0.5">{s.label}</p>
-              </div>
-            ))}
           </div>
-        </div>
-      </div>
+        )}
+      </header>
 
       {/* CONTENU */}
-      <div className="relative -mt-14 px-4 pb-28 space-y-4">
-
-        {/* BOUTONS ACTIONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setCreateShopOpen(true)}
-            className="flex flex-col items-center gap-2 p-4 bg-white rounded-3xl shadow-card active:scale-95 transition-transform">
-            <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center shadow-green">
-              <Store size={22} className="text-white"/>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-dark-800 text-sm">Créer boutique</p>
-              <p className="text-dark-600/50 text-xs">Coût : 10 pièces</p>
-            </div>
-          </button>
-
-          <button onClick={() => setPremiumOpen(true)}
-            className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-gold-500/10 to-gold-600/5 rounded-3xl shadow-card border border-gold-400/20 active:scale-95 transition-transform">
-            <div className="w-12 h-12 rounded-2xl bg-gold-500 flex items-center justify-center shadow-gold animate-badge-glow">
-              <Crown size={22} className="text-white"/>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-dark-800 text-sm">Devenir Premium</p>
-              <p className="text-gold-600 text-xs font-semibold">Boostez vos ventes</p>
-            </div>
-          </button>
-        </div>
+      <div className="px-4 pb-28 space-y-4 pt-4">
 
         {/* VERIFICATION BANNER — si au moins une boutique non vérifiée */}
         {shops.length > 0 && shops.some(s => !s.is_verified) && (
