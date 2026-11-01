@@ -14,9 +14,9 @@ import { fr } from 'date-fns/locale'
 
 // ── Onglets ────────────────────────────────────────────────
 const TABS = [
-  { key: 'shops',      label: 'Boutiques',  icon: Store   },
-  { key: 'products',   label: 'Produits',   icon: Package },
-  { key: 'bookmarks',  label: 'Publications', icon: Bookmark },
+  { key: 'shops',      label: 'Boutiques',    shortLabel: 'Boutiques', icon: Store    },
+  { key: 'products',   label: 'Produits',     shortLabel: 'Produits',  icon: Package  },
+  { key: 'bookmarks',  label: 'Publications', shortLabel: 'Posts',     icon: Bookmark },
 ]
 
 // ── Options de tri ─────────────────────────────────────────
@@ -598,22 +598,33 @@ export default function FavoritesPage() {
           </div>
         )}
 
-        {/* Header */}
-        <div className="bg-mang-header shadow-md pt-3 pb-0 px-4 sticky top-0 z-20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-              <Heart size={20} className="text-white fill-white" />
+        {/* Header Compact */}
+        <header className="bg-mang-header shadow-md pt-4 pb-0 px-4 sticky top-0 z-50">
+          {/* Ligne 1 : Titre + Action */}
+          <div className="flex justify-between items-center mb-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center">
+                <Heart size={15} className="text-white fill-white" />
+              </div>
+              <div>
+                <h1 className="font-display font-bold text-white text-xl leading-tight">Mes Favoris</h1>
+                <p className="text-[11px] text-white/60">
+                  <AnimatedCount value={count} /> {tab === 'shops' ? 'boutique' : tab === 'products' ? 'produit' : 'publication'}{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-display font-bold text-white text-xl">Mes Favoris</h1>
-              <p className="text-xs text-primary-200">
-                <AnimatedCount value={count} />{' '}
-                {tab === 'shops' ? 'boutique' : tab === 'products' ? 'produit' : 'publication'}{count > 1 ? 's' : ''}
-              </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleRefresh}
+                title="Actualiser"
+                className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <RefreshCw size={14} className={clsx("text-white", (loadingShops || loadingProducts || loadingBookmarks) && "animate-spin")} />
+              </button>
             </div>
           </div>
 
-          {/* Onglets */}
+          {/* Onglets compacts sans débordement */}
           <div className="flex border-b border-white/10">
             {TABS.map(t => {
               const Icon = t.icon
@@ -624,15 +635,16 @@ export default function FavoritesPage() {
                   key={t.key}
                   onClick={() => setTab(t.key)}
                   className={clsx(
-                    'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors border-b-2',
-                    isActive ? 'text-white border-white' : 'text-white/60 border-transparent'
+                    'flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap min-w-0',
+                    isActive ? 'text-white border-white' : 'text-white/60 border-transparent hover:text-white/80'
                   )}
                 >
-                  <Icon size={15} />
-                  {t.label}
+                  <Icon size={14} className="flex-shrink-0" />
+                  <span className="hidden sm:inline truncate">{t.label}</span>
+                  <span className="sm:hidden truncate">{t.shortLabel || t.label}</span>
                   {c > 0 && (
                     <span className={clsx(
-                      'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                      'text-[9px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0',
                       isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-white/60'
                     )}>
                       <AnimatedCount value={c} />
@@ -642,7 +654,7 @@ export default function FavoritesPage() {
               )
             })}
           </div>
-        </div>
+        </header>
 
         {/* Contenu */}
         <div className="px-4 pt-4">
