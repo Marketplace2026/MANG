@@ -531,63 +531,60 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-surface-50 pb-28">
-      {/* HEADER */}
+      {/* HEADER COMPACT */}
       <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
-        <div className="flex justify-between items-center">
+        {/* Ligne 1 : Titre + Actions */}
+        <div className="flex justify-between items-center mb-2.5">
           <div>
-            <h1 className="text-white text-2xl font-bold">Commandes</h1>
-            <p className="text-white/80 text-sm">Achats & ventes</p>
+            <h1 className="text-white text-xl font-bold leading-tight">Commandes</h1>
+            <p className="text-white/60 text-[11px]">Achats & ventes</p>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => loadOrders(false)}
-              className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-90">
-              <RefreshCw size={16} className="text-white"/>
+          <div className="flex gap-2">
+            <button onClick={() => loadOrders(false)} title="Actualiser"
+              className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center active:scale-90 transition-transform">
+              <RefreshCw size={14} className={clsx("text-white", loading && "animate-spin")} />
             </button>
           </div>
         </div>
+
+        {/* Ligne 2 : Stats pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {[
+            { label: 'Total',    value: stats.total,    color: 'text-white' },
+            { label: 'Attente',  value: stats.pending,  color: 'text-orange-300' },
+            { label: 'Acceptées', value: stats.accepted, color: 'text-emerald-300' },
+            { label: 'Payées',   value: stats.paid,     color: 'text-blue-300' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1.5 flex-shrink-0">
+              <span className={clsx('font-bold text-xs leading-none', s.color)}>{s.value}</span>
+              <span className="text-white/50 text-[9px]">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Alerte discrète commandes en attente vendeur */}
+        {pendingCount > 0 && (
+          <div className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/20 border border-orange-400/30 text-orange-200 text-[11px] font-semibold">
+            <AlertCircle size={13} className="text-orange-300 flex-shrink-0"/>
+            <span className="truncate">
+              {pendingCount} commande{pendingCount > 1 ? 's' : ''} en attente de votre réponse !
+            </span>
+          </div>
+        )}
       </header>
 
-      <div className="bg-mang-header pb-20 px-4 relative overflow-hidden border-t border-white/10">
-        <div className="absolute inset-0 opacity-5"
-          style={{ backgroundImage: 'radial-gradient(circle,white 1px,transparent 1px)', backgroundSize: '20px 20px' }}/>
-        <div className="relative pt-2">
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: 'Total',     value: stats.total,    color: 'text-white' },
-              { label: 'En attente', value: stats.pending,  color: 'text-orange-300' },
-              { label: 'Acceptées', value: stats.accepted, color: 'text-emerald-300' },
-              { label: 'Payées',    value: stats.paid,     color: 'text-blue-300' },
-            ].map((s,i) => (
-              <div key={i} className="bg-white/10 rounded-2xl p-2.5 text-center">
-                <p className={clsx('font-display font-bold text-xl leading-none', s.color)}>{s.value}</p>
-                <p className="text-white/50 text-[9px] font-medium mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {pendingCount > 0 && (
-            <div className="mt-3 flex items-center gap-2 p-3 rounded-2xl bg-orange-400/20 border border-orange-400/30">
-              <AlertCircle size={16} className="text-orange-300 flex-shrink-0"/>
-              <p className="text-orange-200 text-xs font-semibold">
-                {pendingCount} commande{pendingCount > 1 ? 's' : ''} en attente de votre réponse !
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="relative -mt-10 px-4 space-y-3">
+      {/* CONTENU */}
+      <div className="px-4 space-y-3 pt-3">
         {/* TABS */}
-        <div className="bg-white rounded-2xl shadow-card p-1.5 flex gap-1">
+        <div className="bg-white rounded-xl shadow-card p-1 border border-surface-100 flex gap-1">
           {TABS.map(t => (
             <button key={t.key} onClick={() => {
               setTab(t.key)
               setSelectionMode(false)
               setSelectedOrderIds([])
             }}
-              className={clsx('flex-1 py-2.5 rounded-xl text-xs font-bold transition-all',
-                tab === t.key ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600')}>
+              className={clsx('flex-1 py-2 rounded-lg text-xs font-bold transition-all',
+                tab === t.key ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50')}>
               {t.label}
             </button>
           ))}
