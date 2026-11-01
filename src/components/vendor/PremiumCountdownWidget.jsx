@@ -86,7 +86,7 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
 
   return (
     <div className={clsx(
-      'rounded-3xl p-4.5 mb-4 border transition-all duration-300 shadow-md relative overflow-hidden',
+      'rounded-2xl p-3 mb-2 border transition-all duration-300 shadow-sm relative overflow-hidden',
       signalType === 'critical' && 'bg-gradient-to-br from-red-500/15 via-rose-500/10 to-red-600/20 border-red-500/40 shadow-red-500/10 animate-pulse-gentle',
       signalType === 'warning' && 'bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-600/20 border-amber-400/40 shadow-amber-500/10',
       signalType === 'normal' && 'bg-gradient-to-br from-dark-900/90 via-dark-800 to-dark-900 border-gold-400/30 text-white',
@@ -100,34 +100,34 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
       )} />
 
       {/* EN-TÊTE : Statut & Titre */}
-      <div className="flex items-center justify-between mb-3 relative z-10">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between mb-2 relative z-10">
+        <div className="flex items-center gap-2">
           <div className={clsx(
-            'w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm',
+            'w-7 h-7 rounded-xl flex items-center justify-center shadow-sm',
             signalType === 'critical' ? 'bg-red-500 text-white animate-bounce-gentle' :
             signalType === 'warning' ? 'bg-amber-500 text-white' :
             'bg-gradient-to-br from-gold-400 to-amber-500 text-dark-900'
           )}>
-            {signalType === 'critical' ? <AlertCircle size={22} /> :
-             signalType === 'warning' ? <AlertTriangle size={22} /> :
-             <Crown size={22} />}
+            {signalType === 'critical' ? <AlertCircle size={15} /> :
+             signalType === 'warning' ? <AlertTriangle size={15} /> :
+             <Crown size={15} />}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-display font-black text-sm tracking-wide text-white">
+            <div className="flex items-center gap-1">
+              <span className="font-display font-black text-xs tracking-wide text-white">
                 Premium {planInfo.name}
               </span>
-              <span className="text-gold-400 text-xs font-bold">{planInfo.stars}</span>
+              <span className="text-gold-400 text-[10px] font-bold">{planInfo.stars}</span>
             </div>
             <p className={clsx(
-              'text-[11px] font-medium',
+              'text-[10px] font-medium',
               signalType === 'critical' ? 'text-red-300 font-bold' :
               signalType === 'warning' ? 'text-amber-300 font-bold' :
               signalType === 'expired' ? 'text-surface-400' : 'text-gold-300/80'
             )}>
-              {signalType === 'critical' ? '🚨 Signal Critique : Expiration imminente !' :
-               signalType === 'warning' ? '⚠️ Signal d\'Alerte : Se termine bientôt' :
-               signalType === 'expired' ? '❌ Abonnement Expiré' : '🟢 Abonnement Actif & Prioritaire'}
+              {signalType === 'critical' ? '🚨 Expiration imminente !' :
+               signalType === 'warning' ? '⚠️ Se termine bientôt' :
+               signalType === 'expired' ? '❌ Abonnement Expiré' : '🟢 Actif & Prioritaire'}
             </p>
           </div>
         </div>
@@ -136,44 +136,44 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
         <button
           onClick={onRenew}
           className={clsx(
-            'px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all',
+            'px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all',
             signalType === 'critical' ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' :
             signalType === 'warning' ? 'bg-amber-500 hover:bg-amber-600 text-white' :
             'bg-gold-500 hover:bg-gold-400 text-dark-900 font-black'
           )}
         >
-          <RefreshCw size={12} className="animate-spin-slow" />
+          <RefreshCw size={10} className="animate-spin-slow" />
           {timeLeft.isExpired ? 'Réactiver' : 'Prolonger'}
         </button>
       </div>
 
       {/* COMPTEUR VISUEL EN DIRECT (Jours, Heures, Min, Sec) */}
       {!timeLeft.isExpired ? (
-        <div className="relative z-10 mb-3">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="relative z-10 mb-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {[
               { val: timeLeft.days, unit: 'Jours' },
-              { val: String(timeLeft.hours).padStart(2, '0'), unit: 'Heures' },
+              { val: String(timeLeft.hours).padStart(2, '0'), unit: 'H' },
               { val: String(timeLeft.minutes).padStart(2, '0'), unit: 'Min' },
               { val: String(timeLeft.seconds).padStart(2, '0'), unit: 'Sec' }
             ].map((box, i) => (
               <div
                 key={i}
                 className={clsx(
-                  'rounded-2xl p-2 text-center border backdrop-blur-md transition-all',
+                  'rounded-xl px-1 py-1.5 text-center border backdrop-blur-md transition-all',
                   signalType === 'critical' ? 'bg-red-950/40 border-red-500/30' :
                   signalType === 'warning' ? 'bg-amber-950/40 border-amber-400/30' :
                   'bg-white/10 border-white/15'
                 )}
               >
                 <p className={clsx(
-                  'font-display font-black text-xl leading-none tracking-tight',
+                  'font-display font-black text-base leading-none tracking-tight',
                   signalType === 'critical' ? 'text-red-300' :
                   signalType === 'warning' ? 'text-amber-300' : 'text-white'
                 )}>
                   {box.val}
                 </p>
-                <p className="text-[9px] uppercase font-bold text-white/60 tracking-wider mt-1">
+                <p className="text-[8px] uppercase font-bold text-white/50 tracking-wider mt-0.5">
                   {box.unit}
                 </p>
               </div>
@@ -181,12 +181,12 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
           </div>
 
           {/* Jauge de progression */}
-          <div className="mt-3">
-            <div className="flex justify-between items-center text-[10px] text-white/70 mb-1 font-medium">
+          <div className="mt-2">
+            <div className="flex justify-between items-center text-[9px] text-white/60 mb-0.5 font-medium">
               <span>Temps restant sur 30j</span>
               <span className="font-bold">{Math.round(percentRemaining)}%</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden border border-white/10 p-[1px]">
+            <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden border border-white/10">
               <div
                 className={clsx(
                   'h-full rounded-full transition-all duration-500',
@@ -200,19 +200,19 @@ export default function PremiumCountdownWidget({ shop, premiumStatus, onRenew })
           </div>
         </div>
       ) : (
-        <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-2xl mb-3 text-center">
-          <p className="text-red-300 text-xs font-bold">
-            Votre boutique est actuellement repassée en mode gratuit (5 produits max).
+        <div className="p-2 bg-red-950/40 border border-red-500/30 rounded-xl mb-2 text-center">
+          <p className="text-red-300 text-[11px] font-bold">
+            Boutique repassée en mode gratuit (5 produits max).
           </p>
-          <p className="text-white/60 text-[11px] mt-0.5">
-            Réactivez votre abonnement pour retrouver votre visibilité prioritaire et vos produits illimités.
+          <p className="text-white/60 text-[10px] mt-0.5">
+            Réactivez pour retrouver votre visibilité prioritaire.
           </p>
         </div>
       )}
 
       {/* MESSAGE D'EXPLICATION ACTIONNABLE */}
       <div className={clsx(
-        'p-2.5 rounded-2xl flex items-center gap-2 text-xs relative z-10 border',
+        'px-2 py-1.5 rounded-xl flex items-center gap-1.5 text-xs relative z-10 border',
         signalType === 'critical' ? 'bg-red-500/10 border-red-500/30 text-red-200' :
         signalType === 'warning' ? 'bg-amber-500/10 border-amber-400/30 text-amber-200' :
         signalType === 'expired' ? 'bg-surface-800/60 border-surface-700 text-surface-300' :
