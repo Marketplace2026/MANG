@@ -95,22 +95,80 @@ export default function NotificationsPage() {
 
   const handleClick = async (notif) => {
     if (!notif.is_read) await markAsRead(notif.id)
-    // Navigation selon type
-    if (ORDER_TYPES.includes(notif.type))              navigate('/commandes')
-    else if (WALLET_TYPES.includes(notif.type))        navigate('/portefeuille')
-    else if (notif.type === 'new_message')             navigate('/messages')
-    else if ((notif.type === 'user_follow' || notif.reference_type === 'profile') && notif.reference_id)
-      navigate('/profil/' + notif.reference_id)
-    else if (notif.type === 'post_like')
+
+    // Navigation selon le type de notification
+    // ── Commandes ──
+    if (ORDER_TYPES.includes(notif.type)) {
+      navigate('/commandes')
+    }
+    // ── Wallet ──
+    else if (WALLET_TYPES.includes(notif.type)) {
+      navigate('/portefeuille')
+    }
+    // ── Message privé ──
+    else if (notif.type === 'new_message') {
+      navigate('/messages')
+    }
+    // ── Quelqu'un suit votre profil ──
+    else if (notif.type === 'user_follow') {
+      if (notif.reference_id) navigate('/profil/' + notif.reference_id)
+      else navigate('/profil')
+    }
+    // ── Quelqu'un suit votre boutique ──
+    else if (notif.type === 'shop_follow') {
+      if (notif.reference_id) navigate('/boutique/' + notif.reference_id)
+      else navigate('/vendeur')
+    }
+    // ── Like sur votre boutique ──
+    else if (notif.type === 'shop_like') {
+      if (notif.reference_id) navigate('/boutique/' + notif.reference_id)
+      else navigate('/vendeur')
+    }
+    // ── Produit mis en favori ──
+    else if (notif.type === 'product_favorite') {
+      if (notif.reference_id) navigate('/produit/' + notif.reference_id)
+      else navigate('/vendeur')
+    }
+    // ── Like / commentaire sur une publication communautaire ──
+    else if (notif.type === 'post_like' || notif.type === 'comment_like' || notif.type === 'shop_comment') {
       navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'shop_comment')
+    }
+    // ── Réponse à un commentaire ──
+    else if (notif.type === 'comment_reply') {
       navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'comment_like')
-      navigate('/communaute', { state: { openPostId: notif.reference_id } })
-    else if (notif.type === 'shop_follow' && notif.reference_id)
-      navigate('/boutique/' + notif.reference_id)
-    else if (notif.type === 'verification_request')
+    }
+    // ── Vérification admin ──
+    else if (notif.type === 'verification_request') {
       navigate('/admin/verifications')
+    }
+    // ── Annonces système / broadcast ──
+    else if (SYSTEM_TYPES.includes(notif.type)) {
+      // Si la notif contient une URL de référence, on y va
+      if (notif.reference_type === 'url' && notif.reference_id) {
+        navigate(notif.reference_id)
+      } else if (notif.reference_type === 'shop' && notif.reference_id) {
+        navigate('/boutique/' + notif.reference_id)
+      } else if (notif.reference_type === 'product' && notif.reference_id) {
+        navigate('/produit/' + notif.reference_id)
+      } else if (notif.reference_type === 'profile' && notif.reference_id) {
+        navigate('/profil/' + notif.reference_id)
+      } else {
+        // Annonce générale → marketplace
+        navigate('/marketplace')
+      }
+    }
+    // ── Fallback : tout type non géré → profil ──
+    else {
+      if (notif.reference_type === 'shop' && notif.reference_id) {
+        navigate('/boutique/' + notif.reference_id)
+      } else if (notif.reference_type === 'product' && notif.reference_id) {
+        navigate('/produit/' + notif.reference_id)
+      } else if (notif.reference_type === 'profile' && notif.reference_id) {
+        navigate('/profil/' + notif.reference_id)
+      } else {
+        navigate('/marketplace')
+      }
+    }
   }
 
   const handleDelete = async (e, notifId) => {
