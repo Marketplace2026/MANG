@@ -56,28 +56,27 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 flex flex-col transition-colors duration-300">
-      {/* HEADER */}
-      <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
-        <div className="flex justify-between items-center">
+      {/* HEADER COMPACT — Titre + icône + tabs fusionnés */}
+      <header className="bg-mang-header pt-3 pb-0 px-4 sticky top-0 z-50 shadow-md">
+        {/* Ligne 1 : Titre + icône */}
+        <div className="flex justify-between items-center pb-2">
           <div>
-            <h1 className="text-white text-2xl font-bold">Communauté</h1>
-            <p className="text-white/80 text-sm">MANG — Ensemble, on grandit</p>
+            <h1 className="text-white text-xl font-black tracking-tight">Communauté</h1>
+            <p className="text-white/60 text-[11px]">MANG — Ensemble, on grandit</p>
           </div>
-          <div className="flex gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-              <Flame size={18} className="text-gold-300"/>
+          <div className="flex gap-2">
+            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center">
+              <Flame size={15} className="text-gold-300"/>
             </div>
           </div>
         </div>
-      </header>
 
-      <div className="bg-mang-header pb-0 px-4 flex-shrink-0 border-t border-white/10">
-        {/* Tabs scrollables */}
-        <div ref={tabsRef} className="flex gap-1 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+        {/* Ligne 2 : Tabs intégrées */}
+        <div ref={tabsRef} className="flex gap-1 overflow-x-auto scrollbar-none pb-0 -mx-1 px-1">
           {TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={clsx(
-                'flex-shrink-0 px-4 py-2 rounded-t-xl text-sm font-bold transition-all whitespace-nowrap',
+                'flex-shrink-0 px-3.5 py-1.5 rounded-t-xl text-xs font-bold transition-all whitespace-nowrap',
                 tab === t.key
                   ? 'bg-surface-50 dark:bg-dark-950 text-primary-700 dark:text-primary-400'
                   : 'text-white/70 hover:text-white'
@@ -86,7 +85,7 @@ export default function CommunityPage() {
             </button>
           ))}
         </div>
-      </div>
+      </header>
 
       {/* CONTENU */}
       <div className="flex-1 overflow-y-auto pb-28">
