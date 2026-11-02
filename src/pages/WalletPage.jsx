@@ -1188,26 +1188,26 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
-      {/* Header Unifié (pt-4) */}
-      <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-40 shadow-md">
+      {/* Header Compact */}
+      <header className="bg-mang-header pt-3 pb-2 px-4 sticky top-0 z-40 shadow-md">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-white text-2xl font-bold">MANG PAY</h1>
-            <p className="text-white/80 text-xs font-semibold">Portefeuille Numérique Sécurisé</p>
+            <h1 className="text-white text-xl font-black tracking-tight">MANG PAY</h1>
+            <p className="text-white/60 text-[11px]">Portefeuille Numérique Sécurisé</p>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => setPO(true)} 
-              className="px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl flex items-center gap-1.5 text-white text-xs font-bold active:scale-95 transition-all"
+              className="px-2.5 py-1 bg-white/15 hover:bg-white/25 rounded-xl flex items-center gap-1 text-white text-[11px] font-bold active:scale-95 transition-all"
             >
-              <Shield size={14} className="text-amber-400" />
+              <Shield size={13} className="text-amber-400" />
               <span>PIN</span>
             </button>
             <button 
               onClick={() => { loadTx(); refreshWallet() }} 
-              className="w-9 h-9 bg-white/15 hover:bg-white/25 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+              className="w-8 h-8 bg-white/15 hover:bg-white/25 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
             >
-              <RefreshCw size={15} className={`text-white ${loadingTx ? 'animate-spin' : ''}`} />
+              <RefreshCw size={14} className={`text-white ${loadingTx ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
