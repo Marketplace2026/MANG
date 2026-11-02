@@ -1691,30 +1691,27 @@ export default function MessagesPage() {
           "w-full md:w-[360px] lg:w-[400px] flex flex-col border-r border-surface-100 flex-shrink-0",
           active ? "hidden md:flex" : "flex"
         )}>
-          {/* Header */}
-          <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 flex-shrink-0 shadow-md">
-            <div className="flex justify-between items-center">
+          {/* Header Compact */}
+          <header className="bg-mang-header pt-3 pb-0 px-4 sticky top-0 z-50 flex-shrink-0 shadow-md">
+            <div className="flex justify-between items-center pb-2">
               <div>
-                <h1 className="text-white text-2xl font-bold">Messages</h1>
-                <p className="text-white/80 text-sm">
+                <h1 className="text-white text-xl font-black tracking-tight">Messages</h1>
+                <p className="text-white/60 text-[11px]">
                   {convs.length} conversation{convs.length !== 1 ? 's' : ''}
                   {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
                 </p>
               </div>
-              <div className="flex gap-3">
-                <button onClick={loadConvs} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90">
+              <div className="flex gap-2">
+                <button onClick={loadConvs} className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center active:scale-90">
                   <Loader2 size={16} className="text-white"/>
                 </button>
               </div>
             </div>
-          </header>
-
-          <div className="bg-mang-header px-4 pb-3 flex-shrink-0 border-t border-white/10">
-            {/* Recherche */}
-            <div className="relative mb-3">
+          {/* Recherche + Tabs intégrés */}
+            <div className="relative mb-2">
               <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"/>
               <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:bg-white/15"/>
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white placeholder-white/30 text-xs focus:outline-none focus:bg-white/15"/>
               {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-white/40"/></button>}
             </div>
 
@@ -1744,7 +1741,7 @@ export default function MessagesPage() {
                 )
               })}
             </div>
-          </div>
+          </header>
 
           {/* Liste */}
           <div className="flex-1 overflow-y-auto pb-28">

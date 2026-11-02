@@ -103,7 +103,7 @@ export default function ReferralPage() {
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-28 transition-colors duration-300">
       {/* HEADER PROFESSIONNEL */}
       <div
-        className="relative overflow-hidden pt-10 pb-20 px-4 md:px-8 bg-mang-header"
+        className="relative overflow-hidden pt-4 pb-10 px-4 md:px-8 bg-mang-header"
       >
         <div
           className="absolute inset-0 opacity-5 pointer-events-none"
@@ -112,14 +112,14 @@ export default function ReferralPage() {
         <div className="absolute -top-16 -right-16 w-60 h-60 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
 
         {/* Barre du haut */}
-        <div className="relative flex items-center justify-between mb-6">
+        <div className="relative flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 flex items-center justify-center text-white active:scale-95 transition-all"
+              className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white active:scale-95 transition-all"
               aria-label="Retour"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={15} />
             </button>
             <div>
               <div className="flex items-center gap-2">
@@ -127,12 +127,12 @@ export default function ReferralPage() {
                   <Sparkles size={11} /> Programme Ambassadeur
                 </span>
               </div>
-              <h1 className="font-display text-2xl text-white font-bold tracking-tight">Parrainage MANG</h1>
+              <h1 className="font-display text-xl text-white font-black tracking-tight">Parrainage MANG</h1>
             </div>
           </div>
         </div>
 
-        <p className="text-white/80 text-xs md:text-sm max-w-lg mb-6 leading-relaxed">
+        <p className="text-white/60 text-[11px] md:text-xs max-w-lg mb-4 leading-relaxed">
           Partagez votre code exclusif. Chaque fois qu'un ami s'inscrit ou lance sa boutique sur MANG, vous gagnez des pièces gratuites pour promouvoir vos annonces.
         </p>
 
