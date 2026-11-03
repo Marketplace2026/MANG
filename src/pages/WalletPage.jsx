@@ -552,7 +552,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
               <div className="flex items-center gap-3 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl">
                 <div className="w-12 h-12 rounded-xl bg-emerald-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {receiver.avatar_url
-                    ? <img src={receiver.avatar_url} className="w-full h-full object-cover" alt=""/>
+                    ? <img loading="lazy" src={receiver.avatar_url} className="w-full h-full object-cover" alt=""/>
                     : <span className="text-xl font-black text-emerald-800">{(receiver.username||'?')[0]?.toUpperCase()}</span>}
                 </div>
                 <div className="flex-1 min-w-0">

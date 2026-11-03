@@ -119,7 +119,7 @@ export default function OnboardingPage() {
               {/* Logo panier carré */}
               <div className="flex justify-center my-6">
                 <img 
-                  src="/logo-mang.png" 
+                  loading="lazy" src="/logo-mang.png" 
                   alt="MANG" 
                   className="object-contain drop-shadow-2xl mx-auto w-44 h-44 hover:scale-105 transition-transform duration-300"
                 />
@@ -211,7 +211,7 @@ export default function OnboardingPage() {
             <div className="text-center space-y-2">
               <div className="flex justify-center my-4">
                 <img 
-                  src="/logo-mang.png" 
+                  loading="lazy" src="/logo-mang.png" 
                   alt="MANG" 
                   className="object-contain drop-shadow-2xl mx-auto w-32 h-32" 
                 />

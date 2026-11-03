@@ -4,13 +4,13 @@ import { clsx } from 'clsx'
 import { BottomSheet } from '@/components/ui'
 import { useCategories } from '@/hooks/useMarketplace'
 
-export default function SearchBar({ value, onChange, onFilter, filters, onClearFilter }) {
+export default function SearchBar({ value, onChange, onFilter, filters, onClearFilter, sortBy, setSortBy }) {
   const [focused, setFocused] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const inputRef = useRef()
   const { groups } = useCategories()
 
-  const activeFiltersCount = [filters.category, filters.hasDelivery].filter(Boolean).length
+  const activeFiltersCount = [filters.category, filters.hasDelivery, filters.minPrice, filters.maxPrice].filter(Boolean).length
 
   return (
     <>
@@ -69,6 +69,12 @@ export default function SearchBar({ value, onChange, onFilter, filters, onClearF
           {filters.hasDelivery && (
             <FilterChip label="Avec livraison" icon={<Truck size={11}/>} onRemove={() => onClearFilter('hasDelivery')}/>
           )}
+          {filters.minPrice && (
+            <FilterChip label={`Min: ${Number(filters.minPrice).toLocaleString('fr-FR')} F`} onRemove={() => onClearFilter('minPrice')}/>
+          )}
+          {filters.maxPrice && (
+            <FilterChip label={`Max: ${Number(filters.maxPrice).toLocaleString('fr-FR')} F`} onRemove={() => onClearFilter('maxPrice')}/>
+          )}
         </div>
       )}
 
@@ -79,6 +85,8 @@ export default function SearchBar({ value, onChange, onFilter, filters, onClearF
         filters={filters}
         onFilter={(f) => { onFilter(f); setFilterOpen(false) }}
         groups={groups}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
       />
     </>
   )
@@ -96,7 +104,7 @@ function FilterChip({ label, icon, onRemove }) {
   )
 }
 
-function FilterSheet({ open, onClose, filters, onFilter, groups }) {
+function FilterSheet({ open, onClose, filters, onFilter, groups, sortBy, setSortBy }) {
   const [localFilters, setLocalFilters] = useState(filters)
   const [expandedGroup, setExpandedGroup] = useState(null)
 
@@ -105,7 +113,8 @@ function FilterSheet({ open, onClose, filters, onFilter, groups }) {
   const applyFilters = () => onFilter(localFilters)
 
   const resetFilters = () => {
-    const reset = { category: null, categoryName: null, hasDelivery: false }
+    const reset = { category: null, categoryName: null, hasDelivery: false, minPrice: null, maxPrice: null }
+    if (setSortBy) setSortBy('recent')
     setLocalFilters(reset)
     onFilter(reset)
   }
@@ -147,6 +156,70 @@ function FilterSheet({ open, onClose, filters, onFilter, groups }) {
               )}
             </div>
           </button>
+        </div>
+
+        {/* Tri */}
+        {setSortBy && (
+          <div>
+            <p className="text-sm font-bold text-dark-700 mb-2">Trier par</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'recent', label: '🕐 Plus récent' },
+                { key: 'likes', label: '❤️ Popularité' },
+                { key: 'rating', label: '⭐ Note' },
+                { key: 'followers', label: '👥 Abonnés' },
+              ].map(s => (
+                <button key={s.key} onClick={() => setSortBy(s.key)}
+                  className={clsx(
+                    'py-2.5 px-3 rounded-xl text-xs font-bold transition-all border-2',
+                    sortBy === s.key
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-surface-200 text-dark-700'
+                  )}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fourchette de prix */}
+        <div>
+          <p className="text-sm font-bold text-dark-700 mb-2">Fourchette de prix (FCFA)</p>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <input
+                type="number"
+                placeholder="Min"
+                value={localFilters.minPrice || ''}
+                onChange={e => setLocalFilters(p => ({ ...p, minPrice: e.target.value || null }))}
+                className="w-full px-3 py-2.5 bg-surface-50 border-2 border-surface-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
+              />
+            </div>
+            <span className="text-dark-400 text-sm self-center">—</span>
+            <div className="flex-1">
+              <input
+                type="number"
+                placeholder="Max"
+                value={localFilters.maxPrice || ''}
+                onChange={e => setLocalFilters(p => ({ ...p, maxPrice: e.target.value || null }))}
+                className="w-full px-3 py-2.5 bg-surface-50 border-2 border-surface-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {[500, 1000, 2000, 5000, 10000, 25000].map(p => (
+              <button key={p} onClick={() => setLocalFilters(prev => ({ ...prev, maxPrice: String(p) }))}
+                className={clsx(
+                  'px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all',
+                  String(localFilters.maxPrice) === String(p)
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-surface-50 text-dark-600 border-surface-200'
+                )}>
+                {'<'} {p.toLocaleString('fr-FR')}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Catégories */}

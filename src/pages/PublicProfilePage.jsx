@@ -356,7 +356,7 @@ export default function PublicProfilePage() {
       {/* ── 2. HERO COVER (Photo de Couverture Facebook Style) ── */}
       <div className="relative w-full h-48 md:h-64 bg-primary-950 overflow-hidden">
         <img
-          src={DEFAULT_COVER}
+          loading="lazy" src={DEFAULT_COVER}
           alt="Couverture"
           className="w-full h-full object-cover opacity-80"
         />
@@ -739,7 +739,7 @@ export default function PublicProfilePage() {
           </button>
           <div className="max-w-md w-full p-2 text-center" onClick={e => e.stopPropagation()}>
             <img
-              src={profile.avatar_url || '/logo-mang.png'}
+              loading="lazy" src={profile.avatar_url || '/logo-mang.png'}
               alt={profile.username}
               className="w-72 h-72 md:w-80 md:h-80 rounded-3xl object-cover mx-auto shadow-2xl ring-4 ring-white/20"
             />
@@ -780,7 +780,7 @@ function MiniPostCard({ post }) {
     >
       {post.image_url && (
         <div className="mb-3 rounded-2xl overflow-hidden bg-surface-100 max-h-64">
-          <img src={post.image_url} alt="post" className="w-full h-full object-cover" />
+          <img loading="lazy" src={post.image_url} alt="post" className="w-full h-full object-cover" />
         </div>
       )}
       {post.content && (
@@ -819,7 +819,7 @@ function MiniShopCard({ shop }) {
     >
       <div className="w-20 h-20 rounded-2xl overflow-hidden bg-primary-100 shrink-0 border border-surface-200/60 shadow-inner">
         {shop.cover_url ? (
-          <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
+          <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-3xl">🌾</div>
         )}

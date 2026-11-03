@@ -158,7 +158,7 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
           <button onClick={() => imgRef.current?.click()}
             className="w-full h-32 rounded-2xl overflow-hidden border-2 border-dashed border-surface-300 bg-surface-50 flex flex-col items-center justify-center active:scale-[0.98] transition-transform relative">
             {imagePreview
-              ? <img src={imagePreview} className="w-full h-full object-cover"/>
+              ? <img loading="lazy" src={imagePreview} className="w-full h-full object-cover"/>
               : <><Camera size={24} className="text-dark-600/30 mb-1.5"/><p className="text-dark-600/50 text-sm">Appuyer pour ajouter</p></>}
           </button>
           <input ref={imgRef} type="file" accept="image/*" onChange={handleImage} className="hidden"/>

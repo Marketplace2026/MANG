@@ -111,7 +111,7 @@ function StoryCard({ label, thumbnail, avatar, avatarName, unseen, onClick, show
           : 'ring-2 ring-surface-200 dark:ring-dark-700'
       )}>
         {thumbnail ? (
-          <img src={thumbnail} className="w-full h-full object-cover" alt={label} />
+          <img loading="lazy" src={thumbnail} className="w-full h-full object-cover" alt={label} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-surface-100 dark:bg-dark-800">
             <Avatar src={avatar} name={avatarName} size="lg" />
@@ -351,7 +351,7 @@ function StoryViewer({
         {/* Right Tap Zone */}
         <div onClick={handleNext} className="absolute right-0 top-0 bottom-0 w-1/2 z-10 cursor-pointer" />
 
-        <img src={story.media} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl" />
+        <img loading="lazy" src={story.media} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl" />
 
         {story.caption && (
           <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm p-4 rounded-2xl border border-white/10 text-white">
@@ -492,7 +492,7 @@ function StoryComposer({ previewUrl, caption, onCaptionChange, onCancel, onPubli
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4 min-h-0">
-        <img src={previewUrl} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+        <img loading="lazy" src={previewUrl} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
       </div>
 
       <div className="p-4 flex items-center gap-2 pb-6">
@@ -528,7 +528,7 @@ function Lightbox({ imageUrl, onClose }) {
         </button>
       </div>
       <div className="flex-1 flex items-center justify-center p-2">
-        <img src={imageUrl} className="max-w-full max-h-[80vh] object-contain rounded-xl select-none" onClick={e => e.stopPropagation()} />
+        <img loading="lazy" src={imageUrl} className="max-w-full max-h-[80vh] object-contain rounded-xl select-none" onClick={e => e.stopPropagation()} />
       </div>
       <div className="pb-8 text-center text-white/50 text-xs font-semibold">
         Cliquez n'importe où pour fermer
@@ -1427,7 +1427,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
         {/* Preview image */}
         {imagePreview && !isPollMode && (
           <div className="relative rounded-2xl overflow-hidden">
-            <img src={imagePreview} alt="preview" className="w-full max-h-48 object-cover rounded-2xl"/>
+            <img loading="lazy" src={imagePreview} alt="preview" className="w-full max-h-48 object-cover rounded-2xl"/>
             <button onClick={() => { setImageFile(null); setImagePreview(null) }}
               className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
               <X size={14} className="text-white"/>
@@ -1440,7 +1440,7 @@ function PostComposer({ open, onClose, user, profile, onPosted }) {
           <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-950/20 rounded-2xl border border-primary-100 dark:border-primary-900/50">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100 dark:bg-primary-900/40">
               {selectedShop.cover_url
-                ? <img src={getOptimizedImageUrl(selectedShop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover"/>
+                ? <img loading="lazy" src={getOptimizedImageUrl(selectedShop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover"/>
                 : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={20} /></div>
               }
             </div>
@@ -1583,7 +1583,7 @@ function ShopPicker({ open, onClose, onSelect }) {
                   className="w-full flex items-center gap-3 py-3 active:bg-surface-50 rounded-xl text-left">
                   <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100">
                     {shop.cover_url
-                      ? <img src={shop.cover_url} className="w-full h-full object-cover" alt={shop.name}/>
+                      ? <img loading="lazy" src={shop.cover_url} className="w-full h-full object-cover" alt={shop.name}/>
                       : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={20} /></div>
                     }
                   </div>
@@ -1898,7 +1898,7 @@ function PostCard({
               }}
               className="mt-1 max-w-full rounded-xl overflow-hidden cursor-zoom-in active:opacity-95 transition-opacity"
             >
-              <img src={getOptimizedImageUrl(post.parent_post.image_url, { width: 350, quality: 80 })} alt="quoted post media" className="max-h-48 object-cover rounded-xl" />
+              <img loading="lazy" src={getOptimizedImageUrl(post.parent_post.image_url, { width: 350, quality: 80 })} alt="quoted post media" className="max-h-48 object-cover rounded-xl" />
             </div>
           )}
         </div>
@@ -1910,7 +1910,7 @@ function PostCard({
           onClick={() => onImageClick(post.image_url)}
           className="mb-3 rounded-2xl overflow-hidden cursor-zoom-in active:opacity-95 transition-opacity"
         >
-          <img src={getOptimizedImageUrl(post.image_url, { width: 600, quality: 80 })} alt="post" className="w-full max-h-80 object-cover"/>
+          <img loading="lazy" src={getOptimizedImageUrl(post.image_url, { width: 600, quality: 80 })} alt="post" className="w-full max-h-80 object-cover"/>
         </div>
       )}
 
@@ -1920,7 +1920,7 @@ function PostCard({
           className="w-full mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950 dark:to-primary-900/50 rounded-2xl border border-primary-100 dark:border-primary-900 active:scale-[0.98] transition-transform text-left">
           <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-primary-200 dark:bg-primary-800">
             {post.shop.cover_url
-              ? <img src={getOptimizedImageUrl(post.shop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover" alt={post.shop.name}/>
+              ? <img loading="lazy" src={getOptimizedImageUrl(post.shop.cover_url, { width: 150, quality: 80 })} className="w-full h-full object-cover" alt={post.shop.name}/>
               : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
             }
           </div>
@@ -2637,7 +2637,7 @@ function RepostComposer({ open, onClose, postToQuote, user, profile, onPosted })
             {postToQuote.content?.startsWith('{"is_poll"') ? 'Sondage communauté' : postToQuote.content}
           </p>
           {postToQuote.image_url && (
-            <img src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />
+            <img loading="lazy" src={postToQuote.image_url} className="w-24 h-24 object-cover rounded-xl mt-1" />
           )}
         </div>
 

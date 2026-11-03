@@ -13,7 +13,7 @@ export default function ChatCommerceBanner({ product, shop, onClose }) {
       <div className="flex items-center gap-3 min-w-0">
         {product.images?.[0] || product.image_url ? (
           <img
-            src={product.images?.[0] || product.image_url}
+            loading="lazy" src={product.images?.[0] || product.image_url}
             alt={product.name}
             className="w-10 h-10 rounded-xl object-cover border border-white/20 flex-shrink-0"
           />

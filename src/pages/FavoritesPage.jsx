@@ -107,7 +107,7 @@ function ShopFavoriteCard({ item, onUnfollow, index }) {
       {/* Image */}
       <div className="relative aspect-square bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop?.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
+          ? <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Package size={24} className="text-dark-300" /></div>
         }
         {shop?.has_delivery && (
@@ -170,7 +170,7 @@ function ProductFavoriteCard({ item, onUnfavorite, index }) {
       {/* Image */}
       <div className="relative aspect-square bg-surface-100 overflow-hidden">
         {product?.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          ? <img loading="lazy" src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center"><Package size={28} className="text-dark-300" /></div>
         }
         {unavailable && (
@@ -748,7 +748,7 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
         >
           <div className="w-8 h-8 rounded-full overflow-hidden border border-surface-200 flex-shrink-0">
             {post.user?.avatar_url ? (
-              <img src={post.user.avatar_url} className="w-full h-full object-cover" />
+              <img loading="lazy" src={post.user.avatar_url} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs">
                 {post.user?.username?.[0].toUpperCase()}
@@ -778,7 +778,7 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
           </p>
         </div>
         {post.image_url && (
-          <img src={post.image_url} className="w-16 h-16 object-cover rounded-2xl flex-shrink-0 border border-surface-100" />
+          <img loading="lazy" src={post.image_url} className="w-16 h-16 object-cover rounded-2xl flex-shrink-0 border border-surface-100" />
         )}
       </div>
 

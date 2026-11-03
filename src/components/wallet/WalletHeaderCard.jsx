@@ -72,7 +72,7 @@ export default function WalletHeaderCard({ wallet, pieces, onOpenQR, onOpenEscro
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border-2 border-white/80 shadow-lg p-1.5 flex-shrink-0">
-            <img src="/logo-mang.png" alt="MANG" className="w-full h-full object-contain" />
+            <img loading="lazy" src="/logo-mang.png" alt="MANG" className="w-full h-full object-contain" />
           </div>
           <div>
             <h3 className="font-display font-black text-base tracking-wider text-amber-400">MANG PAY</h3>

@@ -269,7 +269,7 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center gap-4 px-8" onClick={e => e.stopPropagation()}>
             {profile.avatar_url ? (
               <img
-                src={profile.avatar_url}
+                loading="lazy" src={profile.avatar_url}
                 alt={profile.full_name || profile.username}
                 className="w-72 h-72 rounded-full object-cover shadow-2xl border-4 border-white/20"
                 style={{ maxWidth: '85vw', maxHeight: '85vw' }}
@@ -620,7 +620,7 @@ function AvatarUploader({ profile, onUpdated, onViewFull }) {
         >
           {displaySrc ? (
             <img
-              src={displaySrc}
+              loading="lazy" src={displaySrc}
               alt={displayName}
               className="w-20 h-20 rounded-full object-cover"
             />
@@ -686,7 +686,7 @@ function AvatarUploader({ profile, onUpdated, onViewFull }) {
               onTouchEnd={onTouchEnd}
             >
               <img
-                src={previewSrc}
+                loading="lazy" src={previewSrc}
                 alt="preview"
                 className="absolute w-full h-full object-cover pointer-events-none"
                 style={{

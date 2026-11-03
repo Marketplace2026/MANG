@@ -459,7 +459,7 @@ function ShopCard({ shop, premiumStatus, verifyRequest, onOpen, onEdit, onDelete
       {/* Cover */}
       <div className="relative h-28 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          ? <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={32} /></div>}
 
         {premiumLevel > 0 && (
@@ -652,7 +652,7 @@ function ProductItem({ product, isExcess, onDelete, onToggle }) {
     <div className="flex gap-3 p-3 bg-white rounded-2xl shadow-card">
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
         {product.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
+          ? <img loading="lazy" src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Package size={24} /></div>}
       </div>
       <div className="flex-1 min-w-0">
@@ -1148,7 +1148,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                 className={clsx('w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all',
                   req?.status === 'pending' ? 'border-yellow-200 bg-yellow-50 opacity-70' : 'border-gray-100 bg-white active:scale-[0.98]')}>
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-primary-100 flex-shrink-0">
-                  {s.cover_url ? <img src={s.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
+                  {s.cover_url ? <img loading="lazy" src={s.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-dark-800 text-sm truncate">{s.name}</p>
@@ -1175,7 +1175,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
           {/* Boutique */}
           <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100">
             <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-100 flex-shrink-0">
-              {shop.cover_url ? <img src={shop.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
+              {shop.cover_url ? <img loading="lazy" src={shop.cover_url} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-blue-800 text-sm truncate">{shop.name}</p>
@@ -1256,7 +1256,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                       onChange={e => handlePhoto(e, setIdPhoto, setIdPhotoPreview)}/>
                     {idPhotoPreview ? (
                       <div className="relative rounded-2xl overflow-hidden">
-                        <img src={idPhotoPreview} className="w-full h-36 object-cover rounded-2xl"/>
+                        <img loading="lazy" src={idPhotoPreview} className="w-full h-36 object-cover rounded-2xl"/>
                         <button onClick={() => { setIdPhoto(null); setIdPhotoPreview(null) }}
                           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
                           <X size={14} className="text-white"/>
@@ -1284,7 +1284,7 @@ function VerificationSheet({ open, onClose, shop, shops, user, profile, verifyRe
                       onChange={e => handlePhoto(e, setSelfiePhoto, setSelfiePreview)}/>
                     {selfiePreview ? (
                       <div className="relative rounded-2xl overflow-hidden">
-                        <img src={selfiePreview} className="w-full h-28 object-cover rounded-2xl"/>
+                        <img loading="lazy" src={selfiePreview} className="w-full h-28 object-cover rounded-2xl"/>
                         <button onClick={() => { setSelfiePhoto(null); setSelfiePreview(null) }}
                           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center">
                           <X size={14} className="text-white"/>
@@ -1624,7 +1624,7 @@ function ReceivedOrdersTab({ orders, loading, onRefresh }) {
               <div className="flex gap-3">
                 <div className="w-12 h-12 bg-surface-100 rounded-xl overflow-hidden flex-shrink-0">
                   {order.product?.image_url ? (
-                    <img src={order.product.image_url} className="w-full h-full object-cover" />
+                    <img loading="lazy" src={order.product.image_url} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>
                   )}

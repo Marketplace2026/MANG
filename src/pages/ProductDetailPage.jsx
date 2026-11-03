@@ -394,7 +394,7 @@ export default function ProductDetailPage() {
           style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
           {slides.map((src, idx) => (
             <div key={idx} className="w-full h-full flex-shrink-0 relative cursor-zoom-in" onClick={() => setZoomOpen(true)}>
-              <img src={src} className="w-full h-full object-cover" alt={`Slide ${idx + 1}`}/>
+              <img loading="lazy" src={src} className="w-full h-full object-cover" alt={`Slide ${idx + 1}`}/>
             </div>
           ))}
         </div>
@@ -640,7 +640,7 @@ export default function ProductDetailPage() {
                   className="w-36 bg-white rounded-2xl overflow-hidden shadow-card border border-surface-150 p-2.5 active:scale-[0.97] transition-all cursor-pointer flex-shrink-0 space-y-2">
                   <div className="w-full aspect-square bg-surface-50 rounded-xl overflow-hidden">
                     {sim.image_url ? (
-                      <img src={sim.image_url} className="w-full h-full object-cover"/>
+                      <img loading="lazy" src={sim.image_url} className="w-full h-full object-cover"/>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center"><Package size={22} className="text-dark-300" /></div>
                     )}
@@ -858,7 +858,7 @@ export default function ProductDetailPage() {
       {/* MODAL IMAGE ZOOM */}
       {zoomOpen && (
         <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setZoomOpen(false)}>
-          <img src={slides[activeSlide]} className="max-w-full max-h-[85vh] object-contain rounded-2xl" alt="Zoom"/>
+          <img loading="lazy" src={slides[activeSlide]} className="max-w-full max-h-[85vh] object-contain rounded-2xl" alt="Zoom"/>
           <button className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white" onClick={() => setZoomOpen(false)}></button>
         </div>
       )}

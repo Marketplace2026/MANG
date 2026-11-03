@@ -2264,7 +2264,7 @@ export default function AdminVerificationPage() {
 
                       {p.image_url && (
                         <div className="h-44 rounded-2xl overflow-hidden bg-surface-100 border border-surface-200">
-                          <img src={p.image_url} alt="Publication" className="w-full h-full object-cover" />
+                          <img loading="lazy" src={p.image_url} alt="Publication" className="w-full h-full object-cover" />
                         </div>
                       )}
 
@@ -2511,7 +2511,7 @@ export default function AdminVerificationPage() {
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <div className="w-9 h-9 rounded-lg bg-surface-100 overflow-hidden flex-shrink-0">
                             {prod.image_url ? (
-                              <img src={prod.image_url} alt="" className="w-full h-full object-cover" />
+                              <img loading="lazy" src={prod.image_url} alt="" className="w-full h-full object-cover" />
                             ) : null}
                           </div>
                           <div className="min-w-0">
@@ -2773,7 +2773,7 @@ export default function AdminVerificationPage() {
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-dark-600 pl-0.5">Pièce d'identité</p>
                   <a href={selectedRequest.id_photo_url} target="_blank" rel="noreferrer" className="block h-28 rounded-xl bg-surface-100 overflow-hidden border border-surface-200">
-                    <img src={selectedRequest.id_photo_url} className="w-full h-full object-cover" alt="ID" />
+                    <img loading="lazy" src={selectedRequest.id_photo_url} className="w-full h-full object-cover" alt="ID" />
                   </a>
                 </div>
               )}
@@ -2781,7 +2781,7 @@ export default function AdminVerificationPage() {
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-dark-600 pl-0.5">Selfie de vérification</p>
                   <a href={selectedRequest.selfie_url} target="_blank" rel="noreferrer" className="block h-28 rounded-xl bg-surface-100 overflow-hidden border border-surface-200">
-                    <img src={selectedRequest.selfie_url} className="w-full h-full object-cover" alt="Selfie" />
+                    <img loading="lazy" src={selectedRequest.selfie_url} className="w-full h-full object-cover" alt="Selfie" />
                   </a>
                 </div>
               )}

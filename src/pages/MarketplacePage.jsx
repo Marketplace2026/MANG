@@ -151,7 +151,7 @@ export default function MarketplacePage() {
   const [isListening, setIsListening] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
 
-  const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false })
+  const [filters, setFilters] = useState({ category: null, categoryName: null, hasDelivery: null, nearby: false, minPrice: null, maxPrice: null })
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [sortBy, setSortBy] = useState(() => new URLSearchParams(window.location.search).get('sortBy') || 'recent')
@@ -365,6 +365,23 @@ export default function MarketplacePage() {
         result.sort((a, b) => (Number(b.rating_avg) || 0) - (Number(a.rating_avg) || 0))
       } else if (sortBy === 'followers') {
         result.sort((a, b) => (Number(b.followers_count) || 0) - (Number(a.followers_count) || 0))
+      }
+
+      // Filtre par fourchette de prix (basé sur les prix produits de la boutique)
+      if (filters.minPrice || filters.maxPrice) {
+        const minP = filters.minPrice ? Number(filters.minPrice) : 0
+        const maxP = filters.maxPrice ? Number(filters.maxPrice) : Infinity
+        // On filtre les boutiques qui ont au moins un produit dans la fourchette
+        const { data: matchingShopIds } = await supabase
+          .from('products')
+          .select('shop_id')
+          .gte('price', minP)
+          .lte('price', maxP)
+          .eq('is_active', true)
+        if (matchingShopIds) {
+          const validIds = new Set(matchingShopIds.map(p => p.shop_id))
+          result = result.filter(s => validIds.has(s.id))
+        }
       }
 
       // Calculer systématiquement la distance pour toutes les boutiques si la position de l'utilisateur est connue
@@ -702,7 +719,7 @@ export default function MarketplacePage() {
   }
 
   const resetFilters = () => {
-    setFilters({ category: null, categoryName: null, hasDelivery: null, nearby: false })
+    setFilters({ category: null, categoryName: null, hasDelivery: null, nearby: false, minPrice: null, maxPrice: null })
     setSortBy('recent')
     setMinRating(null)
     setVerifiedOnly(false)
@@ -751,7 +768,7 @@ export default function MarketplacePage() {
         {/* LIGNE 1 : HEADER PRINCIPAL */}
         <div className="h-14 pl-0 pr-3 flex justify-between items-center">
           <div className="flex items-center gap-1 cursor-pointer h-full py-1" onClick={() => navigate('/marketplace')}>
-            <img src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
+            <img loading="lazy" src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
             <div className="flex flex-col leading-none">
               <span className="font-display font-black text-white text-[18px] tracking-wider leading-none">MANG</span>
               <span className="text-green-300 text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5">Marché Agricole</span>
@@ -773,7 +790,7 @@ export default function MarketplacePage() {
                 title="Mon profil"
               >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  <img loading="lazy" src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center text-dark-900 font-black text-xs">
                     {(profile?.username || 'M')[0].toUpperCase()}
@@ -1069,7 +1086,7 @@ export default function MarketplacePage() {
           >
             {/* Image de fond vibrante avec overlay subtil */}
             <img
-              src={BANNERS[activeBanner].image}
+              loading="lazy" src={BANNERS[activeBanner].image}
               alt={BANNERS[activeBanner].title}
               key={BANNERS[activeBanner].id}
               className="absolute inset-0 w-full h-full object-cover opacity-35 mix-blend-overlay group-hover:scale-105 transition-transform duration-700 ease-out"
@@ -1337,6 +1354,8 @@ export default function MarketplacePage() {
       <AdvancedFilterSheet
         open={advancedOpen}
         onClose={() => setAdvancedOpen(false)}
+        filters={filters}
+        setFilters={setFilters}
         sortBy={sortBy} setSortBy={setSortBy}
         minRating={minRating} setMinRating={setMinRating}
         verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
@@ -1861,7 +1880,7 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
       {/* Image */}
       <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-primary-100">
         {shop.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          ? <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Store size={24} /></div>
         }
       </div>
@@ -2054,7 +2073,7 @@ function ShopSkeleton() {
 // ============================================================
 // ADVANCED FILTER SHEET
 // ============================================================
-function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setMinRating, verifiedOnly, setVerifiedOnly, onReset }) {
+function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setMinRating, verifiedOnly, setVerifiedOnly, onReset, filters, setFilters }) {
   const SORT_OPTIONS = [
     { key: 'recent',    label: 'Plus récentes' },
     { key: 'rating',    label: '⭐ Meilleures notes' },
@@ -2097,6 +2116,43 @@ function AdvancedFilterSheet({ open, onClose, sortBy, setSortBy, minRating, setM
             ))}
           </div>
         </div>
+
+        {/* Fourchette de prix */}
+        {filters && setFilters && (
+          <div>
+            <p className="font-black text-dark-800 text-sm mb-3">Fourchette de prix (FCFA)</p>
+            <div className="flex gap-3 mb-2">
+              <input
+                type="number"
+                placeholder="Prix min"
+                value={filters.minPrice || ''}
+                onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value || null }))}
+                className="flex-1 px-3 py-2.5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
+              />
+              <span className="text-gray-400 self-center">—</span>
+              <input
+                type="number"
+                placeholder="Prix max"
+                value={filters.maxPrice || ''}
+                onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value || null }))}
+                className="flex-1 px-3 py-2.5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[500, 1000, 2000, 5000, 10000, 25000].map(p => (
+                <button key={p} onClick={() => setFilters(f => ({ ...f, maxPrice: String(p) }))}
+                  className={clsx(
+                    'px-2.5 py-1 rounded-xl text-[11px] font-bold border-2 transition-all',
+                    String(filters.maxPrice) === String(p)
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-dark-600 border-gray-100'
+                  )}>
+                  {'<'} {p.toLocaleString('fr-FR')} F
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Options */}
         <div>

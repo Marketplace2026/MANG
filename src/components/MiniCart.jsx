@@ -51,7 +51,7 @@ export default function MiniCart() {
             items.map(item => (
               <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface-50 border border-surface-150">
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
+                  <img loading="lazy" src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
                 ) : (
                   <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0"></div>
                 )}

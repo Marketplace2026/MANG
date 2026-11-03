@@ -72,7 +72,7 @@ export default function QRCodeModal({ open, onClose, user, wallet, onScanResult 
 
               {/* QR Code Container */}
               <div className="w-56 h-56 mx-auto p-4 bg-white rounded-3xl border-2 border-emerald-500 shadow-xl flex items-center justify-center relative">
-                <img src={qrDataUrl} alt="QR Code MANG" className="w-full h-full object-contain" />
+                <img loading="lazy" src={qrDataUrl} alt="QR Code MANG" className="w-full h-full object-contain" />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-10 h-10 rounded-xl bg-mang-header text-white font-black text-sm flex items-center justify-center shadow-lg border-2 border-white">
                     

@@ -70,7 +70,7 @@ function Avatar({ src, name, size = 'md', online = false }) {
   return (
     <div className="relative flex-shrink-0">
       <div className={clsx('rounded-2xl overflow-hidden bg-primary-100 flex items-center justify-center font-bold text-primary-700', sizes[size])}>
-        {src ? <img src={src} alt={name} className="w-full h-full object-cover"/> : initials}
+        {src ? <img loading="lazy" src={src} alt={name} className="w-full h-full object-cover"/> : initials}
       </div>
       {online && <span className={clsx('absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-400 border-2 border-white', dotSizes[size])}/>}
     </div>
@@ -87,7 +87,7 @@ function ImageViewer({ url, onClose }) {
       <button className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
         <X size={20} className="text-white"/>
       </button>
-      <img src={url} alt="" className="max-w-full max-h-full object-contain"/>
+      <img loading="lazy" src={url} alt="" className="max-w-full max-h-full object-contain"/>
     </div>
   )
 }
@@ -298,7 +298,7 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
           {/* Image */}
           {msg.type === 'image' && (
             <div className="relative">
-              <img src={msg.file_url} alt="Image" className="max-w-[240px] max-h-[300px] object-cover block"
+              <img loading="lazy" src={msg.file_url} alt="Image" className="max-w-[240px] max-h-[300px] object-cover block"
                 onClick={() => onZoom && onZoom(msg.file_url)}/>
               <button onClick={() => onZoom && onZoom(msg.file_url)}
                 className="absolute top-2 right-2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center">
@@ -1179,7 +1179,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         {contextProduct && (
           <div className="mb-2 flex items-center gap-3 bg-emerald-50/70 border border-emerald-100/50 rounded-2xl p-2 animate-scale-in">
             {contextProduct.image_url && (
-              <img src={contextProduct.image_url} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+              <img loading="lazy" src={contextProduct.image_url} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-dark-800 text-xs font-black truncate">{contextProduct.name}</p>
@@ -1404,7 +1404,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 <p className="text-xs font-bold text-dark-400 uppercase mb-3">Médias partagés</p>
                 <div className="grid grid-cols-3 gap-1">
                   {messages.filter(m => m.type === 'image').slice(0, 6).map(m => (
-                    <img key={m.id} src={m.file_url} alt="" className="w-full aspect-square object-cover rounded-xl cursor-pointer active:scale-95"
+                    <img loading="lazy" key={m.id} src={m.file_url} alt="" className="w-full aspect-square object-cover rounded-xl cursor-pointer active:scale-95"
                       onClick={() => { setZoomImg(m.file_url); setShowInfo(false) }}/>
                   ))}
                   {messages.filter(m => m.type === 'image').length === 0 && (

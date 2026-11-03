@@ -837,7 +837,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
       <div className="flex gap-3 p-3.5">
         <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
           {order.product?.image_url
-            ? <img src={order.product.image_url} className="w-full h-full object-cover"/>
+            ? <img loading="lazy" src={order.product.image_url} className="w-full h-full object-cover"/>
             : <div className="w-full h-full flex items-center justify-center text-2xl opacity-30"><Package size={22} className="text-gray-300" /></div>}
         </div>
         <div className="flex-1 min-w-0">
@@ -899,7 +899,7 @@ function OrderDetailSheet({
         <div className="flex gap-3 items-center p-3 bg-surface-50 rounded-2xl">
           <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
             {order.product?.image_url
-              ? <img src={order.product.image_url} className="w-full h-full object-cover"/>
+              ? <img loading="lazy" src={order.product.image_url} className="w-full h-full object-cover"/>
               : <div className="w-full h-full flex items-center justify-center text-primary-600/30 bg-primary-50"><Package size={24} /></div>}
           </div>
           <div className="flex-1 min-w-0">

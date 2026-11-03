@@ -228,7 +228,7 @@ export default function ShopPublicPage() {
         <div className="relative w-full h-44 overflow-hidden bg-gradient-to-br from-primary-700 to-primary-900"
           onClick={() => shop.cover_url && setZoomImage(shop.cover_url)}>
           {shop.cover_url && (
-            <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+            <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30"/>
 
@@ -267,7 +267,7 @@ export default function ShopPublicPage() {
             >
               <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-gray-100 group-hover:ring-emerald-400 transition-all">
                 {shop.owner?.avatar_url
-                  ? <img src={shop.owner.avatar_url} className="w-full h-full object-cover"/>
+                  ? <img loading="lazy" src={shop.owner.avatar_url} className="w-full h-full object-cover"/>
                   : <div className="w-full h-full flex items-center justify-center font-black text-2xl text-white"
                       style={{ background: `hsl(${(shop.name?.charCodeAt(0) || 0) * 137 % 360}, 60%, 45%)` }}>
                       {(shop.owner?.username || shop.name || '?')[0].toUpperCase()}
@@ -856,7 +856,7 @@ export default function ShopPublicPage() {
           <button className="absolute top-12 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
             <X size={20} className="text-white"/>
           </button>
-          <img src={zoomImage} alt="" className="max-w-[95vw] max-h-[95vh] rounded-2xl object-contain"/>
+          <img loading="lazy" src={zoomImage} alt="" className="max-w-[95vw] max-h-[95vh] rounded-2xl object-contain"/>
         </div>
       )}
 
@@ -1282,7 +1282,7 @@ function OrderModal({ open, product, shop, user, onClose }) {
     <Modal open={open} onClose={onClose} title="Passer commande">
       <div className="p-5 space-y-4">
         <div className="flex gap-3 p-3 bg-gray-50 rounded-2xl">
-          {product.image_url && <img src={product.image_url} className="w-14 h-14 rounded-xl object-cover flex-shrink-0"/>}
+          {product.image_url && <img loading="lazy" src={product.image_url} className="w-14 h-14 rounded-xl object-cover flex-shrink-0"/>}
           <div>
             <p className="font-bold text-dark-800 text-sm">{product.name}</p>
             <p className="font-black text-primary-700 text-base">{product.price?.toLocaleString('fr-FR')} FCFA</p>

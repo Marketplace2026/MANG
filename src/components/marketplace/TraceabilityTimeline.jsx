@@ -123,7 +123,7 @@ export default function TraceabilityTimeline({ productId }) {
               {step.media_url && (
                 <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
                   <img 
-                    src={step.media_url} 
+                    loading="lazy" src={step.media_url} 
                     alt={STEP_LABELS[step.step_type]} 
                     className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
                   />

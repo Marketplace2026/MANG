@@ -125,7 +125,7 @@ export default function PWAInstallBanner() {
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="relative flex-shrink-0">
               <img
-                src="/logo-mang.png"
+                loading="lazy" src="/logo-mang.png"
                 alt="MANG"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-0.5 shadow-md object-contain border border-gold-400"
               />
@@ -188,7 +188,7 @@ export default function PWAInstallBanner() {
             {/* En-tête */}
             <div className="flex items-center gap-3 mb-4">
               <img
-                src="/logo-mang.png"
+                loading="lazy" src="/logo-mang.png"
                 alt="Logo MANG"
                 className="w-12 h-12 rounded-2xl bg-primary-50 p-1.5 border border-primary-200 object-contain shadow-sm"
               />

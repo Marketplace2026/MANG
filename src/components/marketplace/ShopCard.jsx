@@ -63,7 +63,7 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
       {/* Cover */}
       <div className="relative h-32 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url ? (
-          <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-5xl opacity-30">
@@ -227,7 +227,7 @@ export function TopShopCard({ shop, rank }) {
     >
       <div className="relative h-24 bg-gradient-to-br from-primary-100 to-primary-200">
         {shop.cover_url
-          ? <img src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
+          ? <img loading="lazy" src={shop.cover_url} alt={shop.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-3xl opacity-30">{shop.category?.icon || '🌿'}</div>
         }
         {/* Rang */}
@@ -292,7 +292,7 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
       {/* Image */}
       <div className="relative h-40 bg-gradient-to-br from-surface-100 to-surface-200">
         {product.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
+          ? <img loading="lazy" src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
           : <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">📦</div>
         }
         {/* Badge Certification Bio */}

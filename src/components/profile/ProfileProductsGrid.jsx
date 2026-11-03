@@ -64,7 +64,7 @@ export default function ProfileProductsGrid({ products = [], shop, profile }) {
               {/* Image Produit */}
               <div className="relative aspect-square bg-surface-100 dark:bg-dark-800 overflow-hidden">
                 <img
-                  src={image}
+                  loading="lazy" src={image}
                   alt={prod.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />

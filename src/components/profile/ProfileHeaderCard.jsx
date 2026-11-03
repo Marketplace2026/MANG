@@ -112,7 +112,7 @@ export default function ProfileHeaderCard({
       {/* 1. COVER BANNER (Hauteur optimisée mobile 140px) */}
       <div className="relative h-36 sm:h-44 bg-gradient-to-r from-emerald-900 via-primary-900 to-dark-900 overflow-hidden">
         {shop?.cover_url ? (
-          <img src={shop.cover_url} alt={profile.username} className="w-full h-full object-cover" />
+          <img loading="lazy" src={shop.cover_url} alt={profile.username} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
         )}

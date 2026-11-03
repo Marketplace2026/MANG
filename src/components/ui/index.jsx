@@ -46,7 +46,7 @@ export function Avatar({ src, name, size = 'md', online = false, className = '' 
   return (
     <div className={clsx('relative flex-shrink-0', className)}>
       <img
-        src={finalSrc}
+        loading="lazy" src={finalSrc}
         alt={name || 'Avatar'}
         className={clsx(sizes[size], 'rounded-2xl object-cover bg-surface-100')}
         onError={(e) => {

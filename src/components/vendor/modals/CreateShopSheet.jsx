@@ -217,7 +217,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
           <button onClick={() => coverRef.current?.click()}
             className="w-full h-36 rounded-2xl overflow-hidden border-2 border-dashed border-surface-300 bg-surface-50 flex flex-col items-center justify-center active:scale-[0.98] transition-transform relative">
             {coverPreview ? (
-              <img src={coverPreview} className="w-full h-full object-cover"/>
+              <img loading="lazy" src={coverPreview} className="w-full h-full object-cover"/>
             ) : (
               <>
                 <Camera size={28} className="text-dark-600/30 mb-2"/>
