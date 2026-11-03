@@ -1467,8 +1467,8 @@ function ConvItem({ conv, userId, onClick }) {
   return (
     <button onClick={onClick}
       className={clsx(
-        'w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left border-b border-surface-100/60',
-        hasUnread ? 'bg-white active:bg-surface-50' : 'bg-white/60 active:bg-surface-50'
+        'w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left border-b border-surface-100/60 dark:border-dark-700/60',
+        hasUnread ? 'bg-white dark:bg-dark-800 active:bg-surface-50 dark:active:bg-dark-700' : 'bg-white/60 dark:bg-dark-900 active:bg-surface-50 dark:active:bg-dark-700'
       )}>
       <div className="relative flex-shrink-0">
         <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
@@ -1483,7 +1483,7 @@ function ConvItem({ conv, userId, onClick }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900' : 'font-bold text-dark-700')}>
+          <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900 dark:text-white' : 'font-bold text-dark-700 dark:text-gray-200')}>
             @{other?.username || conv.shop?.name || 'Utilisateur'}
           </p>
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
@@ -1508,7 +1508,7 @@ function ConvItem({ conv, userId, onClick }) {
         )}
 
         <p className={clsx('text-xs truncate transition-all',
-          isTyping ? 'text-emerald-600 font-bold' : hasUnread ? 'text-dark-800 font-bold' : 'text-dark-400 font-normal')}>
+          isTyping ? 'text-emerald-600 font-bold' : hasUnread ? 'text-dark-800 dark:text-gray-100 font-bold' : 'text-dark-400 dark:text-gray-400 font-normal')}>
           {isTyping ? '... écrit' : (conv.last_message || 'Démarrer la conversation...')}
         </p>
       </div>
@@ -1683,12 +1683,12 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-100 flex justify-center items-stretch py-0 md:py-6 md:px-4">
-      <div className="w-full max-w-6xl bg-white md:rounded-3xl md:shadow-card overflow-hidden flex">
+    <div className="min-h-screen bg-surface-100 dark:bg-dark-950 flex justify-center items-stretch py-0 md:py-6 md:px-4 text-dark-800 dark:text-gray-100 transition-colors duration-200">
+      <div className="w-full max-w-6xl bg-white dark:bg-dark-900 md:rounded-3xl md:shadow-card overflow-hidden flex border border-transparent dark:border-dark-700/60">
         
         {/* Partie Gauche : Liste des Conversations */}
         <div className={clsx(
-          "w-full md:w-[360px] lg:w-[400px] flex flex-col border-r border-surface-100 flex-shrink-0",
+          "w-full md:w-[360px] lg:w-[400px] flex flex-col border-r border-surface-100 dark:border-dark-700/60 flex-shrink-0 bg-white dark:bg-dark-900",
           active ? "hidden md:flex" : "flex"
         )}>
           {/* Header Compact */}

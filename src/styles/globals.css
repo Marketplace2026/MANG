@@ -19,8 +19,8 @@ body {
 }
 html.dark body,
 body.dark {
-  background-color: #0a1628;
-  color: #f3f4f6;
+  background-color: #18191a;
+  color: #e4e6eb;
 }
 .fixed.top-0:not(.pwa-install-top-banner) {
   top: var(--pwa-banner-offset, 0px) !important;
@@ -275,4 +275,120 @@ body.dark {
 /* Zoom image produit au hover */
 .product-img-hover:hover img {
   transform: scale(1.08);
+}
+
+/* ============================================================
+   FACEBOOK DARK MODE THEME SYSTEM (Style immersif & contrasté)
+   ============================================================ */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark #root {
+  background-color: #18191a !important;
+  color: #e4e6eb;
+}
+
+/* 1. Arrière-plans des pages et conteneurs */
+html.dark .bg-surface-50,
+html.dark .bg-gray-50,
+html.dark .bg-surface-0 {
+  background-color: #18191a !important;
+}
+
+/* 2. Cartes, blocs de liste, sections de menus (Facebook style: #242526) */
+html.dark .bg-white:not(.btn-primary):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-yellow"]):not([class*="bg-blue"]) {
+  background-color: #242526 !important;
+}
+
+/* 3. Éléments secondaires / Badges légers / Boutons gris (#3a3b3c) */
+html.dark .bg-surface-100,
+html.dark .bg-gray-100,
+html.dark .bg-surface-200,
+html.dark .bg-gray-200 {
+  background-color: #3a3b3c !important;
+  color: #e4e6eb !important;
+}
+
+/* 4. Textes principaux en blanc net (#ffffff ou #e4e6eb) */
+html.dark .text-dark-900,
+html.dark .text-dark-800,
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #ffffff !important;
+}
+
+/* 5. Textes secondaires clairs et très lisibles (#b0b3b8) */
+html.dark .text-dark-700,
+html.dark .text-dark-600,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #b0b3b8 !important;
+}
+
+/* 6. Textes tertiaires / dates / mentions (#9da0a5) */
+html.dark .text-dark-500,
+html.dark .text-dark-400,
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #9da0a5 !important;
+}
+
+/* 7. Bordures et séparateurs (#3a3b3c) */
+html.dark .border-gray-50,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-surface-50,
+html.dark .border-surface-100,
+html.dark .border-surface-200 {
+  border-color: #3a3b3c !important;
+}
+
+html.dark .divide-surface-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-surface-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #3a3b3c !important;
+}
+
+/* 8. Inputs, Searchbars & Textareas */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark textarea,
+html.dark select {
+  background-color: #3a3b3c !important;
+  color: #ffffff !important;
+  border-color: #4e4f50 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #b0b3b8 !important;
+}
+
+/* 9. Bottom sheets & Dialogs modaux */
+html.dark [role="dialog"],
+html.dark .rounded-t-3xl.bg-white,
+html.dark .shadow-modal {
+  background-color: #242526 !important;
+  border-color: #3a3b3c !important;
+}
+
+/* 10. Header MANG & Navigation */
+html.dark .bg-mang-header,
+html.dark .bg-mang-gradient {
+  background: linear-gradient(135deg, #0b1a10 0%, #0e2417 40%, #0c1f13 100%) !important;
+  border-bottom: 1px solid #242526 !important;
+}
+
+html.dark nav.fixed.bottom-0 {
+  background-color: rgba(24, 25, 26, 0.95) !important;
+  border-top-color: #3a3b3c !important;
 }

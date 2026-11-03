@@ -77,10 +77,14 @@ export default {
           300: '#d1d5db',
         },
         dark: {
-          900: '#0a1628',
-          800: '#111827',
-          700: '#1f2937',
-          600: '#374151',
+          950: '#121212',
+          900: '#18191a', // Arrière-plan principal Facebook Dark
+          800: '#242526', // Cartes et blocs Facebook Dark
+          700: '#3a3b3c', // Boutons secondaires, bordures, inputs Facebook
+          600: '#4e4f50', // Séparateurs et icônes
+          500: '#b0b3b8', // Texte secondaire Facebook (gris clair lisible)
+          100: '#e4e6eb', // Texte principal Facebook (quasi-blanc)
+          50:  '#ffffff', // Titres et blanc pur
         }
       },
       fontFamily: {

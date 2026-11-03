@@ -250,7 +250,7 @@ export default function NotificationsPage() {
                 'flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all border',
                 filter === t.key
                   ? 'border-primary-600 bg-primary-600 text-white shadow-green'
-                  : 'border-surface-200 bg-white text-dark-600'
+                  : 'border-surface-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-600 dark:text-gray-300'
               )}>
               {t.label}
               {t.key === 'unread' && unreadCount > 0 && (
@@ -326,8 +326,8 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
     <div
       onClick={onClick}
       className={clsx(
-        'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors active:bg-surface-50',
-        !safeNotif.is_read && 'bg-primary-50/50'
+        'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors active:bg-surface-50 dark:active:bg-dark-700/50',
+        !safeNotif.is_read ? 'bg-primary-50/50 dark:bg-emerald-950/20' : 'bg-white dark:bg-dark-800'
       )}
     >
       {/* Icône */}
@@ -345,7 +345,7 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
       {/* Contenu */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className={clsx('text-sm leading-tight', safeNotif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 dark:text-gray-100 font-bold')}>
+          <p className={clsx('text-sm leading-tight', safeNotif.is_read ? 'text-dark-700 dark:text-gray-300 font-medium' : 'text-dark-900 dark:text-white font-bold')}>
             {safeNotif.title}
           </p>
           {/* Point non lu */}
@@ -354,11 +354,11 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
           )}
         </div>
         {safeNotif.body && (
-          <p className="text-dark-600/60 text-xs mt-0.5 line-clamp-2">
+          <p className="text-dark-600/70 dark:text-gray-400 text-xs mt-0.5 line-clamp-2">
             {safeNotif.body}
           </p>
         )}
-        <p className="text-dark-600/40 text-[10px] mt-1">
+        <p className="text-dark-600/50 dark:text-gray-500 text-[10px] mt-1">
           {formatDistanceToNow(new Date(safeNotif.created_at), { addSuffix: true, locale: fr })}
         </p>
       </div>
@@ -368,13 +368,13 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
         <button
           onClick={onDelete}
           disabled={isDeleting}
-          className="w-7 h-7 rounded-xl bg-surface-100 dark:bg-dark-800 flex items-center justify-center active:scale-90 transition-transform"
+          className="w-7 h-7 rounded-xl bg-surface-100 dark:bg-dark-700 flex items-center justify-center active:scale-90 transition-transform"
         >
           {isDeleting
             ? <div className="w-3 h-3 border-2 border-dark-300 border-t-dark-600 rounded-full animate-spin"/>
-            : <X size={13} className="text-dark-600/50"/>}
+            : <X size={13} className="text-dark-600/60 dark:text-gray-300"/>}
         </button>
-        <ChevronRight size={15} className="text-dark-600/30"/>
+        <ChevronRight size={15} className="text-dark-600/30 dark:text-gray-600"/>
       </div>
     </div>
   )
