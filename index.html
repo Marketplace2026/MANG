@@ -27,6 +27,19 @@
     <title>MANG — Marché Agricole Nouvelle Génération</title>
 
     <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('mang-theme');
+          if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
+
+    <script>
       // Détection précoce des erreurs de chunk et de cache corrompu
       window.addEventListener('error', function(e) {
         var msg = (e && e.message) || '';

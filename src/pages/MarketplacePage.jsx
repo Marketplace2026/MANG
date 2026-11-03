@@ -762,7 +762,7 @@ export default function MarketplacePage() {
   ].filter(Boolean).length
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
       {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 z-30 shadow-xl max-w-[480px] mx-auto" style={{background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)'}}>
         {/* LIGNE 1 : HEADER PRINCIPAL */}
@@ -874,7 +874,7 @@ export default function MarketplacePage() {
 
         {(showSearchBar || search) && (
         <div className="px-3 pb-2 relative animate-fadeIn">
-          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 h-12 shadow-sm border-2 border-white/0 focus-within:border-gold-400 transition-all">
+          <div className="flex items-center gap-2 bg-white dark:bg-dark-800 rounded-2xl px-3 h-12 shadow-sm border border-transparent dark:border-dark-700 transition-colors duration-200 border-2 border-white/0 focus-within:border-gold-400 transition-all">
             <Search size={16} className="text-dark-600/40 flex-shrink-0" />
             <div className="flex-1 relative">
               <input
@@ -939,7 +939,7 @@ export default function MarketplacePage() {
           {/* Dropdown de suggestions et historique */}
           {showSuggestions && (
             <div 
-              className="absolute left-3 right-3 top-full mt-1 bg-white rounded-2xl shadow-modal z-50 overflow-hidden border border-surface-200 max-h-[300px] overflow-y-auto"
+              className="absolute left-3 right-3 top-full mt-1 bg-white dark:bg-dark-800 rounded-2xl shadow-modal border border-surface-200 dark:border-dark-700 z-50 overflow-hidden border border-surface-200 max-h-[300px] overflow-y-auto"
               onMouseDown={e => e.preventDefault()}
             >
               {!search.trim() ? (

@@ -195,7 +195,7 @@ export default function NotificationsPage() {
   const groups = groupByDate(filtered)
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 dark:text-gray-100 transition-colors duration-200">
       {/* HEADER COMPACT */}
       <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
 
@@ -276,7 +276,7 @@ export default function NotificationsPage() {
                 <p className="text-xs font-bold text-dark-600/40 uppercase tracking-wider mb-2 px-1">
                   {group.label}
                 </p>
-                <div className="bg-white rounded-3xl shadow-card overflow-hidden divide-y divide-surface-100">
+                <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card overflow-hidden divide-y divide-surface-100 dark:divide-dark-700/60 border border-transparent dark:border-dark-700/60 transition-colors duration-200">
                   {group.items.map(notif => (
                     <NotifItem
                       key={notif.id}
@@ -320,7 +320,7 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
     reference_id: notif?.reference_id,
   }
 
-  const cfg = NOTIF_CONFIG[safeNotif.type] || { icon: Bell, color: 'bg-surface-100 text-dark-600' }
+  const cfg = NOTIF_CONFIG[safeNotif.type] || { icon: Bell, color: 'bg-surface-100 dark:bg-dark-800 text-dark-600' }
 
   return (
     <div
@@ -345,7 +345,7 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
       {/* Contenu */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className={clsx('text-sm leading-tight', safeNotif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 font-bold')}>
+          <p className={clsx('text-sm leading-tight', safeNotif.is_read ? 'text-dark-700 font-medium' : 'text-dark-800 dark:text-gray-100 font-bold')}>
             {safeNotif.title}
           </p>
           {/* Point non lu */}
@@ -368,7 +368,7 @@ function NotifItem({ notif, onClick, onDelete, isDeleting }) {
         <button
           onClick={onDelete}
           disabled={isDeleting}
-          className="w-7 h-7 rounded-xl bg-surface-100 flex items-center justify-center active:scale-90 transition-transform"
+          className="w-7 h-7 rounded-xl bg-surface-100 dark:bg-dark-800 flex items-center justify-center active:scale-90 transition-transform"
         >
           {isDeleting
             ? <div className="w-3 h-3 border-2 border-dark-300 border-t-dark-600 rounded-full animate-spin"/>
@@ -395,11 +395,11 @@ function EmptyNotifications({ filter }) {
   const { icon: EmptyIcon, title, sub } = config[filter] || config.all
 
   return (
-    <div className="text-center py-16 bg-white rounded-3xl shadow-card px-6">
+    <div className="text-center py-16 bg-white dark:bg-dark-800 rounded-3xl shadow-card px-6 border border-transparent dark:border-dark-700/60 transition-colors duration-200">
       <div className="w-16 h-16 rounded-3xl bg-primary-50 flex items-center justify-center mx-auto mb-3 text-primary-600">
         <EmptyIcon size={32} />
       </div>
-      <p className="font-display text-lg font-bold text-dark-800">{title}</p>
+      <p className="font-display text-lg font-bold text-dark-800 dark:text-gray-100">{title}</p>
       <p className="text-dark-600/50 text-sm mt-2">{sub}</p>
     </div>
   )

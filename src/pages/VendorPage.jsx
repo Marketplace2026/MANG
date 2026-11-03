@@ -455,7 +455,7 @@ function ShopCard({ shop, premiumStatus, verifyRequest, onOpen, onEdit, onDelete
   const premiumBorder = { 3:'border-gold-400/50', 2:'border-slate-400/40', 1:'border-amber-700/40' }[premiumLevel] || 'border-surface-200'
 
   return (
-    <div className={clsx('bg-white rounded-3xl shadow-card overflow-hidden border-2', premiumBorder)}>
+    <div className={clsx('bg-white dark:bg-dark-800 rounded-3xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200 overflow-hidden border-2', premiumBorder)}>
       {/* Cover */}
       <div className="relative h-28 bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
         {shop.cover_url
@@ -649,7 +649,7 @@ function ProductItem({ product, isExcess, onDelete, onToggle }) {
     now:'Dispo','1w':'1 sem','2w':'2 sem','1m':'1 mois','2m':'2 mois','3m':'3 mois','6m':'6 mois','1y':'1 an'
   }
   return (
-    <div className="flex gap-3 p-3 bg-white rounded-2xl shadow-card">
+    <div className="flex gap-3 p-3 bg-white dark:bg-dark-800 rounded-2xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200">
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
         {product.image_url
           ? <img loading="lazy" src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
@@ -963,7 +963,7 @@ function EmptyShops({ onCreate }) {
 
 function ShopCardSkeleton() {
   return (
-    <div className="bg-white rounded-3xl shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200 overflow-hidden">
       <div className="h-28 skeleton"/>
       <div className="p-3.5 space-y-3">
         <div className="grid grid-cols-3 gap-2">

@@ -34,7 +34,7 @@ const SORT_PRODUCTS = [
 // ── Skeleton card ──────────────────────────────────────────
 function SkeletonShopCard() {
   return (
-    <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden animate-pulse">
+    <div className="bg-white rounded-2xl border border-surface-100 dark:border-dark-700/60 overflow-hidden animate-pulse">
       <div className="aspect-square bg-surface-100" />
       <div className="p-2.5 space-y-2">
         <div className="h-3 bg-surface-100 rounded-full w-3/4" />
@@ -47,7 +47,7 @@ function SkeletonShopCard() {
 
 function SkeletonProductCard() {
   return (
-    <div className="bg-white rounded-2xl border border-surface-100 overflow-hidden animate-pulse">
+    <div className="bg-white rounded-2xl border border-surface-100 dark:border-dark-700/60 overflow-hidden animate-pulse">
       <div className="aspect-square bg-surface-100" />
       <div className="p-2.5 space-y-2">
         <div className="h-3 bg-surface-100 rounded-full w-3/4" />
@@ -96,7 +96,7 @@ function ShopFavoriteCard({ item, onUnfollow, index }) {
   return (
     <div
       className={clsx(
-        'bg-white rounded-2xl border border-surface-100 overflow-hidden transition-all duration-300 flex flex-col',
+        'bg-white rounded-2xl border border-surface-100 dark:border-dark-700/60 overflow-hidden transition-all duration-300 flex flex-col',
         removing
           ? 'opacity-0 scale-95 pointer-events-none'
           : 'opacity-100 scale-100 active:scale-[0.97]'
@@ -159,7 +159,7 @@ function ProductFavoriteCard({ item, onUnfavorite, index }) {
     <div
       className={clsx(
         'bg-white rounded-2xl border overflow-hidden transition-all duration-300 flex flex-col',
-        unavailable ? 'border-surface-200 opacity-75' : 'border-surface-100',
+        unavailable ? 'border-surface-200 opacity-75' : 'border-surface-100 dark:border-dark-700/60',
         removing
           ? 'opacity-0 scale-95 pointer-events-none'
           : 'opacity-100 scale-100 active:scale-[0.97]'
@@ -295,7 +295,7 @@ function SortDropdown({ tab, sort, setSort }) {
         {current.label}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 bg-white border border-surface-100 rounded-2xl shadow-xl shadow-dark-900/10 overflow-hidden z-30 min-w-[130px]"
+        <div className="absolute right-0 top-full mt-1.5 bg-white border border-surface-100 dark:border-dark-700/60 rounded-2xl shadow-xl shadow-dark-900/10 overflow-hidden z-30 min-w-[130px]"
           style={{ animation: 'scaleIn 0.15s cubic-bezier(0.22,1,0.36,1) both' }}>
           {options.map(o => (
             <button
@@ -303,7 +303,7 @@ function SortDropdown({ tab, sort, setSort }) {
               onClick={() => { setSort(o.key); setOpen(false) }}
               className={clsx(
                 'w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold transition-colors text-left',
-                sort === o.key ? 'text-primary-600 bg-primary-50' : 'text-dark-600 hover:bg-surface-50'
+                sort === o.key ? 'text-primary-600 bg-primary-50' : 'text-dark-600 hover:bg-surface-50 dark:bg-dark-900'
               )}
             >
               {o.label}
@@ -576,7 +576,7 @@ export default function FavoritesPage() {
       `}</style>
 
       <div
-        className="min-h-screen bg-surface-50 pb-28"
+        className="min-h-screen bg-surface-50 dark:bg-dark-900 pb-28"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -664,7 +664,7 @@ export default function FavoritesPage() {
                 ? [1, 2, 3, 4].map(i => <SkeletonShopCard key={i} />)
                 : tab === 'products'
                 ? [1, 2, 3, 4].map(i => <SkeletonProductCard key={i} />)
-                : [1, 2, 3].map(i => <div key={i} className="col-span-2 h-24 bg-white border border-surface-100 rounded-2xl animate-pulse" />)
+                : [1, 2, 3].map(i => <div key={i} className="col-span-2 h-24 bg-white border border-surface-100 dark:border-dark-700/60 rounded-2xl animate-pulse" />)
               }
             </div>
           ) : hasError ? (
@@ -729,7 +729,7 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
   return (
     <div
       className={clsx(
-        'bg-white rounded-3xl border border-surface-100 p-4.5 transition-all duration-300 flex flex-col gap-3 active:scale-[0.98] cursor-pointer col-span-2 shadow-sm',
+        'bg-white rounded-3xl border border-surface-100 dark:border-dark-700/60 p-4.5 transition-all duration-300 flex flex-col gap-3 active:scale-[0.98] cursor-pointer col-span-2 shadow-sm',
         removing
           ? 'opacity-0 scale-95 pointer-events-none'
           : 'opacity-100 scale-100'
@@ -778,11 +778,11 @@ function BookmarkedPostCard({ item, onUnbookmark, index }) {
           </p>
         </div>
         {post.image_url && (
-          <img loading="lazy" src={post.image_url} className="w-16 h-16 object-cover rounded-2xl flex-shrink-0 border border-surface-100" />
+          <img loading="lazy" src={post.image_url} className="w-16 h-16 object-cover rounded-2xl flex-shrink-0 border border-surface-100 dark:border-dark-700/60" />
         )}
       </div>
 
-      <div className="flex justify-between items-center pt-2.5 border-t border-surface-100 text-[10px] text-dark-600/50 font-bold">
+      <div className="flex justify-between items-center pt-2.5 border-t border-surface-100 dark:border-dark-700/60 text-[10px] text-dark-600/50 font-bold">
         <span> {post.comments_count || 0} commentaire{post.comments_count > 1 ? 's' : ''}</span>
         <span className="text-primary-600 font-bold flex items-center gap-0.5">Voir la discussion →</span>
       </div>

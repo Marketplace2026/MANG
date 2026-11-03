@@ -52,7 +52,7 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
   return (
     <div
       className={clsx(
-        'bg-white rounded-3xl shadow-card overflow-hidden active:scale-[0.98] transition-transform duration-150 cursor-pointer',
+        'bg-white dark:bg-dark-800 rounded-3xl shadow-card overflow-hidden active:scale-[0.98] transition-all duration-150 cursor-pointer border border-transparent dark:border-dark-700/60',
         premiumBorder
       )}
       style={style}
@@ -105,23 +105,23 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-bold text-dark-800 text-sm leading-tight truncate">
+            <h3 className="font-display font-bold text-dark-800 dark:text-gray-100 text-sm leading-tight truncate">
               {shop.name}
             </h3>
-            <p className="text-dark-600/40 text-xs truncate">
+            <p className="text-dark-600 dark:text-gray-400/40 text-xs truncate">
               @{shop.owner?.username}
             </p>
           </div>
         </div>
 
         {shop.description && (
-          <p className="text-dark-600/60 text-xs mb-2.5 line-clamp-2 leading-relaxed">
+          <p className="text-dark-600 dark:text-gray-400/60 text-xs mb-2.5 line-clamp-2 leading-relaxed">
             {shop.description}
           </p>
         )}
 
         {/* Actions : Cloche abonnement + Pouce like avec rebond */}
-        <div className="flex items-center gap-2 pt-2 border-t border-surface-100">
+        <div className="flex items-center gap-2 pt-2 border-t border-surface-100 dark:border-dark-700/60">
 
           {/* Cloche — S'abonner avec rebond permanent */}
           <button
@@ -167,8 +167,8 @@ export function ShopCard({ shop, onLike, isLiked = false, onFollow, isFollowing 
         {/* Localisation */}
         {shop.city && (
           <div className="flex items-center gap-1.5 mt-2">
-            <MapPin size={9} className="text-dark-600/40"/>
-            <span className="text-dark-600/40 text-[10px] font-medium truncate flex-1">{shop.city}</span>
+            <MapPin size={9} className="text-dark-600 dark:text-gray-400/40"/>
+            <span className="text-dark-600 dark:text-gray-400/40 text-[10px] font-medium truncate flex-1">{shop.city}</span>
             {shop.distance !== undefined && shop.distance !== null && (
               <span className="text-emerald-700 bg-emerald-50 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none">
                 📍 {shop.distance < 1 ? `${Math.round(shop.distance * 1000)}m` : `${shop.distance.toFixed(1)}km`}
@@ -220,7 +220,7 @@ export function TopShopCard({ shop, rank }) {
 
   return (
     <div
-      className="flex-shrink-0 w-48 bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-95 transition-transform"
+      className="flex-shrink-0 w-48 bg-white dark:bg-dark-800 rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-95 transition-all border border-transparent dark:border-dark-700/60"
       onClick={() => navigate(`/boutique/${shop.slug}`)}
       onMouseEnter={prefetchShop}
       onTouchStart={prefetchShop}
@@ -241,10 +241,10 @@ export function TopShopCard({ shop, rank }) {
         <PremiumBadge level={shop.premium_level}/>
       </div>
       <div className="p-2.5">
-        <p className="font-bold text-dark-800 text-xs truncate">{shop.name}</p>
+        <p className="font-bold text-dark-800 dark:text-gray-100 text-xs truncate">{shop.name}</p>
         <div className="flex items-center gap-1 mt-1">
           <Users size={9} className="text-primary-500"/>
-          <span className="text-[10px] text-dark-600/50 font-medium">{shop.followers_count} abonnés</span>
+          <span className="text-[10px] text-dark-600 dark:text-gray-400/50 font-medium">{shop.followers_count} abonnés</span>
         </div>
       </div>
     </div>
@@ -284,7 +284,7 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
 
   return (
     <div 
-      className="bg-white rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-[0.98] hover:shadow-md transition-all duration-150"
+      className="bg-white dark:bg-dark-800 rounded-2xl shadow-card overflow-hidden cursor-pointer active:scale-[0.98] hover:shadow-md transition-all duration-150 border border-transparent dark:border-dark-700/60"
       onClick={() => navigate(`/produit/${product.id}`)}
       onMouseEnter={prefetchProduct}
       onTouchStart={prefetchProduct}
@@ -309,7 +309,7 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
           onClick={e => { e.stopPropagation(); onFavorite?.() }}
           className="absolute top-2 right-2 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-90 transition-transform"
         >
-          <Heart size={14} className={clsx(isFavorite ? 'text-red-500 fill-red-500' : 'text-dark-600/50')}/>
+          <Heart size={14} className={clsx(isFavorite ? 'text-red-500 fill-red-500' : 'text-dark-600 dark:text-gray-400/50')}/>
         </button>
         {/* Disponibilité */}
         <div className={clsx('absolute bottom-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold', avail.color)}>
@@ -318,9 +318,9 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
       </div>
 
       <div className="p-3">
-        <h4 className="font-bold text-dark-800 text-sm truncate">{product.name}</h4>
+        <h4 className="font-bold text-dark-800 dark:text-gray-100 text-sm truncate">{product.name}</h4>
         {product.description && (
-          <p className="text-dark-600/50 text-xs mt-0.5 line-clamp-2">{product.description}</p>
+          <p className="text-dark-600 dark:text-gray-400/50 text-xs mt-0.5 line-clamp-2">{product.description}</p>
         )}
         <div className="flex items-center justify-between mt-2.5">
           <div>

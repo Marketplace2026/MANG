@@ -247,13 +247,13 @@ function ToggleSwitch({ value, onChange, disabled }) {
 
 function Section({ title, children }) {
   return (
-    <div className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+    <div className="bg-white dark:bg-dark-800 rounded-3xl overflow-hidden transition-colors duration-200 border border-transparent dark:border-dark-700/60" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
       {title && (
-        <div className="px-5 pt-4 pb-2 border-b border-gray-50">
+        <div className="px-5 pt-4 pb-2 border-b border-gray-50 dark:border-dark-700/60">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
         </div>
       )}
-      <div className="divide-y divide-gray-50">{children}</div>
+      <div className="divide-y divide-gray-50 dark:divide-dark-700/60">{children}</div>
     </div>
   )
 }
@@ -263,12 +263,12 @@ function Section({ title, children }) {
 function Item({ icon: Icon, iconBg, iconColor, label, sub, danger, onClick }) {
   return (
     <button onClick={onClick}
-      className={`w-full flex items-center gap-3.5 px-5 py-3.5 text-left transition-colors ${danger ? 'active:bg-red-50' : 'active:bg-gray-50'}`}>
+      className={`w-full flex items-center gap-3.5 px-5 py-3.5 text-left transition-colors ${danger ? 'active:bg-red-50' : 'active:bg-gray-50 dark:active:bg-dark-700/50'}`}>
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
         <Icon size={16} className={iconColor} strokeWidth={2.2} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold leading-snug ${danger ? 'text-red-600' : 'text-gray-800'}`}>{label}</p>
+        <p className={`text-sm font-semibold leading-snug ${danger ? 'text-red-600' : 'text-gray-800 dark:text-gray-100'}`}>{label}</p>
         {sub && <p className="text-[11px] text-gray-400 mt-0.5 truncate">{sub}</p>}
       </div>
       <ChevronRight size={15} className="text-gray-300 flex-shrink-0" />
@@ -285,7 +285,7 @@ function ItemToggle({ icon: Icon, iconBg, iconColor, label, sub, value, onChange
         <Icon size={16} className={iconColor} strokeWidth={2.2} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 leading-snug">{label}</p>
+        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-snug">{label}</p>
         {sub && <p className="text-[11px] text-gray-400 mt-0.5">{sub}</p>}
       </div>
       <ToggleSwitch value={value} onChange={onChange} disabled={saving} />
@@ -373,17 +373,17 @@ export default function SettingsPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100"
+      <div className="sticky top-0 z-10 bg-white dark:bg-dark-900 border-b border-gray-100 dark:border-dark-800 transition-colors duration-200"
         style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-3 px-4 py-3.5">
           <button onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center active:scale-90 transition-transform">
+            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark-800 flex items-center justify-center active:scale-90 transition-transform">
             <ArrowLeft size={18} className="text-gray-700" />
           </button>
-          <h1 className="font-black text-gray-900 text-[17px] tracking-tight">{t.settings}</h1>
+          <h1 className="font-black text-gray-900 dark:text-white dark:text-white text-[17px] tracking-tight">{t.settings}</h1>
         </div>
       </div>
 
@@ -453,12 +453,12 @@ export default function SettingsPage() {
             onClick={() => setLanguageOpen(true)} />
           {/* Thème : toggle inline, pas de navigation */}
           <div className="flex items-center gap-3.5 px-5 py-3.5">
-            <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center flex-shrink-0">
               {dark ? <Moon size={16} className="text-indigo-500" strokeWidth={2.2} />
                     : <Sun  size={16} className="text-amber-500" strokeWidth={2.2} />}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-800">{t.theme}</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t.theme}</p>
               <p className="text-[11px] text-gray-400">{dark ? t.themeDark : t.themeLight}</p>
             </div>
             <ToggleSwitch value={dark} onChange={setDark} />
@@ -556,7 +556,7 @@ function EmailSheet({ open, onClose, user, t }) {
           <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Nouvel e-mail</label>
           <input value={email} onChange={e => setEmail(e.target.value)}
             type="email" placeholder="exemple@mail.com"
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 transition-colors" />
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors" />
         </div>
         <div className="relative">
           <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
@@ -564,7 +564,7 @@ function EmailSheet({ open, onClose, user, t }) {
           </label>
           <input value={pass} onChange={e => setPass(e.target.value)}
             type={showPw ? 'text' : 'password'} placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 transition-colors pr-12" />
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors pr-12" />
           <button onClick={() => setShowPw(p => !p)}
             className="absolute right-4 top-[38px] text-gray-400">
             {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -616,7 +616,7 @@ function PhoneSheet({ open, onClose, profile, userId, onUpdated, t }) {
           </label>
           <input value={phone} onChange={e => setPhone(e.target.value)}
             type="tel" placeholder="+229 01 23 45 67"
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 transition-colors" />
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-green-400 outline-none text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors" />
           <p className="text-[11px] text-gray-400 mt-1.5">Format international recommandé : +229 ...</p>
         </div>
         {phone && (
@@ -702,7 +702,7 @@ function SecuritySheet({ open, onClose, t }) {
                   value={form[k]} placeholder={ph}
                   type={show[k] ? 'text' : 'password'}
                   onChange={e => { setForm(p => ({ ...p, [k]: e.target.value })); setErrors(p => ({ ...p, [k]: '' })) }}
-                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none text-sm font-semibold text-gray-800 transition-colors pr-12 ${errors[k] ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-green-400'}`}
+                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none text-sm font-semibold text-gray-800 dark:text-gray-100 transition-colors pr-12 ${errors[k] ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-green-400'}`}
                 />
                 <button onClick={() => setShow(p => ({ ...p, [k]: !p[k] }))}
                   className="absolute right-4 top-[38px] text-gray-400">
@@ -765,7 +765,7 @@ function LanguageSheet({ open, onClose, profile, userId, onUpdated }) {
             }`}>
             <span className="text-2xl">{l.flag}</span>
             <div className="flex-1 text-left">
-              <p className={`text-sm font-bold ${current === l.code ? 'text-green-700' : 'text-gray-800'}`}>{l.label}</p>
+              <p className={`text-sm font-bold ${current === l.code ? 'text-green-700' : 'text-gray-800 dark:text-gray-100'}`}>{l.label}</p>
               <p className="text-[11px] text-gray-400">{l.sub}</p>
             </div>
             {current === l.code && <Check size={16} className="text-green-500" />}
@@ -812,7 +812,7 @@ function HelpSheet({ open, onClose }) {
           <div key={i} className="rounded-2xl overflow-hidden border border-gray-100">
             <button onClick={() => setExpanded(expanded === i ? null : i)}
               className="w-full flex items-center justify-between gap-3 px-4 py-3.5 bg-gray-50 active:bg-gray-100 transition-colors text-left">
-              <span className="text-sm font-semibold text-gray-800 flex-1">{faq.q}</span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex-1">{faq.q}</span>
               <span className={`text-green-500 font-black text-lg transition-transform duration-200 ${expanded === i ? 'rotate-45' : ''}`}>+</span>
             </button>
             {expanded === i && (
@@ -875,7 +875,7 @@ function DeleteSheet({ open, onClose, onConfirm, t }) {
           <input value={input} onChange={e => setInput(e.target.value)}
             placeholder={keyword}
             className={`w-full px-4 py-3 rounded-xl border-2 outline-none text-sm font-semibold transition-colors ${
-              valid ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 focus:border-red-300 text-gray-800'
+              valid ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 focus:border-red-300 text-gray-800 dark:text-gray-100'
             }`} />
         </div>
         <button onClick={handleDelete} disabled={loading || !valid}

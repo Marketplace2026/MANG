@@ -70,7 +70,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-surface-50">
+    <div className="min-h-dvh flex flex-col bg-surface-50 dark:bg-dark-900 transition-colors duration-200">
       {/* BANNIÈRE MODE INVITÉ (Desktop uniquement pour ne pas masquer les en-têtes mobiles fixes) */}
       {!user && (
         <div className="hidden md:flex sticky top-0 z-40 bg-gradient-to-r from-amber-500 via-primary-600 to-amber-600 text-white px-6 py-2 text-sm font-medium items-center justify-between shadow-sm">
@@ -98,7 +98,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
       )}
 
       {/* HEADER DESKTOP */}
-      <header className="sticky top-0 left-0 right-0 h-16 bg-white border-b border-surface-200 z-30 hidden md:flex items-center justify-between px-6">
+      <header className="sticky top-0 left-0 right-0 h-16 bg-white dark:bg-dark-800 border-b border-surface-200 dark:border-dark-700 z-30 hidden md:flex items-center justify-between px-6 transition-colors duration-200">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/marketplace')}>
           <img src="/logo-mang.png" className="w-9 h-9 hover:scale-110 active:scale-95 transition-transform duration-200" alt="MANG" />
           <span className="font-display font-bold text-primary-700 text-lg">MANG</span>
@@ -169,7 +169,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
       {/* ── BARRE NAV BAS ── */}
       {!isProductPage && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-lg border-t border-surface-200/50 md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-dark-900/90 backdrop-blur-lg border-t border-surface-200/50 dark:border-dark-800 md:hidden transition-colors duration-200"
           style={{
             paddingBottom: 'env(safe-area-inset-bottom)',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
@@ -205,7 +205,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                   <div
                     className={clsx(
                       'absolute inset-0 rounded-full transition-all duration-300 ease-out -z-10',
-                      isActive ? 'bg-primary-50 scale-100 opacity-100' : 'bg-transparent scale-50 opacity-0'
+                      isActive ? 'bg-primary-50 dark:bg-primary-950/60 scale-100 opacity-100' : 'bg-transparent scale-50 opacity-0'
                     )}
                   />
                   <Icon
@@ -213,20 +213,20 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                     strokeWidth={isActive ? 2.5 : 1.8}
                     className={clsx(
                       'transition-transform duration-300',
-                      isActive ? 'text-primary-600 scale-110' : 'text-dark-500/60 hover:text-dark-900'
+                      isActive ? 'text-primary-600 dark:text-primary-400 scale-110' : 'text-dark-500/60 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
                     )}
                   />
                   
                   {/* Badge Messages */}
                   {item.path === '/messages' && unreadMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white shadow-sm animate-pulse">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white dark:border-dark-900 shadow-sm animate-pulse">
                       {unreadMessages > 9 ? '9+' : unreadMessages}
                     </span>
                   )}
                   
                   {/* Badge Panier */}
                   {item.path === '/panier' && cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white shadow-sm animate-pulse">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-1 border-2 border-white dark:border-dark-900 shadow-sm animate-pulse">
                       {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
@@ -236,7 +236,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                 <span
                   className={clsx(
                     'text-[10px] font-bold tracking-wide mt-1 transition-all duration-300',
-                    isActive ? 'text-primary-700 scale-105' : 'text-dark-500/50'
+                    isActive ? 'text-primary-700 dark:text-primary-400 scale-105' : 'text-dark-500/50 dark:text-dark-400'
                   )}
                 >
                   {item.label}

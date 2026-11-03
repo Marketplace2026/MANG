@@ -47,7 +47,7 @@ function getTxCfg(tx) {
   if (t.includes('piece') || t.includes('coin')) return TX_TYPES.pieces_purchase
   if (t.includes('order') && Number(tx.amount) < 0) return TX_TYPES.order_payment
   if (t.includes('order')) return TX_TYPES.order_received
-  return { label: 'Transaction', icon: CreditCard, color: 'text-gray-600', bg: 'bg-gray-50' }
+  return { label: 'Transaction', icon: CreditCard, color: 'text-gray-600', bg: 'bg-gray-50 dark:bg-dark-900' }
 }
 
 // Montant déjà en FCFA dans la DB
@@ -76,7 +76,7 @@ function Sheet({ open, onClose, title, children }) {
         </div>
         {title && (
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-shrink-0">
-            <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
+            <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">{title}</h3>
             <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center">
               <X size={16} className="text-gray-500"/>
             </button>
@@ -115,7 +115,7 @@ function PinInput({ value, onChange, error, label }) {
               'w-14 h-14 text-center text-2xl font-bold rounded-2xl border-2 outline-none transition-all',
               error ? 'border-red-400 bg-red-50' :
               digits[i] ? 'border-green-500 bg-green-50' :
-              'border-gray-200 bg-gray-50 focus:border-green-500'
+              'border-gray-200 bg-gray-50 dark:bg-dark-900 focus:border-green-500'
             )}
           />
         ))}
@@ -220,7 +220,7 @@ function DepositSheet({ open, onClose, user, wallet, onSuccess }) {
             <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input type="tel" placeholder="Ex: 22961000000" value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
           </div>
         </div>
         <div>
@@ -229,14 +229,14 @@ function DepositSheet({ open, onClose, user, wallet, onSuccess }) {
             {PRESETS.map(p => (
               <button key={p} onClick={() => setAmount(String(p))}
                 className={clsx('px-3 py-1.5 rounded-xl text-xs font-bold border transition-all',
-                  amount === String(p) ? 'bg-green-600 text-white border-green-600' : 'bg-gray-50 text-gray-600 border-gray-200')}>
+                  amount === String(p) ? 'bg-green-600 text-white border-green-600' : 'bg-gray-50 dark:bg-dark-900 text-gray-600 border-gray-200')}>
                 {p.toLocaleString('fr-FR')}
               </button>
             ))}
           </div>
           <input type="number" placeholder="Autre montant" value={amount}
             onChange={e => setAmount(e.target.value)} min="100"
-            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+            className="w-full px-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
         </div>
         {amount && parseInt(amount) >= 100 && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 space-y-1 text-sm">
@@ -372,13 +372,13 @@ function WithdrawSheet({ open, onClose, user, wallet, onSuccess }) {
               <p className="text-sm font-bold text-gray-700 mb-2">Numéro Mobile Money</p>
               <input type="tel" placeholder="Ex: 22961000000" value={phone}
                 onChange={e => setPhone(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                className="w-full px-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
             </div>
             <div>
               <p className="text-sm font-bold text-gray-700 mb-2">Montant (FCFA)</p>
               <input type="number" placeholder="Montant à retirer (min 500)" value={amount}
                 onChange={e => setAmount(e.target.value)} min="500"
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                className="w-full px-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
               <p className="text-xs text-gray-400 mt-1 pl-1">
                 Solde disponible : <span className="font-bold text-green-700">{balanceFCFA.toLocaleString('fr-FR')} FCFA</span>
               </p>
@@ -533,7 +533,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
                 value={receiverNum}
                 onChange={e => handleNumChange(e.target.value)}
                 maxLength={10}
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-base font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400"
+                className="w-full px-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-base font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400"
               />
               {lookingUp && (
                 <p className="text-xs text-blue-600 mt-1.5 pl-1 flex items-center gap-1">
@@ -574,7 +574,7 @@ function TransferSheet({ open, onClose, user, wallet, onSuccess, initialWalletNu
               <p className="text-sm font-bold text-gray-700 mb-2">Montant en FCFA</p>
               <input type="number" placeholder="Ex: 500" value={amount}
                 onChange={e => setAmount(e.target.value)} min="100"
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                className="w-full px-4 py-3.5 bg-gray-50 dark:bg-dark-900 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
               <p className="text-xs text-gray-400 mt-1 pl-1">
                 Solde : <span className="font-bold text-green-700">{balanceFCFA.toLocaleString('fr-FR')} FCFA</span>
               </p>
@@ -1006,7 +1006,7 @@ function TxDetailSheet({ open, onClose, tx }) {
   return (
     <Sheet open={open} onClose={onClose} title="Détail transaction">
       <div className="px-5 py-4 pb-10 space-y-4">
-        <div className="text-center py-6 bg-gray-50 rounded-2xl">
+        <div className="text-center py-6 bg-gray-50 dark:bg-dark-900 rounded-2xl">
           <div className={clsx('w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3', cfg.bg)}>
             {(() => {
               const IconComp = cfg.icon || CreditCard
@@ -1042,7 +1042,7 @@ function TxDetailSheet({ open, onClose, tx }) {
           ].filter(Boolean).map(([lbl, val]) => (
             <div key={lbl} className="flex items-start justify-between px-4 py-3 gap-3">
               <span className="text-gray-500 text-sm flex-shrink-0">{lbl}</span>
-              <span className="text-gray-800 text-sm font-semibold text-right break-all">{val}</span>
+              <span className="text-gray-800 dark:text-gray-100 text-sm font-semibold text-right break-all">{val}</span>
             </div>
           ))}
         </div>
@@ -1187,7 +1187,7 @@ export default function WalletPage() {
   const monthOut = monthTx.filter(t=>Number(t.amount)<0).reduce((s,t)=>s+toFCFA(t.amount),0)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 dark:bg-dark-950 text-dark-800 dark:text-gray-100 pb-28 transition-colors duration-200">
       {/* Header Compact */}
       <header className="bg-mang-header pt-3 pb-2 px-4 sticky top-0 z-40 shadow-md">
         <div className="flex justify-between items-center">
@@ -1231,7 +1231,7 @@ export default function WalletPage() {
         />
 
         {/* Résumé du Mois & Statistiques */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-sm border border-gray-100 dark:border-dark-700 p-4 transition-colors duration-200">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Activité de ce mois</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 flex items-center gap-3">

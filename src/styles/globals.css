@@ -15,6 +15,12 @@ body {
   padding-top: calc(env(safe-area-inset-top) + var(--pwa-banner-offset, 0px)); 
   background-color: white;
   margin: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+html.dark body,
+body.dark {
+  background-color: #0a1628;
+  color: #f3f4f6;
 }
 .fixed.top-0:not(.pwa-install-top-banner) {
   top: var(--pwa-banner-offset, 0px) !important;
@@ -35,7 +41,7 @@ body {
   }
 
   body {
-    @apply bg-surface-50 text-dark-800 font-sans antialiased;
+    @apply bg-surface-50 dark:bg-dark-900 text-dark-800 dark:text-surface-100 font-sans antialiased;
     overscroll-behavior: none;
     min-height: 100dvh;
     padding-bottom: env(safe-area-inset-bottom);

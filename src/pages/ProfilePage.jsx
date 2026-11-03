@@ -133,7 +133,7 @@ export default function ProfilePage() {
   const hasShop = userShops.length > 0
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
 
       {/* ── HERO HEADER COMPACT V3.2 — Facebook Style ── */}
       <div
@@ -303,7 +303,7 @@ export default function ProfilePage() {
         />
 
         {/* ── SUIVI COMMANDES ACHETEUR ── */}
-        <div className="bg-white rounded-3xl shadow-card overflow-hidden">
+        <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card overflow-hidden border border-transparent dark:border-dark-700/60 transition-colors duration-200">
           <div className="px-5 pt-4 pb-2 flex items-center justify-between">
             <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider">Mes Commandes</p>
             <button onClick={() => navigate('/commandes')}
@@ -311,7 +311,7 @@ export default function ProfilePage() {
               Voir tout
             </button>
           </div>
-          <div className="grid grid-cols-4 divide-x divide-surface-100 pb-4">
+          <div className="grid grid-cols-4 divide-x divide-surface-100 dark:divide-dark-700/60 pb-4">
             {[
               { icon: Clock,        label: 'En attente', count: orderStats.pending,   color: 'text-orange-500', bg: 'bg-orange-50' },
               { icon: Package,      label: 'Acceptées',  count: orderStats.accepted,  color: 'text-blue-500',   bg: 'bg-blue-50'   },
@@ -319,7 +319,7 @@ export default function ProfilePage() {
               { icon: CheckCircle,  label: 'Livrées',    count: orderStats.delivered, color: 'text-emerald-500',bg: 'bg-emerald-50'},
             ].map((item, i) => (
               <button key={i} onClick={() => navigate('/commandes')}
-                className="flex flex-col items-center gap-1.5 pt-3 pb-1 active:bg-surface-50 transition-colors">
+                className="flex flex-col items-center gap-1.5 pt-3 pb-1 active:bg-surface-50 dark:active:bg-dark-700/50 transition-colors">
                 <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center relative`}>
                   <item.icon size={16} className={item.color}/>
                   {item.count > 0 && (
@@ -335,7 +335,7 @@ export default function ProfilePage() {
         </div>
 
         {/* ── RACCOURCIS RAPIDES ── */}
-        <div className="bg-white rounded-3xl shadow-card p-4">
+        <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card p-4 border border-transparent dark:border-dark-700/60 transition-colors duration-200">
           <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider mb-3.5">Accès rapide</p>
           <div className="grid grid-cols-4 gap-y-4 gap-x-2 text-center">
             {[
@@ -471,13 +471,13 @@ export default function ProfilePage() {
 
 function MenuSection({ title, icon, children }) {
   return (
-    <div className="bg-white rounded-3xl shadow-card overflow-hidden">
-      <div className="px-5 pt-4 pb-2 border-b border-surface-50">
+    <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card overflow-hidden border border-transparent dark:border-dark-700/60 transition-colors duration-200">
+      <div className="px-5 pt-4 pb-2 border-b border-surface-50 dark:border-dark-700/60">
         <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider flex items-center gap-1.5">
           <span>{icon}</span> {title}
         </p>
       </div>
-      <div className="divide-y divide-surface-50">
+      <div className="divide-y divide-surface-50 dark:divide-dark-700/60">
         {children}
       </div>
     </div>
@@ -490,13 +490,13 @@ function MenuItem({ icon: Icon, color, label, sub, onClick, last }) {
   return (
     <button onClick={onClick}
       className={clsx(
-        'w-full flex items-center gap-3 px-5 py-3.5 active:bg-surface-50 transition-colors text-left',
+        'w-full flex items-center gap-3 px-5 py-3.5 active:bg-surface-50 dark:active:bg-dark-700/50 transition-colors text-left',
       )}>
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon size={16} strokeWidth={2.2}/>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-dark-800 leading-snug">{label}</p>
+        <p className="text-sm font-semibold text-dark-800 dark:text-gray-100 leading-snug">{label}</p>
         {sub && <p className="text-[11px] text-dark-600/50 mt-0.5 truncate">{sub}</p>}
       </div>
       <ChevronRight size={15} className="text-dark-600/25 flex-shrink-0"/>
@@ -839,14 +839,14 @@ function PersonalInfoCard({ profile, onEdit }) {
   const locationLabel = [profile.neighbourhood, profile.city].filter(Boolean).join(', ')
 
   return (
-    <div className="bg-white rounded-3xl shadow-card overflow-hidden">
+    <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-card overflow-hidden border border-transparent dark:border-dark-700/60 transition-colors duration-200">
       <div className="px-5 py-4 border-b border-surface-100 flex items-center justify-between">
         <p className="text-[11px] font-black text-dark-400 uppercase tracking-wider">👤 Informations</p>
         <button onClick={onEdit} className="text-[10px] font-bold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg">
           Modifier
         </button>
       </div>
-      <div className="divide-y divide-surface-50">
+      <div className="divide-y divide-surface-50 dark:divide-dark-700/60">
         {[
           { icon: User,   label: 'Nom complet',  value: profile.full_name  || 'Non renseigné' },
           { icon: Mail,   label: 'Email',         value: profile.email },
@@ -1551,7 +1551,7 @@ function HelpSheet({ open, onClose }) {
         {FAQ.map((item, i) => (
           <div key={i} className="bg-surface-50 rounded-2xl overflow-hidden">
             <button onClick={() => toggle(i)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
-              <span className="flex-1 text-sm font-semibold text-dark-800 leading-snug">{item.q}</span>
+              <span className="flex-1 text-sm font-semibold text-dark-800 dark:text-gray-100 leading-snug">{item.q}</span>
               {openIdx === i ? <ChevronUp size={16} className="text-primary-500 flex-shrink-0"/> : <ChevronDown size={16} className="text-dark-600/30 flex-shrink-0"/>}
             </button>
             {openIdx === i && (
@@ -1570,7 +1570,7 @@ function HelpSheet({ open, onClose }) {
 
 function ProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
       <div className="bg-mang-header pb-24 pt-16">
         <div className="flex flex-col items-center gap-3">
           <div className="w-24 h-24 rounded-full skeleton"/>

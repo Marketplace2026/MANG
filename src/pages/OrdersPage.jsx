@@ -66,7 +66,7 @@ function PinInput({ value, onChange, error }) {
             'w-14 h-14 text-center text-2xl font-bold rounded-2xl border-2 outline-none transition-all',
             error ? 'border-red-400 bg-red-50' :
             digits[i] ? 'border-primary-500 bg-primary-50' :
-            'border-surface-200 bg-surface-50 focus:border-primary-400'
+            'border-surface-200 bg-surface-50 dark:bg-dark-900 focus:border-primary-400'
           )}
         />
       ))}
@@ -530,7 +530,7 @@ export default function OrdersPage() {
   const pendingCount = orders.filter(o => o.role === 'seller' && o.status === 'pending').length
 
   return (
-    <div className="min-h-screen bg-surface-50 pb-28">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-900 pb-28">
       {/* HEADER COMPACT */}
       <header className="bg-mang-header pt-4 pb-3 px-4 sticky top-0 z-50 shadow-md">
         {/* Ligne 1 : Titre + Actions */}
@@ -576,7 +576,7 @@ export default function OrdersPage() {
       {/* CONTENU */}
       <div className="px-4 space-y-3 pt-3">
         {/* TABS */}
-        <div className="bg-white rounded-xl shadow-card p-1 border border-surface-100 flex gap-1">
+        <div className="bg-white rounded-xl shadow-card p-1 border border-surface-100 dark:border-dark-700/60 flex gap-1">
           {TABS.map(t => (
             <button key={t.key} onClick={() => {
               setTab(t.key)
@@ -584,7 +584,7 @@ export default function OrdersPage() {
               setSelectedOrderIds([])
             }}
               className={clsx('flex-1 py-2 rounded-lg text-xs font-bold transition-all',
-                tab === t.key ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50')}>
+                tab === t.key ? 'bg-primary-600 text-white shadow-green' : 'text-dark-600 hover:bg-surface-50 dark:bg-dark-900')}>
               {t.label}
             </button>
           ))}
@@ -599,7 +599,7 @@ export default function OrdersPage() {
                 placeholder="Rechercher par produit, boutique, client..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-surface-50 border border-surface-200 rounded-2xl pl-9 pr-8 py-2.5 text-xs font-bold outline-none focus:border-primary-500"
+                className="w-full bg-surface-50 dark:bg-dark-900 border border-surface-200 rounded-2xl pl-9 pr-8 py-2.5 text-xs font-bold outline-none focus:border-primary-500"
               />
               <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
               {search && (
@@ -682,7 +682,7 @@ export default function OrdersPage() {
         {loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl shadow-card p-3.5 flex gap-3">
+              <div key={i} className="bg-white dark:bg-dark-800 rounded-2xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200 p-3.5 flex gap-3">
                 <div className="w-16 h-16 rounded-xl skeleton flex-shrink-0"/>
                 <div className="flex-1 space-y-2">
                   <div className="h-4 skeleton rounded-lg w-1/3"/>
@@ -693,7 +693,7 @@ export default function OrdersPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl shadow-card">
+          <div className="text-center py-16 bg-white dark:bg-dark-800 rounded-3xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200">
             <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-3 text-dark-400"><Package size={36} /></div>
             <p className="font-display text-lg font-bold text-dark-800">Aucune commande</p>
             <p className="text-dark-600/50 text-sm mt-1">Vos commandes apparaîtront ici</p>
@@ -794,7 +794,7 @@ export default function OrdersPage() {
           <div className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"/>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-modal w-full max-w-sm animate-scale-in">
-              <div className="flex items-center justify-between p-5 border-b border-surface-100">
+              <div className="flex items-center justify-between p-5 border-b border-surface-100 dark:border-dark-700/60">
                 <h3 className="font-display text-lg font-bold text-dark-800">Code PIN Wallet</h3>
                 <button onClick={() => { setPinModal(null); setPin(''); setPinError(false) }}
                   className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center">
@@ -805,7 +805,7 @@ export default function OrdersPage() {
                 <p className="text-sm text-dark-600 text-center">
                   Entrez votre PIN à 4 chiffres pour confirmer le paiement
                 </p>
-                <div className="text-center bg-surface-50 rounded-2xl p-4">
+                <div className="text-center bg-surface-50 dark:bg-dark-900 rounded-2xl p-4">
                   <p className="font-display text-3xl font-bold text-dark-800">
                     {selectedOrder ? formatFCFA(selectedOrder.total_amount) : '0 FCFA'}
                   </p>
@@ -833,7 +833,7 @@ function OrderCard({ order, isBuyer, onOpen }) {
 
   return (
     <div onClick={onOpen}
-      className="bg-white rounded-2xl shadow-card overflow-hidden active:scale-[0.98] transition-transform cursor-pointer">
+      className="bg-white dark:bg-dark-800 rounded-2xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200 overflow-hidden active:scale-[0.98] transition-transform cursor-pointer">
       <div className="flex gap-3 p-3.5">
         <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
           {order.product?.image_url
@@ -868,12 +868,12 @@ function OrderCard({ order, isBuyer, onOpen }) {
 
       {/* Actions rapides */}
       {order.status === 'pending' && !isBuyer && (
-        <div className="border-t border-surface-100 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-600 text-center">
+        <div className="border-t border-surface-100 dark:border-dark-700/60 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-600 text-center">
           En attente de votre réponse → Voir & Répondre
         </div>
       )}
       {order.status === 'accepted' && isBuyer && (
-        <div className="border-t border-surface-100 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600 text-center">
+        <div className="border-t border-surface-100 dark:border-dark-700/60 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600 text-center">
           Acceptée — Cliquez pour payer
         </div>
       )}
@@ -896,7 +896,7 @@ function OrderDetailSheet({
     <BottomSheet open={open} onClose={onClose} title="Détails de la commande">
       <div className="px-4 pt-2 pb-8 space-y-4">
         {/* Produit */}
-        <div className="flex gap-3 items-center p-3 bg-surface-50 rounded-2xl">
+        <div className="flex gap-3 items-center p-3 bg-surface-50 dark:bg-dark-900 rounded-2xl">
           <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-100">
             {order.product?.image_url
               ? <img loading="lazy" src={order.product.image_url} className="w-full h-full object-cover"/>
@@ -936,7 +936,7 @@ function OrderDetailSheet({
         </div>
 
         {/* Infos */}
-        <div className="bg-white rounded-2xl shadow-card overflow-hidden divide-y divide-surface-100">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-card border border-transparent dark:border-dark-700/60 transition-colors duration-200 overflow-hidden divide-y divide-surface-100 dark:divide-dark-700/60">
           {[
             { icon: Hash,   label: 'ID',         value: `#${order.id.slice(0,8).toUpperCase()}` },
             { icon: Package,label: 'Boutique',    value: order.shop?.name || '—' },
@@ -966,7 +966,7 @@ function OrderDetailSheet({
         <div className="grid grid-cols-2 gap-3.5">
           <button
             onClick={() => downloadOrderPDF(order)}
-            className="py-3 bg-white border border-surface-200 text-dark-700 hover:bg-surface-50 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+            className="py-3 bg-white border border-surface-200 text-dark-700 hover:bg-surface-50 dark:bg-dark-900 font-bold rounded-2xl text-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-sm"
           >
             Reçu PDF
           </button>
@@ -1179,7 +1179,7 @@ function ReviewSheet({ open, onClose, order, user, onSubmitted }) {
             value={comment}
             onChange={e => setComment(e.target.value)}
             rows={3}
-            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-emerald-500 resize-none font-medium text-dark-800"
+            className="w-full bg-surface-50 dark:bg-dark-900 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-emerald-500 resize-none font-medium text-dark-800"
           />
         </div>
 
@@ -1265,7 +1265,7 @@ function DisputeSheet({ open, onClose, order, user, onSubmitted }) {
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={3}
-            className="w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none font-medium"
+            className="w-full bg-surface-50 dark:bg-dark-900 border border-surface-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-red-500 resize-none font-medium"
           />
         </div>
 
