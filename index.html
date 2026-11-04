@@ -30,10 +30,14 @@
       (function() {
         try {
           var t = localStorage.getItem('mang-theme');
-          if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          var isDark = (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (isDark) {
             document.documentElement.classList.add('dark');
+            if (meta) meta.setAttribute('content', '#18191a');
           } else {
             document.documentElement.classList.remove('dark');
+            if (meta) meta.setAttribute('content', '#ffffff');
           }
         } catch(e) {}
       })();

@@ -764,14 +764,14 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
       {/* HEADER FIXE */}
-      <header className="fixed top-0 left-0 right-0 z-30 shadow-xl max-w-[480px] mx-auto" style={{background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)'}}>
+      <header className="fixed top-0 left-0 right-0 z-30 shadow-xl max-w-[480px] mx-auto bg-gradient-to-r from-[#14532d] via-[#166534] to-[#15803d] dark:from-[#242526] dark:via-[#1c1e21] dark:to-[#242526] dark:border-b dark:border-[#3a3b3c] transition-colors duration-200">
         {/* LIGNE 1 : HEADER PRINCIPAL */}
         <div className="h-14 pl-0 pr-3 flex justify-between items-center">
           <div className="flex items-center gap-1 cursor-pointer h-full py-1" onClick={() => navigate('/marketplace')}>
             <img loading="lazy" src="/logo-mang.png" alt="MANG" className="w-12 h-12 hover:scale-105 active:scale-95 transition-transform duration-200 object-contain drop-shadow-sm my-auto" />
             <div className="flex flex-col leading-none">
               <span className="font-display font-black text-white text-[18px] tracking-wider leading-none">MANG</span>
-              <span className="text-green-300 text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5">Marché Agricole</span>
+              <span className="text-green-300 dark:text-gray-400 text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5">Marché Agricole</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -799,13 +799,13 @@ export default function MarketplacePage() {
               </button>
             )}
 
-            <Link to="/vendeur" className="flex items-center gap-1 bg-yellow-400/15 hover:bg-yellow-400/25 border border-yellow-400/30 rounded-lg px-2 py-1 transition-all active:scale-95">
+            <Link to="/vendeur" className="flex items-center gap-1 bg-yellow-400/15 hover:bg-yellow-400/25 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] border border-yellow-400/30 dark:border-[#4e4f50] rounded-lg px-2 py-1 transition-all active:scale-95">
               <Store size={13} className="text-yellow-300" />
               <span className="text-yellow-200 font-black text-[10px] tracking-wide">Vendre</span>
             </Link>
 
             <Link to="/notifications" className="relative">
-              <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90">
+              <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] flex items-center justify-center transition-all active:scale-90">
                 <BellIcon className="w-5 h-5 text-white" />
               </div>
               {unreadCount > 0 && (
@@ -825,7 +825,7 @@ export default function MarketplacePage() {
               'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black transition-all active:scale-95 border',
               filters.nearby
                 ? 'bg-yellow-400 text-dark-900 border-yellow-300 shadow-sm'
-                : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+                : 'bg-white/10 hover:bg-white/20 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] text-white border-white/15 dark:border-[#4e4f50]'
             )}
           >
             <MapPin size={11} className={filters.nearby ? 'text-dark-800' : (userCity ? 'text-yellow-300' : 'text-red-400 animate-pulse')} />
@@ -842,7 +842,7 @@ export default function MarketplacePage() {
                 {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}
               </button>
             ) : (
-              <span className="text-green-300/60 text-[9px] font-bold tracking-widest uppercase">Bénin</span>
+              <span className="text-green-300/60 dark:text-gray-400 text-[9px] font-bold tracking-widest uppercase">Bénin</span>
             )}
           </div>
 
@@ -859,22 +859,22 @@ export default function MarketplacePage() {
                 'w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90',
                 (showSearchBar || search)
                   ? 'bg-yellow-400 text-dark-900 shadow-sm'
-                  : 'bg-white/10 hover:bg-white/20 text-white'
+                  : 'bg-white/10 hover:bg-white/20 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] text-white'
               )}
               title="Rechercher"
             >
               <Search size={13} strokeWidth={2.4} />
             </button>
 
-            <Link to="/communaute" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90" title="Communauté">
-              <GlobeIcon className="w-4 h-4 text-green-200" />
+            <Link to="/communaute" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] flex items-center justify-center transition-all active:scale-90" title="Communauté">
+              <GlobeIcon className="w-4 h-4 text-green-200 dark:text-gray-300" />
             </Link>
           </div>
         </div>
 
         {(showSearchBar || search) && (
         <div className="px-3 pb-2 relative animate-fadeIn">
-          <div className="flex items-center gap-2 bg-white dark:bg-dark-800 rounded-2xl px-3 h-12 shadow-sm border border-transparent dark:border-dark-700 transition-colors duration-200 border-2 border-white/0 focus-within:border-gold-400 transition-all">
+          <div className="flex items-center gap-2 bg-white dark:bg-[#242526] rounded-2xl px-3 h-12 shadow-sm border border-surface-200 dark:border-[#3a3b3c] transition-colors duration-200 focus-within:border-gold-400">
             <Search size={16} className="text-dark-600/40 flex-shrink-0" />
             <div className="flex-1 relative">
               <input
@@ -885,7 +885,7 @@ export default function MarketplacePage() {
                 onFocus={() => setShowSuggestions(true)}
                 onKeyDown={handleKeyDown}
                 placeholder="Rechercher des produits, boutiques..."
-                className="w-full bg-transparent text-dark-800 text-sm font-semibold outline-none placeholder-dark-600/40"
+                className="w-full bg-transparent text-dark-800 dark:text-white text-sm font-semibold outline-none placeholder-dark-600/40 dark:placeholder-gray-400"
               />
             </div>
 

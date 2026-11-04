@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom'
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900">
+    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] transition-colors duration-200">
       {/* Décoration fond */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-gold-500/10 blur-3xl" />
@@ -14,13 +14,13 @@ export default function AuthLayout() {
       <div className="flex flex-col items-center pt-16 pb-8 relative z-10">
         <img src="/logo-mang.png" className="w-16 h-16 mx-auto mb-4" />
         <h1 className="font-display text-3xl text-white font-bold tracking-tight">MANG</h1>
-        <p className="text-primary-300 text-sm mt-1 font-medium">Marché Agricole Nouvelle Génération</p>
+        <p className="text-primary-300 dark:text-gray-300 text-sm mt-1 font-medium">Marché Agricole Nouvelle Génération</p>
       </div>
 
       {/* Formulaire */}
       <div className="flex-1 flex flex-col justify-start px-4 pb-8 relative z-10">
         <div className="mx-auto w-full max-w-sm">
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10">
+          <div className="bg-white/10 dark:bg-[#242526] backdrop-blur-md rounded-3xl p-6 border border-white/10 dark:border-[#3a3b3c] shadow-xl">
             <Outlet />
           </div>
         </div>

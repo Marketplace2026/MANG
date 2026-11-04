@@ -30,10 +30,14 @@
       (function() {
         try {
           var t = localStorage.getItem('mang-theme');
-          if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          var isDark = (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (isDark) {
             document.documentElement.classList.add('dark');
+            if (meta) meta.setAttribute('content', '#18191a');
           } else {
             document.documentElement.classList.remove('dark');
+            if (meta) meta.setAttribute('content', '#ffffff');
           }
         } catch(e) {}
       })();
@@ -66,13 +70,13 @@
         }
       }, true);
     </script>
-    <script type="module" crossorigin src="/assets/index-tCFS4i3r.js"></script>
+    <script type="module" crossorigin src="/assets/index-DpBUwY8Q.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-CF4KUbtU.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-utils-DleeHdt0.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-CoN1UZ5H.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-icons-BBcWdvJo.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-i18n-GmFFxxL1.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-CJz4Q6x-.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-C9avgAxu.css">
   </head>
   <body class="bg-surface-50 font-sans">
     <div id="root">

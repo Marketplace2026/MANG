@@ -65,7 +65,7 @@ export default function OnboardingPage() {
   const testimonial = TESTIMONIALS[tIdx]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between transition-colors duration-200">
       
       {/* Éléments de fond décoratifs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/connexion')}
-            className="text-xs font-bold text-white/90 hover:text-white px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 transition active:scale-95 flex items-center gap-1.5"
+            className="text-xs font-bold text-white/90 hover:text-white px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] border border-white/20 dark:border-[#4e4f50] transition active:scale-95 flex items-center gap-1.5"
           >
             <LogIn size={13} />
             <span>Connexion</span>
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
             <div className="px-5 mb-5">
               <div className="grid grid-cols-4 gap-2">
                 {STATS.map((s, i) => (
-                  <div key={i} className="flex flex-col items-center py-3 px-1 rounded-2xl bg-white/5 border border-white/10">
+                  <div key={i} className="flex flex-col items-center py-3 px-1 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                     <s.icon size={16} className="text-gold-400 mb-1" />
                     <p className="text-white font-black text-sm leading-none">{s.v}</p>
                     <p className="text-white/70 text-[8px] font-extrabold uppercase tracking-wider mt-1 text-center">{s.l}</p>
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {FEATURES.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2.5 p-3 rounded-2xl bg-white/5 border border-white/10">
+                  <div key={i} className="flex items-start gap-2.5 p-3 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                     <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 text-gold-400">
                       <f.icon size={16} strokeWidth={2} />
                     </div>
@@ -172,7 +172,7 @@ export default function OnboardingPage() {
 
             {/* Témoignage */}
             <div className="px-5 mb-4">
-              <div className="p-4 rounded-2xl relative overflow-hidden bg-white/5 border border-white/15">
+              <div className="p-4 rounded-2xl relative overflow-hidden bg-white/5 dark:bg-[#242526] border border-white/15 dark:border-[#3a3b3c]">
                 <p className="text-white/90 text-xs leading-relaxed mb-3 italic min-h-[2.5rem] font-medium">"{testimonial.text}"</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -228,7 +228,7 @@ export default function OnboardingPage() {
             <div className="space-y-2.5 pt-1">
               
               {/* Card 1: Commission */}
-              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
                   <Percent className="w-5 h-5 text-gold-400" />
                 </div>
@@ -241,7 +241,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Card 2: Escrow */}
-              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-5 h-5 text-gold-400" />
                 </div>
@@ -254,7 +254,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Card 3: Logistics */}
-              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
                   <Truck className="w-5 h-5 text-gold-400" />
                 </div>
@@ -267,7 +267,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Card 4: Community */}
-              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex gap-3.5 p-3.5 rounded-2xl bg-white/5 dark:bg-[#242526] border border-white/10 dark:border-[#3a3b3c]">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
                   <Store className="w-5 h-5 text-gold-400" />
                 </div>
@@ -294,11 +294,11 @@ export default function OnboardingPage() {
       </div>
 
       {/* Barre fixe en bas */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-[0_-6px_25px_rgba(0,0,0,0.15)] max-w-[480px] mx-auto rounded-t-2xl flex flex-col items-center justify-center py-3 px-5">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#242526] border-t border-slate-100 dark:border-[#3a3b3c] shadow-[0_-6px_25px_rgba(0,0,0,0.15)] max-w-[480px] mx-auto rounded-t-2xl flex flex-col items-center justify-center py-3 px-5 transition-colors duration-200">
         {/* Témoin de progression */}
         <div className="flex justify-center gap-1.5 mb-2.5">
-          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 1 ? "w-6 bg-primary-700" : "w-2 bg-slate-200")} />
-          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 2 ? "w-6 bg-primary-700" : "w-2 bg-slate-200")} />
+          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 1 ? "w-6 bg-primary-700 dark:bg-primary-500" : "w-2 bg-slate-200 dark:bg-[#3a3b3c]")} />
+          <div className={clsx("h-1 rounded-full transition-all duration-300", page === 2 ? "w-6 bg-primary-700 dark:bg-primary-500" : "w-2 bg-slate-200 dark:bg-[#3a3b3c]")} />
         </div>
 
         {page === 1 ? (
@@ -310,9 +310,9 @@ export default function OnboardingPage() {
               <span>Continuer</span>
               <ArrowRight size={16} />
             </button>
-            <p className="text-xs text-dark-500 font-medium">
+            <p className="text-xs text-dark-500 dark:text-gray-300 font-medium">
               Déjà un compte ?{' '}
-              <button onClick={() => navigate('/connexion')} className="text-primary-700 font-bold hover:underline">
+              <button onClick={() => navigate('/connexion')} className="text-primary-700 dark:text-primary-400 font-bold hover:underline">
                 Se connecter
               </button>
             </p>
@@ -326,9 +326,9 @@ export default function OnboardingPage() {
               <span>Commencer maintenant</span>
               <ArrowRight size={16} />
             </button>
-            <p className="text-xs text-dark-500 font-medium">
+            <p className="text-xs text-dark-500 dark:text-gray-300 font-medium">
               Vous avez déjà un compte ?{' '}
-              <button onClick={() => navigate('/connexion')} className="text-primary-700 font-bold hover:underline">
+              <button onClick={() => navigate('/connexion')} className="text-primary-700 dark:text-primary-400 font-bold hover:underline">
                 Se connecter
               </button>
             </p>

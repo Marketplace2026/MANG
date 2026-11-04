@@ -169,7 +169,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
       {/* ── BARRE NAV BAS ── */}
       {!isProductPage && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-dark-900/90 backdrop-blur-lg border-t border-surface-200/50 dark:border-dark-800 md:hidden transition-colors duration-200"
+          className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-[#242526] backdrop-blur-lg border-t border-slate-200 dark:border-[#3a3b3c] md:hidden transition-colors duration-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
           style={{
             paddingBottom: 'env(safe-area-inset-bottom)',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02)',
@@ -205,15 +205,15 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                   <div
                     className={clsx(
                       'absolute inset-0 rounded-full transition-all duration-300 ease-out -z-10',
-                      isActive ? 'bg-primary-50 dark:bg-primary-950/60 scale-100 opacity-100' : 'bg-transparent scale-50 opacity-0'
+                      isActive ? 'bg-emerald-50 dark:bg-emerald-950/60 scale-100 opacity-100' : 'bg-transparent scale-50 opacity-0'
                     )}
                   />
                   <Icon
                     size={20}
-                    strokeWidth={isActive ? 2.5 : 1.8}
+                    strokeWidth={isActive ? 2.5 : 2.1}
                     className={clsx(
                       'transition-transform duration-300',
-                      isActive ? 'text-primary-600 dark:text-primary-400 scale-110' : 'text-dark-500/60 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                      isActive ? 'text-emerald-700 dark:text-emerald-400 scale-110' : 'text-slate-600 dark:text-[#b0b3b8] hover:text-dark-900 dark:hover:text-white'
                     )}
                   />
                   
@@ -236,7 +236,7 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                 <span
                   className={clsx(
                     'text-[10px] font-bold tracking-wide mt-1 transition-all duration-300',
-                    isActive ? 'text-primary-700 dark:text-primary-400 scale-105' : 'text-dark-500/50 dark:text-dark-400'
+                    isActive ? 'text-emerald-800 dark:text-emerald-400 font-black scale-105' : 'text-slate-600 dark:text-[#b0b3b8] font-bold'
                   )}
                 >
                   {item.label}

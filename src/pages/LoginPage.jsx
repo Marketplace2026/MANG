@@ -69,15 +69,15 @@ export default function LoginPage() {
   return (
     <div className="animate-fade-in">
       <h2 className="font-display text-2xl text-white font-bold mb-1">Bon retour</h2>
-      <p className="text-primary-300 text-sm mb-6">Connectez-vous à votre compte MANG</p>
+      <p className="text-primary-300 dark:text-gray-300 text-sm mb-6">Connectez-vous à votre compte MANG</p>
 
       {/* Bouton Google */}
       <button
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5"
-        style={{ background: 'rgba(255,255,255,0.95)', color: '#1a1a1a' }}
+        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5 bg-white hover:bg-slate-50 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] text-[#1a1a1a] dark:text-white border border-transparent dark:border-[#4e4f50] shadow-sm"
+        
       >
         {googleLoading
           ? <Loader2 size={18} className="animate-spin text-gray-500"/>
@@ -105,7 +105,7 @@ export default function LoginPage() {
             onChange={e => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+            className="w-full pl-10 pr-4 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border border-white/20 dark:border-[#4e4f50] rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
           />
         </div>
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
             onChange={e => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full pl-10 pr-12 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+            className="w-full pl-10 pr-12 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border border-white/20 dark:border-[#4e4f50] rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
           />
           <button type="button" onClick={() => setShowPass(!showPass)}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
@@ -144,7 +144,7 @@ export default function LoginPage() {
             toast.success("Mode invité activé — Bienvenue sur le marché MANG !")
             navigate('/marketplace')
           }}
-          className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/15 transition-all duration-200 active:scale-95 flex items-center justify-center mt-2"
+          className="w-full py-3.5 bg-white/5 hover:bg-white/10 dark:bg-[#3a3b3c]/60 dark:hover:bg-[#3a3b3c] text-white font-bold rounded-2xl border border-white/15 dark:border-[#4e4f50] transition-all duration-200 active:scale-95 flex items-center justify-center mt-2"
         >
           Entrer en tant qu'invité
         </button>

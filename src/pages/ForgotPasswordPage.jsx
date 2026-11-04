@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
     <div className="text-center animate-fade-in">
       <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner"><Mail size={32} className="text-gold-400" /></div>
       <h2 className="font-display text-xl text-white font-bold mb-2">Email envoyé !</h2>
-      <p className="text-primary-300 text-sm mb-6">Vérifiez votre boîte mail pour réinitialiser votre mot de passe.</p>
+      <p className="text-primary-300 dark:text-gray-300 text-sm mb-6">Vérifiez votre boîte mail pour réinitialiser votre mot de passe.</p>
       <Link to="/connexion" className="btn-primary w-full block text-center">Retour à la connexion</Link>
     </div>
   )
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
           <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input type="email" placeholder="Votre adresse email" value={email}
             onChange={e => setEmail(e.target.value)} required
-            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium" />
+            className="w-full pl-10 pr-4 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border border-white/20 dark:border-[#4e4f50] rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium" />
         </div>
         <button type="submit" disabled={loading}
           className="w-full py-3.5 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-60">

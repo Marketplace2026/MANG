@@ -315,7 +315,7 @@ export default function RegisterPage() {
   return (
     <div className="animate-fade-in">
       <h2 className="font-display text-2xl text-white font-bold mb-1">Rejoignez MANG</h2>
-      <p className="text-primary-300 text-sm mb-4">Créez votre compte et commencez à vendre ou acheter</p>
+      <p className="text-primary-300 dark:text-gray-300 text-sm mb-4">Créez votre compte et commencez à vendre ou acheter</p>
 
       {/* BANNIÈRE CADEAU DE BIENVENUE : 20 PIÈCES OFFERTES */}
       <div className="bg-gradient-to-r from-emerald-500/20 via-primary-500/30 to-gold-500/20 border border-gold-400/30 rounded-2xl p-3 mb-5 flex items-center gap-2.5 shadow-sm">
@@ -332,8 +332,8 @@ export default function RegisterPage() {
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5"
-        style={{ background: 'rgba(255,255,255,0.95)', color: '#1a1a1a' }}
+        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 disabled:opacity-60 mb-5 bg-white hover:bg-slate-50 dark:bg-[#3a3b3c] dark:hover:bg-[#4e4f50] text-[#1a1a1a] dark:text-white border border-transparent dark:border-[#4e4f50] shadow-sm"
+        
       >
         {googleLoading ? <Loader2 size={18} className="animate-spin text-gray-500"/> : <GoogleIcon />}
         <span>{googleLoading ? 'Redirection...' : 'Continuer avec Google'}</span>
@@ -371,8 +371,8 @@ export default function RegisterPage() {
               }}
               autoComplete="off"
               className={clsx(
-                'w-full pl-10 pr-24 py-3.5 bg-white/10 border rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-mono tracking-wider transition-colors',
-                referralCode ? 'border-gold-400/60 bg-gold-500/10' : 'border-white/20'
+                'w-full pl-10 pr-24 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-mono tracking-wider transition-colors',
+                referralCode ? 'border-gold-400/60 bg-gold-500/10 dark:bg-gold-500/20' : 'border-white/20 dark:border-[#4e4f50]'
               )}
             />
             {referralCode ? (
@@ -409,10 +409,10 @@ export default function RegisterPage() {
               required
               autoComplete="username"
               className={clsx(
-                'w-full pl-10 pr-10 py-3.5 bg-white/10 border rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium transition-colors',
+                'w-full pl-10 pr-10 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium transition-colors',
                 usernameStatus === 'available' ? 'border-emerald-400/50' :
                 usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400/50' :
-                'border-white/20'
+                'border-white/20 dark:border-[#4e4f50]'
               )}
             />
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2"><UsernameIcon/></div>
@@ -431,7 +431,7 @@ export default function RegisterPage() {
             onChange={e => setForm({ ...form, email: e.target.value })}
             required
             autoComplete="email"
-            className="w-full pl-10 pr-4 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+            className="w-full pl-10 pr-4 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border border-white/20 dark:border-[#4e4f50] rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
           />
         </div>
 
@@ -447,7 +447,7 @@ export default function RegisterPage() {
               onChange={e => setForm({ ...form, password: e.target.value })}
               required minLength={6}
               autoComplete="new-password"
-              className="w-full pl-10 pr-12 py-3.5 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
+              className="w-full pl-10 pr-12 py-3.5 bg-white/10 dark:bg-[#3a3b3c] border border-white/20 dark:border-[#4e4f50] rounded-2xl text-white placeholder-white/40 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium"
             />
             <button type="button" onClick={() => setShowPass(!showPass)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
