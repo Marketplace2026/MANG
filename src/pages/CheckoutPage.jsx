@@ -5,9 +5,11 @@ import { toast } from 'react-hot-toast';
 import { 
   ArrowLeft, ShieldCheck, Wallet, CheckCircle, 
   AlertTriangle, Phone, MapPin, User, ChevronRight, Store, Loader2,
-  ChevronDown, CheckCircle2, Navigation, Plus, Check, Trash2, X, ShoppingCart
+  ChevronDown, CheckCircle2, Navigation, Plus, Check, Trash2, X, ShoppingCart, Truck
 } from 'lucide-react';
 import { BottomSheet, Button } from '@/components/ui';
+import { clsx } from 'clsx';
+import { getShopDeliveryCities, formatDeliveryPrice } from '@/utils/delivery';
 import { supabase } from '@/lib/supabase';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

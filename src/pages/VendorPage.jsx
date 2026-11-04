@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store'
 import { Avatar, Button, BottomSheet, Modal, PremiumBadge, Skeleton } from '@/components/ui'
 import FarmerCycleManager from '@/components/marketplace/FarmerCycleManager'
 import CreateShopSheet from '@/components/vendor/modals/CreateShopSheet'
+import EditShopSheet from '@/components/vendor/modals/EditShopSheet'
 import AddProductSheet from '@/components/vendor/modals/AddProductSheet'
 import VendorCopilotPanel from '@/components/vendor/VendorCopilotPanel'
 import PremiumCountdownWidget from '@/components/vendor/PremiumCountdownWidget'
@@ -366,6 +367,14 @@ export default function VendorPage() {
         pieces={pieces}
         refreshWallet={refreshPieces}
         onCreated={() => { loadShops(); setCreateShopOpen(false) }}
+      />
+
+      {/* Modifier boutique & livraisons */}
+      <EditShopSheet
+        open={!!editShopOpen}
+        onClose={() => setEditShopOpen(null)}
+        shop={editShopOpen}
+        onUpdated={() => { loadShops(); setEditShopOpen(null) }}
       />
 
       {/* Ajouter produit */}

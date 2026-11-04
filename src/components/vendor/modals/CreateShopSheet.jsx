@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { Button, BottomSheet, Modal } from '@/components/ui'
 import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA } from '@/components/vendor/shared'
+import DeliveryCitiesConfig from '@/components/vendor/DeliveryCitiesConfig'
+import { embedDeliveryCitiesInDescription } from '@/utils/delivery'
 
 export default function CreateShopSheet({ open, onClose, user, pieces, onCreated, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
@@ -19,6 +21,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
   const [loadingStep, setLoadingStep] = useState('')
   const [locating, setLocating] = useState(false)
   const [coords, setCoords] = useState(null)
+  const [deliveryCities, setDeliveryCities] = useState([])
   const coverRef = useRef()
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
 
   const reset = () => {
     setForm({ name:'', description:'', city:'', quarter:'', address:'', whatsapp:'', has_delivery: false })
-    setSelectedCategory(null); setCoverFile(null); setCoverPreview(null); setCoords(null)
+    setSelectedCategory(null); setCoverFile(null); setCoverPreview(null); setCoords(null); setDeliveryCities([])
   }
 
   const handleCover = (e) => {
@@ -66,6 +69,10 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
     if (!form.quarter.trim()) { toast.error('Quartier requis'); return }
     if (!form.address.trim()) { toast.error('Adresse exacte requise'); return }
     if (!coords) { toast.error('Veuillez cliquer sur le bouton "GPS" pour localiser précisément votre boutique'); return }
+    if (form.has_delivery && (!deliveryCities || deliveryCities.length === 0)) {
+      toast.error('Veuillez ajouter au moins une ville avec son tarif de livraison');
+      return;
+    }
     if ((pieces?.balance || 0) < 10) { toast.error('Pièces insuffisantes (10 🪙 requis)'); return }
 
     setLoading(true)
@@ -91,11 +98,17 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
 
       const fullLocationString = `${form.address.trim()} (${form.quarter.trim()}, ${form.city.trim()})`
 
+      const finalDescription = form.has_delivery 
+        ? embedDeliveryCitiesInDescription(form.description.trim() || '', deliveryCities)
+        : (form.description.trim() || null);
+
+      let createdShopId = null;
+
       // 3. Tentative de création via RPC atomique sécurisée en priorité
       const { data: rpcData, error: rpcError } = await supabase.rpc('create_new_shop', {
         p_name: form.name.trim(),
         p_slug: slug,
-        p_description: form.description.trim() || null,
+        p_description: finalDescription,
         p_city: fullLocationString,
         p_latitude: coords?.latitude || null,
         p_longitude: coords?.longitude || null,
@@ -103,7 +116,11 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
         p_has_delivery: !!form.has_delivery,
         p_whatsapp: form.whatsapp.trim() || null,
         p_category_id: selectedCategory?.id || null,
-      })
+      });
+
+      if (!rpcError && rpcData?.success) {
+        createdShopId = rpcData?.shop_id;
+      }
 
       if (!rpcError && rpcData?.success) {
         // Succès via RPC
@@ -112,11 +129,11 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
           console.warn('[RPC create_new_shop returned error, attempting fallback]', rpcData.error)
         }
         // Fallback insertion directe
-        const { error: insertError } = await supabase.from('shops').insert({
+        let insertPayload = {
           owner_id: user.id,
           name: form.name.trim(),
           slug,
-          description: form.description.trim() || null,
+          description: finalDescription,
           city: fullLocationString,
           latitude: coords?.latitude || null,
           longitude: coords?.longitude || null,
@@ -124,7 +141,30 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
           has_delivery: !!form.has_delivery,
           whatsapp: form.whatsapp.trim() || null,
           category_id: selectedCategory?.id || null,
-        })
+        };
+
+        if (form.has_delivery && deliveryCities.length > 0) {
+          insertPayload.delivery_cities = deliveryCities;
+        }
+
+        let { data: insertedShop, error: insertError } = await supabase
+          .from('shops')
+          .insert(insertPayload)
+          .select('id')
+          .single();
+
+        if (insertError && insertError.message && insertError.message.includes('delivery_cities')) {
+          delete insertPayload.delivery_cities;
+          const retry = await supabase.from('shops').insert(insertPayload).select('id').single();
+          insertError = retry.error;
+          insertedShop = retry.data;
+        }
+
+        if (insertError) {
+          console.error('[shops insert error]', insertError);
+          throw insertError;
+        }
+        createdShopId = insertedShop?.id;
 
         if (insertError) {
           console.error('[shops insert error]', insertError)
@@ -158,7 +198,15 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
         }
       }
 
-      setLoadingStep('Finalisation...')
+            if (createdShopId && form.has_delivery && deliveryCities.length > 0) {
+        try {
+          await supabase.from('shops').update({ delivery_cities: deliveryCities }).eq('id', createdShopId);
+        } catch (e) {
+          console.warn('[Sync delivery_cities non-blocking]', e);
+        }
+      }
+
+      setLoadingStep('Finalisation...');
       toast.success('Boutique créée avec succès !')
       reset()
       if (refreshWallet) await refreshWallet()
@@ -320,6 +368,13 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
               {form.has_delivery && <Check size={12} className="text-white" strokeWidth={3}/>}
             </div>
           </button>
+
+          {form.has_delivery && (
+            <DeliveryCitiesConfig
+              cities={deliveryCities}
+              onChange={setDeliveryCities}
+            />
+          )}
 
           <div className="relative">
             <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-600/40 pointer-events-none"/>

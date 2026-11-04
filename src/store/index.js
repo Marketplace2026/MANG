@@ -424,17 +424,24 @@ export const useCartStore = create(
 
       clearCart: () => set({ items: [] }),
 
-      checkoutWithWallet: async (userId, walletBalance, deliveryAddress, deliveryPhone) => {
+      checkoutWithWallet: async (userId, walletBalance, deliveryAddress, deliveryPhone, deliveryOptions = {}) => {
         set({ status: 'loading' })
         try {
+          const { isDelivery = false, deliveryCity = '', deliveryFee = 0 } = deliveryOptions
           const currentItems = get().items
           const subTotal = currentItems.reduce((sum, i) => sum + i.price * i.qty, 0)
+          const totalWithDelivery = subTotal + (isDelivery ? deliveryFee : 0)
           
-          if (walletBalance < subTotal) {
-            toast.error('Solde insuffisant')
+          if (walletBalance < totalWithDelivery) {
+            toast.error('Solde insuffisant pour couvrir les articles et la livraison')
             set({ status: 'idle' })
             return false
           }
+
+          // Préparer l'adresse enrichie avec le mode de livraison
+          const enrichedAddress = isDelivery
+            ? `[LIVRAISON : ${deliveryCity}${deliveryFee > 0 ? ` (+${deliveryFee.toLocaleString('fr-FR')} FCFA)` : ' (Gratuit)'}] ${deliveryAddress}`
+            : `[RETRAIT EN MAGASIN] ${deliveryAddress}`
 
           // Préparer les articles pour le RPC
           const formattedItems = currentItems.map(i => ({
@@ -446,7 +453,7 @@ export const useCartStore = create(
           const { data, error } = await supabase.rpc('place_cart_orders', {
             p_buyer_id: userId,
             p_items: formattedItems,
-            p_delivery_address: deliveryAddress,
+            p_delivery_address: enrichedAddress,
             p_delivery_phone: deliveryPhone
           })
 
@@ -456,6 +463,19 @@ export const useCartStore = create(
             toast.error(data?.error || 'Erreur lors du paiement')
             set({ status: 'idle' })
             return false
+          }
+
+          // Mettre à jour les colonnes de livraison sur les commandes créées si colonnes migrées
+          if (data?.order_ids && Array.isArray(data.order_ids) && data.order_ids.length > 0) {
+            try {
+              await supabase.from('orders').update({
+                is_delivery: isDelivery,
+                delivery_city: isDelivery ? deliveryCity : null,
+                delivery_fee: isDelivery ? deliveryFee : 0
+              }).in('id', data.order_ids)
+            } catch (syncErr) {
+              console.warn('[Sync delivery on orders non-blocking]', syncErr)
+            }
           }
 
           get().clearCart()
