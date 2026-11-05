@@ -250,10 +250,12 @@ export default function ProductDetailPage() {
     toast.success('Lien du produit copié dans le presse-papiers ! ')
   }
 
-  // Calcul du prix unitaire en fonction de la variante et des paliers de gros
+  // Calcul du prix unitaire et de la quantité/conditionnement de référence
+  const unitLabel = product?.unit || product?.variants?.[0]?.name || '1 unité'
+
   const getUnitPrice = () => {
     if (!product) return 0
-    let price = selectedVariant ? selectedVariant.price : product.price
+    let price = product.price
 
     // Paliers de gros
     if (product.wholesale_tiers?.length > 0) {
@@ -274,17 +276,17 @@ export default function ProductDetailPage() {
       navigate('/connexion')
       return
     }
-    addItem(product, quantity, selectedVariant)
-    toast.success('Produit ajouté au panier ! ')
+    addItem(product, quantity, { name: unitLabel, price: unitPrice })
+    toast.success('Produit ajouté au panier !')
   }
 
   const handleBuyNow = () => {
     if (!user) {
-      toast.error('Veuillez vous connecter pour acheter')
+      toast.error('Veuillez vous connecter pour commander')
       navigate('/connexion')
       return
     }
-    addItem(product, quantity, selectedVariant)
+    addItem(product, quantity, { name: unitLabel, price: unitPrice })
     navigate('/panier')
   }
 
@@ -456,9 +458,14 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Section Prix & Promo */}
-          <div className="flex items-baseline gap-2.5 pt-2 border-t border-surface-100">
-            <span className="font-display font-black text-primary-700 text-3xl">{formatFCFA(unitPrice)}</span>
+          {/* Section Prix & Quantité / Conditionnement */}
+          <div className="flex items-baseline gap-2.5 pt-2 border-t border-surface-100 flex-wrap">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="font-display font-black text-primary-700 text-3xl">{formatFCFA(unitPrice)}</span>
+              <span className="text-dark-600 font-bold text-sm bg-surface-100 px-2.5 py-1 rounded-xl">
+                / {unitLabel}
+              </span>
+            </div>
             <span className="text-dark-400 line-through text-sm font-semibold">{formatFCFA(priceBarre)}</span>
             <span className="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-lg">-20% PROMO</span>
           </div>
@@ -523,31 +530,21 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* SECTION 3: ACTIONS ACHAT (Quantité & Variantes) */}
+        {/* SECTION 3: ACTIONS ACHAT (Quantité & Commande) */}
         <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
-          
-          {/* Variantes */}
-          {product.variants?.length > 0 && (
-            <div className="space-y-2.5">
-              <p className="text-xs font-black text-dark-600/40 uppercase tracking-wider pl-0.5">Sélectionner l'option</p>
-              <div className="grid grid-cols-2 gap-2">
-                {product.variants.map((v, i) => (
-                  <button key={i} onClick={() => { setSelectedVariant(v); setQuantity(1) }}
-                    className={clsx('p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.98]',
-                      selectedVariant?.name === v.name
-                        ? 'border-primary-600 bg-primary-50/50 text-primary-800'
-                        : 'border-surface-200 bg-white text-dark-700 hover:border-surface-300'
-                    )}>
-                    <p className="font-bold text-xs leading-tight">{v.name}</p>
-                    <p className="font-black text-sm mt-1 text-primary-600">{formatFCFA(v.price)}</p>
-                    {v.stock !== undefined && (
-                      <p className="text-[9px] text-dark-400 mt-0.5">Stock : {v.stock}</p>
-                    )}
-                  </button>
-                ))}
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black text-dark-800 uppercase tracking-wider">Quantité à commander</p>
+              <p className="text-[11px] text-dark-500 mt-0.5">
+                Format unitaire : <strong className="text-primary-700">{unitLabel}</strong>
+              </p>
             </div>
-          )}
+            {product.stock_quantity !== null && product.stock_quantity !== undefined && (
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                Stock dispo : {product.stock_quantity}
+              </span>
+            )}
+          </div>
 
           {/* Paliers dégressifs de gros */}
           {product.wholesale_tiers?.length > 0 && (
@@ -569,7 +566,10 @@ export default function ProductDetailPage() {
           {/* Ajusteur quantité */}
           {!isOutofStock && (
             <div className="flex items-center justify-between pt-2">
-              <p className="font-bold text-dark-800 text-sm">Quantité</p>
+              <div>
+                <p className="font-bold text-dark-800 text-sm">Quantité ({unitLabel})</p>
+                <p className="text-[10px] text-dark-400">Total : {quantity} x {unitLabel}</p>
+              </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => setQuantity(q => Math.max(1, q - 1))}
                   className="w-10 h-10 rounded-xl bg-surface-100 hover:bg-surface-200 active:scale-90 flex items-center justify-center transition-all">
@@ -600,7 +600,7 @@ export default function ProductDetailPage() {
               { label: 'Origine', value: 'Bénin (Afrique de l\'Ouest)' },
               { label: 'Type de produit', value: 'Agriculture locale récoltée' },
               { label: 'Culture', value: 'Biologique / Sans pesticides chimiques' },
-              { label: 'Conditionnement', value: product.variants?.map(v => v.name).join(', ') || 'Sacs ou vrac' },
+              { label: 'Conditionnement / Unité', value: unitLabel },
               { label: 'Stock total disponible', value: product.stock_quantity !== null ? `${product.stock_quantity} unités` : 'Illimité' }
             ].map((spec, i) => (
               <div key={i} className="flex p-3">
@@ -824,7 +824,7 @@ export default function ProductDetailPage() {
       {/* BARRE ACTIONS STICKY BAS ALIBABA (VERT & ORANGE) */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 px-4 py-3 flex items-center justify-between gap-3 shadow-2xl safe-pb max-w-[var(--content-max-width)] mx-auto">
         <div className="flex flex-col">
-          <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total à payer</p>
+          <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total ({quantity} x {unitLabel})</p>
           <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">{formatFCFA(totalPrice)}</p>
         </div>
 

@@ -322,20 +322,16 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
         {product.description && (
           <p className="text-dark-600 dark:text-gray-400/50 text-xs mt-0.5 line-clamp-2">{product.description}</p>
         )}
-        {/* Prix et conditionnement qualifié (Sac, Kg, etc.) */}
-        <div className="mt-2.5 space-y-1">
+        {/* Prix et Quantité / Conditionnement */}
+        <div className="mt-2.5">
           <div className="flex items-baseline justify-between gap-1 flex-wrap">
             <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
               <span className="font-display font-black text-primary-700 dark:text-primary-400 text-base leading-tight">
-                {product.variants?.length > 1
-                  ? `Dès ${formatFCFA(Math.min(...product.variants.map(v => v.price)))}`
-                  : formatFCFA(product.price)}
+                {formatFCFA(product.price)}
               </span>
-              {product.variants?.length === 1 && (
-                <span className="text-[11px] text-dark-500 dark:text-gray-400 font-bold truncate max-w-[130px]">
-                  / {product.variants[0].name}
-                </span>
-              )}
+              <span className="text-[11px] text-dark-500 dark:text-gray-400 font-bold truncate">
+                / {product.unit || product.variants?.[0]?.name || '1 unité'}
+              </span>
             </div>
 
             {product.distance !== undefined && product.distance !== null && (
@@ -344,15 +340,6 @@ export function ProductCard({ product, shopName, onOrder, onFavorite, isFavorite
               </span>
             )}
           </div>
-
-          {/* Badge intelligent si formats multiples */}
-          {product.variants?.length > 1 && (
-            <div className="flex items-center gap-1 flex-wrap pt-0.5">
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-800/40">
-                📦 {product.variants.length} formats ({product.variants.map(v => v.name).slice(0, 2).join(', ')}{product.variants.length > 2 ? '...' : ''})
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

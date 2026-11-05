@@ -182,6 +182,8 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
               isActive = location.pathname === '/marketplace' && (!!location.state?.openCategories || location.search.includes('cat=true'))
             } else if (item.label === 'Accueil') {
               isActive = location.pathname === '/marketplace' && !location.state?.openCategories && !location.search.includes('cat=true')
+            } else if (item.label === 'Mon MANG') {
+              isActive = location.pathname.startsWith('/profil') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/commandes') || location.pathname.startsWith('/favoris') || location.pathname.startsWith('/parrainage') || location.pathname.startsWith('/portefeuille')
             } else {
               isActive = item.path && location.pathname.startsWith(item.path)
             }
@@ -210,10 +212,10 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                   />
                   <Icon
                     size={20}
-                    strokeWidth={isActive ? 2.5 : 2.1}
+                    strokeWidth={isActive ? 2.5 : 2.2}
                     className={clsx(
                       'transition-transform duration-300',
-                      isActive ? 'text-emerald-700 dark:text-emerald-400 scale-110' : 'text-slate-600 dark:text-[#b0b3b8] hover:text-dark-900 dark:hover:text-white'
+                      isActive ? 'text-emerald-700 dark:text-emerald-400 scale-110' : 'text-slate-700 dark:text-[#b0b3b8] hover:text-dark-900 dark:hover:text-white'
                     )}
                   />
                   
@@ -235,8 +237,8 @@ const cartCount = items.reduce((sum, item) => sum + item.qty, 0)
                 {/* Label */}
                 <span
                   className={clsx(
-                    'text-[10px] font-bold tracking-wide mt-1 transition-all duration-300',
-                    isActive ? 'text-emerald-800 dark:text-emerald-400 font-black scale-105' : 'text-slate-600 dark:text-[#b0b3b8] font-bold'
+                    'text-[10px] tracking-wide mt-1 transition-all duration-300',
+                    isActive ? 'text-emerald-800 dark:text-emerald-400 font-black scale-105' : 'text-slate-700 dark:text-[#b0b3b8] font-extrabold'
                   )}
                 >
                   {item.label}

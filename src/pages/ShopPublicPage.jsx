@@ -1015,10 +1015,14 @@ function ProductCard({ product, user, onZoom, onOrder, onFavorite }) {
           </p>
         </div>
 
-        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-surface-100">
-          <div>
-            <span className="font-black text-primary-700 text-sm">{Number(product.price || 0).toLocaleString('fr-FR')}</span>
-            <span className="text-[9px] text-dark-400 ml-0.5 font-bold">F</span>
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-surface-100 dark:border-dark-700">
+          <div className="min-w-0 pr-1">
+            <div className="flex items-baseline gap-1">
+              <span className="font-black text-primary-700 dark:text-primary-400 text-sm">{Number(product.price || 0).toLocaleString('fr-FR')} F</span>
+            </div>
+            <p className="text-[9.5px] text-dark-500 dark:text-gray-400 font-bold truncate">
+              / {product.unit || product.variants?.[0]?.name || '1 unité'}
+            </p>
           </div>
           <button
             onClick={(e) => {
