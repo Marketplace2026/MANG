@@ -7,6 +7,25 @@ import { Button, BottomSheet } from '@/components/ui'
 import { generateProductDescription } from '@/lib/ai'
 import { CATEGORIES, slugify, AVAILABILITY_OPTIONS, formatFCFA, PRODUCT_LIMITS } from '@/components/vendor/shared'
 
+const PACKAGING_SUGGESTIONS = [
+  'Kg',
+  'Sac de 25 kg',
+  'Sac de 50 kg',
+  'Sac de 100 kg',
+  'Panier',
+  'Bassine',
+  'Carton',
+  'Filet',
+  'Bouteille (1L)',
+  'Bidon (5L)',
+  'Bidon (25L)',
+  'Botte',
+  'Casier',
+  'Tas',
+  'Plateau',
+  'Unité / Pièce'
+]
+
 export default function AddProductSheet({ open, onClose, shop, user, pieces, onAdded, refreshWallet }) {
   const [form, setForm] = useState({ name:'', description:'', price:'', availability:'now' })
   const [stockQuantity, setStockQuantity] = useState('')
@@ -86,9 +105,25 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
   }
 
   const handleAdd = async () => {
-    if (!form.name.trim()) { toast.error('Nom requis'); return }
-    if (!form.price || isNaN(+form.price) || +form.price <= 0) { toast.error('Prix invalide'); return }
-    if (!imageFile) { toast.error('Photo requise'); return }
+    if (!form.name.trim()) { toast.error('Nom du produit requis'); return }
+    if (!imageFile) { toast.error('Photo du produit requise'); return }
+
+    // Vérifier les conditionnements / variantes (obligatoire)
+    let finalVariants = [...variants]
+    if (finalVariants.length === 0 && vName.trim() && vPrice && !isNaN(vPrice) && +vPrice > 0) {
+      finalVariants.push({
+        name: vName.trim(),
+        price: Math.round(+vPrice),
+        stock: vStock && !isNaN(vStock) ? parseInt(vStock) : null
+      })
+    }
+
+    if (finalVariants.length === 0) {
+      toast.error('Veuillez obligatoirement définir le conditionnement (ex: Sac de 50kg, Kg...) avec son prix');
+      return;
+    }
+
+    const calculatedPrice = Math.min(...finalVariants.map(v => v.price))
     if ((pieces?.balance || 0) < 5) { toast.error('Pièces insuffisantes (5 🪙 requis)'); return }
 
     // Vérifier la limite de produits selon l'abonnement
@@ -114,12 +149,12 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
         shop_id: shop.id,
         name: form.name.trim(),
         description: form.description.trim() || null,
-        price: Math.round(+form.price),
+        price: calculatedPrice,
         image_url: imageUrl,
         availability: form.availability,
         is_available: true,
         stock_quantity: stockQuantity ? parseInt(stockQuantity) : null,
-        variants: variants,
+        variants: finalVariants,
         wholesale_tiers: wholesaleTiers
       })
       if (error) throw error
@@ -188,41 +223,149 @@ export default function AddProductSheet({ open, onClose, shop, user, pieces, onA
             className="input-field resize-none" rows={4}/>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-dark-700">Prix unitaire (FCFA) *</label>
-            <input type="number" placeholder="Ex: 5000" min="0" value={form.price}
-              onChange={e => setForm(p => ({...p, price: e.target.value}))} className="input-field"/>
-          </div>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-dark-700">Stock général (optionnel)</label>
-            <input type="number" placeholder="Ex: 250 (vide = infini)" min="0" value={stockQuantity}
-              onChange={e => setStockQuantity(e.target.value)} className="input-field"/>
-          </div>
-        </div>
-
-        {/* COMPOSANT GESTIONNAIRE DE VARIANTES */}
-        <div className="bg-surface-50 border border-surface-200 rounded-3xl p-4 space-y-3">
-          <p className="text-xs font-bold text-dark-700 uppercase tracking-wider pl-0.5">Variantes (ex: 50kg, 100kg, sac)</p>
-          
-          <div className="grid grid-cols-3 gap-1.5">
-            <input type="text" placeholder="Nom" value={vName} onChange={e => setVName(e.target.value)} className="input-field text-xs py-2 px-3"/>
-            <input type="number" placeholder="Prix" value={vPrice} onChange={e => setVPrice(e.target.value)} className="input-field text-xs py-2 px-3"/>
-            <input type="number" placeholder="Stock" value={vStock} onChange={e => setVStock(e.target.value)} className="input-field text-xs py-2 px-3"/>
-          </div>
-          <button onClick={addVariantLocal} className="w-full py-2 bg-primary-100 text-primary-700 text-xs font-bold rounded-xl active:scale-[0.98] transition-transform">
-            ＋ Ajouter la variante
-          </button>
-
-          {variants.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-surface-200">
-              {variants.map((v, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-white border border-surface-150 p-2 rounded-xl text-xs">
-                  <p className="font-semibold text-dark-800">{v.name} - {v.price} F {v.stock !== null ? `(${v.stock} en stock)` : ''}</p>
-                  <button onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 font-bold px-1.5 py-0.5"></button>
-                </div>
-              ))}
+        {/* CONDITIONNEMENTS & VARIANTES (OBLIGATOIRE) */}
+        <div className="bg-surface-50 dark:bg-dark-800 border-2 border-primary-200 dark:border-primary-900/60 rounded-3xl p-4 space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black text-dark-900 dark:text-white uppercase tracking-wider">
+                📦 Conditionnement & Prix (Obligatoire) *
+              </p>
+              <p className="text-[11px] text-dark-500 dark:text-gray-400 mt-0.5">
+                Précisez l'unité ou le format de vente (ex: Sac de 50kg, au Kg, Panier...) avec son prix
+              </p>
             </div>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary-600 text-white shadow-xs">
+              {variants.length} format{variants.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Suggestions de conditionnements rapides */}
+          <div>
+            <label className="block text-[10px] font-bold text-dark-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+              Suggestions rapides en 1-clic :
+            </label>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+              {PACKAGING_SUGGESTIONS.map(sug => {
+                const isSelected = vName.toLowerCase() === sug.toLowerCase()
+                return (
+                  <button
+                    type="button"
+                    key={sug}
+                    onClick={() => setVName(sug)}
+                    className={clsx(
+                      'px-2 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 border',
+                      isSelected
+                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
+                        : 'bg-white dark:bg-dark-700 text-dark-700 dark:text-gray-200 border-surface-200 dark:border-dark-600 hover:border-primary-400'
+                    )}
+                  >
+                    {sug}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Formulaire d'ajout d'une variante */}
+          <div className="bg-white dark:bg-dark-900 rounded-2xl p-3 border border-surface-200 dark:border-dark-700 space-y-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] font-bold text-dark-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Format / Unité *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Sac de 50 kg"
+                  value={vName}
+                  onChange={e => setVName(e.target.value)}
+                  className="input-field text-xs py-2 px-3"
+                />
+              </div>
+
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] font-bold text-dark-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Prix (FCFA) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex: 15000"
+                  value={vPrice}
+                  onChange={e => setVPrice(e.target.value)}
+                  className="input-field text-xs py-2 px-3"
+                />
+              </div>
+
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] font-bold text-dark-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Stock (optionnel)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex: 50"
+                  value={vStock}
+                  onChange={e => setVStock(e.target.value)}
+                  className="input-field text-xs py-2 px-3"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={addVariantLocal}
+              className="w-full py-2.5 bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <Plus size={14} />
+              <span>Valider ce format / conditionnement</span>
+            </button>
+          </div>
+
+          {/* Liste des formats / conditionnements enregistrés */}
+          {variants.length > 0 ? (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[10px] font-bold text-dark-500 dark:text-gray-400 uppercase tracking-wider">
+                Formats qui seront affichés aux acheteurs :
+              </p>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {variants.map((v, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center bg-white dark:bg-dark-900 border border-primary-200 dark:border-primary-900/50 p-2.5 rounded-xl text-xs shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-400 font-black text-[10px] flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <p className="font-bold text-dark-900 dark:text-white">{v.name}</p>
+                        <p className="text-[10px] text-dark-500 dark:text-gray-400">
+                          {v.stock !== null ? `Stock disponible : ${v.stock}` : 'Stock illimité'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-lg border border-primary-200 dark:border-primary-900/50">
+                        {formatFCFA(v.price)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))}
+                        className="w-6 h-6 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors"
+                        title="Supprimer ce format"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40">
+              <AlertCircle size={14} className="shrink-0 text-amber-600" />
+              <span>Ajoutez au moins 1 format (ex: Sac de 50 kg à 15 000 F) pour activer la mise en vente.</span>
+            </p>
           )}
         </div>
 

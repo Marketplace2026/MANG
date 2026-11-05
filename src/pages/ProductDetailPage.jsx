@@ -25,7 +25,7 @@ export default function ProductDetailPage() {
   const cachedProduct = useCacheStore.getState().productDetailsCache[id]
   const [product, setProduct] = useState(cachedProduct || null)
   const [loading, setLoading] = useState(!cachedProduct)
-  const [selectedVariant, setSelectedVariant] = useState(null)
+  const [selectedVariant, setSelectedVariant] = useState(() => cachedProduct?.variants?.[0] || null)
   const [quantity, setQuantity] = useState(1)
   const [reviews, setReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(true)

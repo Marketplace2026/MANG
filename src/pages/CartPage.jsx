@@ -114,13 +114,13 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-xs text-dark-800 truncate">{item.name}</p>
                       {item.variant_name && (
-                        <p className="text-[10px] text-primary-600 font-bold mt-0.5 bg-primary-50 px-2 py-0.5 rounded-lg inline-block">
+                        <p className="text-[10px] text-primary-700 dark:text-primary-300 font-bold mt-0.5 bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-900/40 px-2 py-0.5 rounded-lg inline-block">
                           {item.variant_name}
                         </p>
                       )}
                       <p className="font-black text-sm text-dark-900 mt-1">
                         {formatFCFA(item.price)}
-                        <span className="text-[10px] text-dark-400 font-normal ml-0.5">/ {item.unit || 'u'}</span>
+                        <span className="text-[10px] text-dark-400 dark:text-gray-400 font-normal ml-1">/ {item.variant_name || item.unit || 'unité'}</span>
                       </p>
                     </div>
 
