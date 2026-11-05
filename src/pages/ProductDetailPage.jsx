@@ -359,12 +359,13 @@ export default function ProductDetailPage() {
   const totalPrice = unitPrice * quantity
   const priceBarre = Math.round(unitPrice * 1.25)
   const isOutofStock = product.stock_quantity !== null && product.stock_quantity <= 0
+  const normalPrice = (product.price || 0) * quantity
+  const wholesaleSaving = normalPrice > totalPrice ? (normalPrice - totalPrice) : 0
 
-  // Galerie d'images Alibaba-Style (3 slides)
+  // Galerie d'images réelles du produit (sans fausses photos externes)
   const slides = [
-    product.image_url || null,
-    'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800', // Photo champ pour la traçabilité
-    'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800', // Inspection qualité MANG
+    product.image_url,
+    ...(Array.isArray(product.images) ? product.images : [])
   ].filter(Boolean)
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
@@ -391,49 +392,68 @@ export default function ProductDetailPage() {
       </div>
 
       {/* SECTION 1: HERO GALERIE (Carrousel Swipe & Zoom) */}
-      <div className="relative w-full aspect-square bg-white max-w-[var(--content-max-width)] mx-auto overflow-hidden border-b border-surface-200">
-        <div className="w-full h-full flex transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
-          {slides.map((src, idx) => (
-            <div key={idx} className="w-full h-full flex-shrink-0 relative cursor-zoom-in" onClick={() => setZoomOpen(true)}>
-              <img loading="lazy" src={src} className="w-full h-full object-cover" alt={`Slide ${idx + 1}`}/>
+      <div className="relative w-full aspect-square bg-surface-100 dark:bg-[#18191a] max-w-[var(--content-max-width)] mx-auto overflow-hidden border-b border-surface-200 dark:border-[#3a3b3c]">
+        {slides.length > 0 ? (
+          <div className="w-full h-full flex transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
+            {slides.map((src, idx) => (
+              <div key={idx} className="w-full h-full flex-shrink-0 relative cursor-zoom-in" onClick={() => setZoomOpen(true)}>
+                <img loading="lazy" src={src} className="w-full h-full object-cover" alt={product.name}/>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-dark-400 dark:text-gray-500 bg-surface-50 dark:bg-dark-900">
+            <Package size={52} className="opacity-30 mb-2"/>
+            <span className="text-xs font-bold">Aucune image disponible</span>
+          </div>
+        )}
+
+        {/* Swipe dots indicators (si plusieurs images réelles) */}
+        {slides.length > 1 && (
+          <>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-full z-10">
+              {slides.map((_, idx) => (
+                <button key={idx} onClick={() => setActiveSlide(idx)}
+                  className={clsx('w-2 h-2 rounded-full transition-all', activeSlide === idx ? 'bg-white scale-125' : 'bg-white/40')}/>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Swipe dots indicators */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/35 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
-          {slides.map((_, idx) => (
-            <button key={idx} onClick={() => setActiveSlide(idx)}
-              className={clsx('w-2 h-2 rounded-full transition-all', activeSlide === idx ? 'bg-white scale-125' : 'bg-white/40')}/>
-          ))}
-        </div>
-
-        {/* Counter floating */}
-        <div className="absolute bottom-4 right-4 bg-dark-900/60 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-xl">
-          {activeSlide + 1} / {slides.length}
-        </div>
+            <div className="absolute bottom-4 right-4 bg-dark-900/70 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-xl z-10">
+              {activeSlide + 1} / {slides.length}
+            </div>
+          </>
+        )}
 
         {/* Float action buttons (Favoris & Share) */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2.5">
+        <div className="absolute top-4 right-4 flex flex-col gap-2.5 z-10">
           <button onClick={handleToggleFavorite} disabled={favProcessing}
-            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-surface-200 flex items-center justify-center active:scale-90 transition-transform">
-            <Heart size={18} className={clsx(isFav ? 'text-red-500 fill-red-500 animate-heart-pop' : 'text-dark-600')}/>
+            aria-label="Ajouter aux favoris"
+            className="w-10 h-10 rounded-full bg-white/90 dark:bg-[#242526]/90 backdrop-blur-md shadow-lg border border-surface-200 dark:border-[#3a3b3c] flex items-center justify-center active:scale-90 transition-transform">
+            <Heart size={18} className={clsx(isFav ? 'text-red-500 fill-red-500 animate-heart-pop' : 'text-dark-700 dark:text-gray-200')}/>
           </button>
           <button onClick={handleShare}
-            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-surface-200 flex items-center justify-center active:scale-90 transition-transform">
-            <Share2 size={18} className="text-dark-600"/>
+            aria-label="Partager le produit"
+            className="w-10 h-10 rounded-full bg-white/90 dark:bg-[#242526]/90 backdrop-blur-md shadow-lg border border-surface-200 dark:border-[#3a3b3c] flex items-center justify-center active:scale-90 transition-transform">
+            <Share2 size={18} className="text-dark-700 dark:text-gray-200"/>
           </button>
         </div>
 
-        {/* Badges marketing */}
-        <div className="absolute top-4 left-4 flex flex-col gap-1.5 items-start">
-          <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
-            <CheckCircle size={10}/> En stock
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-black text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
-            <Truck size={10}/> Expédition 24h
-          </span>
+        {/* Badges marketing & Stock */}
+        <div className="absolute top-4 left-4 flex flex-col gap-1.5 items-start z-10">
+          {isOutofStock ? (
+            <span className="px-2.5 py-1 rounded-lg bg-red-600 text-white font-black text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+              <AlertTriangle size={10}/> Rupture de stock
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+              <CheckCircle size={10}/> {product.stock_quantity ? `En stock (${product.stock_quantity})` : 'En stock'}
+            </span>
+          )}
+          {product.shop?.has_delivery && (
+            <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-black text-[9px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+              <Truck size={10}/> Livraison disponible
+            </span>
+          )}
         </div>
       </div>
 
@@ -441,153 +461,208 @@ export default function ProductDetailPage() {
       <div className="px-4 mt-4 space-y-4 max-w-[var(--content-max-width)] mx-auto">
         
         {/* SECTION 2: INFOS CLÉS */}
-        <div className="bg-white rounded-3xl p-5 shadow-card space-y-3.5">
+        <div className="bg-white dark:bg-[#242526] rounded-3xl p-5 shadow-card border border-surface-150 dark:border-[#3a3b3c] space-y-3.5 transition-colors">
           <div className="space-y-1">
-            <h1 className="font-display font-black text-dark-900 text-xl leading-tight">{product.name}</h1>
+            <div className="flex items-start justify-between gap-2">
+              <h1 className="font-display font-black text-dark-900 dark:text-white text-xl leading-tight">{product.name}</h1>
+              {product.shop?.city && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/40 shrink-0">
+                  📍 {product.shop.city}
+                </span>
+              )}
+            </div>
             
-            {/* Étoiles & Sold Count */}
-            <div className="flex items-center gap-2 mt-1">
+            {/* Étoiles & Avis */}
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <div className="flex items-center gap-1 text-gold-500">
                 <Star size={13} className="fill-gold-500"/>
-                <span className="text-xs font-black text-dark-700">{avgRating > 0 ? avgRating : '4.8'}</span>
+                <span className="text-xs font-black text-dark-800 dark:text-gray-200">{avgRating > 0 ? avgRating : '4.8'}</span>
               </div>
-              <span className="text-dark-300 text-[10px]">•</span>
-              <span className="text-dark-600 text-xs font-semibold">{reviews.length} avis vérifiés</span>
-              <span className="text-dark-300 text-[10px]">•</span>
-              <span className="px-2 py-0.5 rounded bg-surface-50 border border-surface-150 text-[10px] text-primary-700 font-black">Vendu: 142</span>
+              <span className="text-dark-300 dark:text-gray-600 text-[10px]">•</span>
+              <span className="text-dark-600 dark:text-[#b0b3b8] text-xs font-semibold">{reviews.length} avis vérifiés</span>
+              <span className="text-dark-300 dark:text-gray-600 text-[10px]">•</span>
+              <span className="px-2 py-0.5 rounded bg-surface-50 dark:bg-[#18191a] border border-surface-150 dark:border-[#3a3b3c] text-[10px] text-primary-700 dark:text-primary-400 font-black">
+                Agriculture locale
+              </span>
             </div>
           </div>
 
           {/* Section Prix & Quantité / Conditionnement */}
-          <div className="flex items-baseline gap-2.5 pt-2 border-t border-surface-100 flex-wrap">
+          <div className="flex items-baseline gap-2.5 pt-2 border-t border-surface-100 dark:border-[#3a3b3c] flex-wrap">
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="font-display font-black text-primary-700 text-3xl">{formatFCFA(unitPrice)}</span>
-              <span className="text-dark-600 font-bold text-sm bg-surface-100 px-2.5 py-1 rounded-xl">
+              <span className="font-display font-black text-primary-700 dark:text-primary-400 text-3xl">{formatFCFA(unitPrice)}</span>
+              <span className="text-dark-700 dark:text-gray-200 font-bold text-sm bg-surface-100 dark:bg-[#18191a] px-2.5 py-1 rounded-xl border border-surface-200 dark:border-[#3a3b3c]">
                 / {unitLabel}
               </span>
             </div>
-            <span className="text-dark-400 line-through text-sm font-semibold">{formatFCFA(priceBarre)}</span>
-            <span className="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-lg">-20% PROMO</span>
+            <span className="text-dark-400 dark:text-gray-500 line-through text-sm font-semibold">{formatFCFA(priceBarre)}</span>
+            <span className="text-[10px] bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 font-black px-2 py-0.5 rounded-lg border border-red-200/50 dark:border-red-900/40">-20% PROMO</span>
+          </div>
+
+          {/* Sécurisation MANG Pay Escrow */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-primary-50/80 dark:from-emerald-950/40 dark:to-primary-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+              <ShieldCheck size={18}/>
+            </div>
+            <div className="min-w-0 flex-1 text-xs">
+              <p className="font-black text-dark-900 dark:text-white flex items-center gap-1.5">
+                <span>Paiement Garanti MANG Pay Escrow</span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] bg-emerald-600 text-white font-black uppercase">Sécurisé</span>
+              </p>
+              <p className="text-dark-600 dark:text-[#b0b3b8] text-[11px] mt-0.5 leading-relaxed">
+                Votre argent est conservé en séquestre et versé au producteur seulement après que vous ayez reçu et vérifié votre produit.
+              </p>
+            </div>
           </div>
 
           {/* Garanties MANG */}
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-surface-100 text-center">
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-surface-100 dark:border-[#3a3b3c] text-center">
             {[
-              { icon: ShieldCheck, title: 'Garantie', desc: 'Remboursement' },
-              { icon: Award,       title: 'Retours',   desc: 'Sous 7 jours' },
-              { icon: Truck,       title: 'Livraison', desc: 'Sécurisée' }
+              { icon: ShieldCheck, title: 'Séquestre Escrow', desc: 'Fonds protégés' },
+              { icon: Award,       title: 'Qualité Vérifiée', desc: 'Traçabilité' },
+              { icon: Truck,       title: 'Livraison', desc: product.shop?.has_delivery ? 'Disponible' : 'Sur place' }
             ].map((g, i) => (
-              <div key={i} className="p-2 rounded-2xl bg-surface-50">
-                <g.icon size={15} className="text-primary-600 mx-auto mb-1"/>
-                <p className="font-bold text-[10px] text-dark-800 leading-tight">{g.title}</p>
-                <p className="text-dark-600/50 text-[8px] mt-0.5">{g.desc}</p>
+              <div key={i} className="p-2 rounded-2xl bg-surface-50 dark:bg-[#18191a] border border-transparent dark:border-[#3a3b3c]">
+                <g.icon size={15} className="text-primary-600 dark:text-primary-400 mx-auto mb-1"/>
+                <p className="font-bold text-[10px] text-dark-800 dark:text-white leading-tight">{g.title}</p>
+                <p className="text-dark-600/60 dark:text-[#b0b3b8] text-[8px] mt-0.5">{g.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* FICHE VENDEUR */}
-        <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
-          <p className="text-xs font-black text-dark-600/40 uppercase tracking-wider pl-0.5">Informations du vendeur</p>
+        <div className="bg-white dark:bg-[#242526] rounded-3xl p-5 shadow-card border border-surface-150 dark:border-[#3a3b3c] space-y-4 transition-colors">
+          <p className="text-xs font-black text-dark-600/60 dark:text-gray-400 uppercase tracking-wider pl-0.5">Boutique & Vendeur</p>
           <div className="flex items-center gap-3">
-            <Avatar src={null} name={product.shop?.name} size="md"/>
+            <Avatar src={product.shop?.owner?.avatar_url || null} name={product.shop?.name} size="md"/>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
-                <p className="font-bold text-dark-800 text-sm truncate">{product.shop?.name}</p>
+                <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{product.shop?.name}</p>
                 {product.shop?.is_verified && (
-                  <BadgeCheck size={14} className="text-emerald-500 fill-emerald-50/50"/>
+                  <BadgeCheck size={14} className="text-emerald-500 fill-emerald-50/50 shrink-0"/>
                 )}
               </div>
-              <p className="text-dark-600/50 text-xs flex items-center gap-1 flex-wrap">
-                <span>Propriétaire :</span>
+              <p className="text-dark-600/60 dark:text-[#b0b3b8] text-xs flex items-center gap-1 flex-wrap">
+                <span>Vendeur :</span>
                 <button
                   type="button"
                   onClick={() => {
                     const target = product.shop?.owner?.username || product.shop?.owner_id
                     if (target) navigate(`/profil/${target}`)
                   }}
-                  className="font-bold text-primary-700 hover:underline cursor-pointer"
+                  className="font-bold text-primary-700 dark:text-primary-400 hover:underline cursor-pointer"
                 >
-                  @{product.shop?.owner?.username || 'vendeur'}
+                  @{product.shop?.owner?.username || 'producteur'}
                 </button>
               </p>
             </div>
             <button onClick={() => navigate(`/boutique/${product.shop?.slug || product.shop_id}`)}
-              className="px-3.5 py-2 rounded-xl bg-surface-50 border border-surface-200 text-dark-700 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1">
+              className="px-3.5 py-2 rounded-xl bg-surface-50 dark:bg-[#18191a] border border-surface-200 dark:border-[#3a3b3c] text-dark-700 dark:text-gray-200 text-xs font-bold active:scale-95 transition-transform flex items-center gap-1 shadow-2xs hover:border-primary-500">
               Visiter <ArrowRight size={12}/>
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold pt-2.5 border-t border-surface-50">
-            <div className="p-2 bg-surface-50 rounded-xl">
-              <p className="text-dark-600/40 text-[9px] uppercase tracking-wider font-bold">Réponse</p>
-              <p className="text-emerald-700 font-bold mt-0.5">Répond en moins de 2h</p>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold pt-2.5 border-t border-surface-100 dark:border-[#3a3b3c]">
+            <div className="p-2 bg-surface-50 dark:bg-[#18191a] rounded-xl border border-transparent dark:border-[#3a3b3c]">
+              <p className="text-dark-600/60 dark:text-[#b0b3b8] text-[9px] uppercase tracking-wider font-bold">Réactivité</p>
+              <p className="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">Répond rapidement</p>
             </div>
-            <div className="p-2 bg-surface-50 rounded-xl">
-              <p className="text-dark-600/40 text-[9px] uppercase tracking-wider font-bold">Note Vendeur</p>
-              <p className="text-gold-600 font-bold mt-0.5">⭐ {product.shop?.rating_avg > 0 ? product.shop.rating_avg.toFixed(1) : '4.9'} / 5.0</p>
+            <div className="p-2 bg-surface-50 dark:bg-[#18191a] rounded-xl border border-transparent dark:border-[#3a3b3c]">
+              <p className="text-dark-600/60 dark:text-[#b0b3b8] text-[9px] uppercase tracking-wider font-bold">Note Boutique</p>
+              <p className="text-gold-600 dark:text-amber-400 font-bold mt-0.5">⭐ {product.shop?.rating_avg > 0 ? product.shop.rating_avg.toFixed(1) : '4.9'} / 5.0</p>
             </div>
           </div>
         </div>
 
         {/* SECTION 3: ACTIONS ACHAT (Quantité & Commande) */}
-        <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-white dark:bg-[#242526] rounded-3xl p-5 shadow-card border border-surface-150 dark:border-[#3a3b3c] space-y-4 transition-colors">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-xs font-black text-dark-800 uppercase tracking-wider">Quantité à commander</p>
-              <p className="text-[11px] text-dark-500 mt-0.5">
-                Format unitaire : <strong className="text-primary-700">{unitLabel}</strong>
+              <p className="text-xs font-black text-dark-800 dark:text-white uppercase tracking-wider">Quantité à commander</p>
+              <p className="text-[11px] text-dark-500 dark:text-[#b0b3b8] mt-0.5">
+                Format unitaire : <strong className="text-primary-700 dark:text-primary-400">{unitLabel}</strong>
               </p>
             </div>
-            {product.stock_quantity !== null && product.stock_quantity !== undefined && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+            {product.stock_quantity !== null && product.stock_quantity !== undefined ? (
+              <span className={clsx(
+                'text-[10px] font-bold px-2.5 py-1 rounded-xl border',
+                product.stock_quantity <= 0
+                  ? 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border-red-200 dark:border-red-900/40'
+                  : product.stock_quantity <= 5
+                  ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-900/40'
+                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40'
+              )}>
                 Stock dispo : {product.stock_quantity}
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                En stock
               </span>
             )}
           </div>
 
           {/* Paliers dégressifs de gros */}
           {product.wholesale_tiers?.length > 0 && (
-            <div className="p-4 bg-gold-500/10 border border-gold-300/30 rounded-2xl space-y-2 text-xs">
-              <p className="font-black text-gold-700 uppercase tracking-wider text-[9px] flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5"><Tag size={13} className="text-amber-600" /> Prix de gros dégressif applicable</span>
+            <div className="p-4 bg-gold-500/10 dark:bg-amber-950/40 border border-gold-300/30 dark:border-amber-800/40 rounded-2xl space-y-2 text-xs">
+              <p className="font-black text-gold-700 dark:text-amber-400 uppercase tracking-wider text-[9px] flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1.5"><Tag size={13} className="text-amber-600 dark:text-amber-400" /> Tarifs de gros dégressifs applicables</span>
               </p>
               <div className="space-y-1">
                 {product.wholesale_tiers.map((t, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-gold-800">
-                    <span>Achetez {t.min_qty}+ unités :</span>
-                    <span className="font-bold">{formatFCFA(t.price)} / u</span>
+                  <div key={idx} className="flex justify-between items-center text-gold-800 dark:text-amber-300">
+                    <span>Achetez {t.min_qty}+ {unitLabel}s :</span>
+                    <span className="font-bold">{formatFCFA(t.price)} / {unitLabel}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Ajusteur quantité */}
+          {/* Ajusteur quantité interactif */}
           {!isOutofStock && (
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                <p className="font-bold text-dark-800 text-sm">Quantité ({unitLabel})</p>
-                <p className="text-[10px] text-dark-400">Total : {quantity} x {unitLabel}</p>
+            <div className="space-y-2 pt-2 border-t border-surface-100 dark:border-[#3a3b3c]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-dark-800 dark:text-white text-sm">Quantité ({unitLabel})</p>
+                  <p className="text-[11px] text-dark-500 dark:text-[#b0b3b8]">
+                    {quantity} x {formatFCFA(unitPrice)} = <strong className="text-primary-700 dark:text-primary-400 font-black">{formatFCFA(totalPrice)}</strong>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 bg-surface-100 dark:bg-[#18191a] p-1 rounded-2xl border border-surface-200 dark:border-[#3a3b3c]">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="w-9 h-9 rounded-xl bg-white dark:bg-[#242526] hover:bg-surface-200 dark:hover:bg-[#3a3b3c] disabled:opacity-40 active:scale-90 flex items-center justify-center transition-all font-bold text-dark-800 dark:text-white shadow-2xs"
+                  >
+                    <Minus size={14}/>
+                  </button>
+                  <span className="font-display font-black text-dark-800 dark:text-white text-base w-8 text-center">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => q + 1)}
+                    className="w-9 h-9 rounded-xl bg-white dark:bg-[#242526] hover:bg-surface-200 dark:hover:bg-[#3a3b3c] active:scale-90 flex items-center justify-center transition-all font-bold text-dark-800 dark:text-white shadow-2xs"
+                  >
+                    <Plus size={14}/>
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                  className="w-10 h-10 rounded-xl bg-surface-100 hover:bg-surface-200 active:scale-90 flex items-center justify-center transition-all">
-                  <Minus size={14} className="text-dark-700"/>
-                </button>
-                <span className="font-display font-black text-dark-800 text-base w-8 text-center">{quantity}</span>
-                <button onClick={() => setQuantity(q => q + 1)}
-                  className="w-10 h-10 rounded-xl bg-surface-100 hover:bg-surface-200 active:scale-90 flex items-center justify-center transition-all">
-                  <Plus size={14} className="text-dark-700"/>
-                </button>
-              </div>
+
+              {/* Message d'économie de gros */}
+              {wholesaleSaving > 0 && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 animate-pulse">
+                  <Tag size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0"/>
+                  <span>Vous économisez <strong>{formatFCFA(wholesaleSaving)}</strong> sur cette commande de gros !</span>
+                </div>
+              )}
             </div>
           )}
 
           {/* Bouton Tertiaire - Devis B2B */}
           <button onClick={() => setQuoteOpen(true)}
-            className="w-full mt-2 py-3 rounded-2xl border-2 border-primary-600/20 hover:border-primary-600 text-primary-700 hover:bg-primary-50/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
-            <span className="inline-flex items-center gap-2"><Tag size={15} /> Demander un devis de gros (B2B)</span>
+            className="w-full mt-2 py-3 rounded-2xl border-2 border-primary-600/30 hover:border-primary-600 text-primary-700 dark:text-primary-400 hover:bg-primary-50/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
+            <span className="inline-flex items-center gap-2"><Tag size={15} /> Demander un devis de gros B2B personnalisé</span>
           </button>
         </div>
 
@@ -636,8 +711,8 @@ export default function ProductDetailPage() {
             <p className="text-xs font-black text-dark-600/40 uppercase tracking-wider pl-0.5">Vous pourriez aussi aimer</p>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
               {similarProducts.map(sim => (
-                <div key={sim.id} onClick={() => { navigate(`/produit/${sim.id}`); window.location.reload() }}
-                  className="w-36 bg-white rounded-2xl overflow-hidden shadow-card border border-surface-150 p-2.5 active:scale-[0.97] transition-all cursor-pointer flex-shrink-0 space-y-2">
+                <div key={sim.id} onClick={() => { navigate(`/produit/${sim.id}`); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className="w-36 bg-white dark:bg-[#242526] rounded-2xl overflow-hidden shadow-card border border-surface-150 dark:border-[#3a3b3c] p-2.5 active:scale-[0.97] transition-all cursor-pointer flex-shrink-0 space-y-2">
                   <div className="w-full aspect-square bg-surface-50 rounded-xl overflow-hidden">
                     {sim.image_url ? (
                       <img loading="lazy" src={sim.image_url} className="w-full h-full object-cover"/>
@@ -656,10 +731,10 @@ export default function ProductDetailPage() {
         )}
 
         {/* SECTION AVIS CLIENTS & BADGE ACHAT VÉRIFIÉ */}
-        <div className="bg-white rounded-3xl p-5 shadow-card space-y-4">
-          <div className="flex justify-between items-center border-b border-surface-100 pb-3">
+        <div className="bg-white dark:bg-[#242526] rounded-3xl p-5 shadow-card border border-surface-150 dark:border-[#3a3b3c] space-y-4 transition-colors">
+          <div className="flex justify-between items-center border-b border-surface-100 dark:border-[#3a3b3c] pb-3">
             <div>
-              <h3 className="font-bold text-dark-800 text-sm">Avis & notes clients</h3>
+              <h3 className="font-bold text-dark-800 dark:text-white text-sm">Avis & notes clients</h3>
               <p className="text-[11px] text-dark-600/50">Expériences partagées et achats vérifiés</p>
             </div>
             {avgRating > 0 && (
@@ -821,35 +896,49 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* BARRE ACTIONS STICKY BAS ALIBABA (VERT & ORANGE) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-surface-200 px-4 py-3 flex items-center justify-between gap-3 shadow-2xl safe-pb max-w-[var(--content-max-width)] mx-auto">
-        <div className="flex flex-col">
-          <p className="text-dark-600/50 text-[9px] font-bold uppercase tracking-wider">Total ({quantity} x {unitLabel})</p>
-          <p className="font-display font-black text-primary-700 text-lg leading-none mt-1">{formatFCFA(totalPrice)}</p>
+      {/* BARRE ACTIONS STICKY BAS */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-[#242526] border-t border-surface-200 dark:border-[#3a3b3c] px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] safe-pb max-w-[var(--content-max-width)] mx-auto transition-colors duration-200">
+        <div className="flex flex-col min-w-0">
+          <p className="text-dark-600/70 dark:text-[#b0b3b8] text-[9px] font-bold uppercase tracking-wider truncate">
+            Total ({quantity} x {unitLabel})
+          </p>
+          <p className="font-display font-black text-primary-700 dark:text-emerald-400 text-lg leading-none mt-1 truncate">
+            {formatFCFA(totalPrice)}
+          </p>
         </div>
 
-        {/* Bouton Chat WhatsApp MANG */}
-        <button onClick={handleContactSeller}
-          className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform hover:bg-emerald-100"
-          title="Contacter le vendeur">
-          <MessageCircle size={20} className="text-emerald-600"/>
+        {/* Bouton Messagerie directe MANG (Chat interne) */}
+        <button
+          type="button"
+          onClick={handleContactSeller}
+          className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center shrink-0 active:scale-95 transition-transform hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 shadow-2xs"
+          title="Messagerie vendeur MANG"
+        >
+          <MessageCircle size={20} />
         </button>
 
         {isOutofStock ? (
-          <button disabled className="flex-1 py-3.5 rounded-2xl bg-surface-200 text-dark-600/40 font-bold text-xs cursor-not-allowed">
+          <button disabled className="flex-1 py-3.5 rounded-2xl bg-surface-200 dark:bg-dark-800 text-dark-400 dark:text-gray-500 font-bold text-xs cursor-not-allowed">
             Rupture de stock
           </button>
         ) : (
-          <div className="flex gap-2 flex-1">
+          <div className="flex gap-2 flex-1 min-w-0">
             {/* VERT - Ajouter au panier */}
-            <button onClick={handleAddToCart}
-              className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md">
-              <ShoppingBag size={14}/> Ajouter au panier
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/20 truncate"
+            >
+              <ShoppingBag size={14} className="shrink-0"/>
+              <span className="truncate">Panier</span>
             </button>
             {/* ORANGE - Acheter maintenant */}
-            <button onClick={handleBuyNow}
-              className="flex-1 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-400 text-white font-black text-xs shadow-md active:scale-95 transition-transform">
-              Acheter maintenant
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              className="flex-1 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-400 text-white font-black text-xs shadow-md shadow-orange-900/20 active:scale-95 transition-transform truncate"
+            >
+              <span className="truncate">Commander</span>
             </button>
           </div>
         )}
