@@ -381,11 +381,49 @@ html.dark .shadow-modal {
   border-color: #3a3b3c !important;
 }
 
-/* 10. Header MANG & Navigation */
+/* 10. Header MANG & Navigation - Identique au Marketplace Facebook Dark */
 html.dark .bg-mang-header,
-html.dark .bg-mang-gradient {
-  background: linear-gradient(135deg, #0b1a10 0%, #0e2417 40%, #0c1f13 100%) !important;
-  border-bottom: 1px solid #242526 !important;
+html.dark .bg-mang-gradient,
+html.dark header:not(.onboarding-header),
+html.dark .sticky-header {
+  background: linear-gradient(to right, #242526, #1c1e21, #242526) !important;
+  border-bottom: 1px solid #3a3b3c !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Boutons, cercles d'action et pastilles dans les headers en mode sombre */
+html.dark .bg-mang-header .bg-white\/10,
+html.dark .bg-mang-header .bg-white\/15,
+html.dark .bg-mang-header .bg-white\/20,
+html.dark .bg-mang-header .border-white\/15,
+html.dark .bg-mang-header .border-white\/20,
+html.dark .bg-mang-header .border-white\/30,
+html.dark header:not(.onboarding-header) .bg-white\/10,
+html.dark header:not(.onboarding-header) .bg-white\/15,
+html.dark header:not(.onboarding-header) .bg-white\/20 {
+  background-color: #3a3b3c !important;
+  border-color: #4e4f50 !important;
+  color: #ffffff !important;
+}
+
+/* Titres dans tous les headers en mode sombre */
+html.dark .bg-mang-header h1,
+html.dark .bg-mang-header h2,
+html.dark .bg-mang-header .font-display,
+html.dark header:not(.onboarding-header) h1,
+html.dark header:not(.onboarding-header) h2,
+html.dark header:not(.onboarding-header) .font-display {
+  color: #ffffff !important;
+}
+
+/* Sous-titres dans les headers en mode sombre */
+html.dark .bg-mang-header p,
+html.dark .bg-mang-header .text-white\/70,
+html.dark .bg-mang-header .text-white\/80,
+html.dark .bg-mang-header .text-green-200,
+html.dark .bg-mang-header .text-green-300,
+html.dark header:not(.onboarding-header) p {
+  color: #b0b3b8 !important;
 }
 
 html.dark nav.fixed.bottom-0 {

@@ -368,18 +368,18 @@ export default function ProductDetailPage() {
   const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
 
   return (
-    <div className="min-h-screen bg-surface-100 pb-36 text-dark-900 font-sans">
+    <div className="min-h-screen bg-surface-100 dark:bg-dark-950 pb-36 text-dark-900 dark:text-gray-100 font-sans transition-colors duration-200">
       
       {/* HEADER STICKY ALIBABA */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-surface-200 px-4 py-3 z-20 flex items-center justify-between max-w-[var(--content-max-width)] mx-auto">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl hover:bg-surface-100 flex items-center justify-center active:scale-95 transition-transform">
-          <ArrowLeft size={20} className="text-dark-800"/>
+      <div className="sticky top-0 bg-white/80 dark:bg-gradient-to-r dark:from-[#242526] dark:via-[#1c1e21] dark:to-[#242526] backdrop-blur-md border-b border-surface-200 dark:border-[#3a3b3c] px-4 py-3 z-20 flex items-center justify-between max-w-[var(--content-max-width)] mx-auto transition-colors duration-200 shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-[#3a3b3c] border border-transparent dark:border-[#4e4f50] flex items-center justify-center active:scale-95 transition-all">
+          <ArrowLeft size={18} className="text-dark-800 dark:text-white"/>
         </button>
-        <h2 className="font-display font-black text-dark-800 text-sm max-w-[180px] truncate">{product.name}</h2>
+        <h2 className="font-display font-black text-dark-800 dark:text-white text-sm max-w-[180px] truncate">{product.name}</h2>
         
         {/* Raccourci panier avec badge */}
-        <button onClick={() => navigate('/panier')} className="w-9 h-9 rounded-xl hover:bg-surface-100 flex items-center justify-center relative active:scale-95 transition-transform">
-          <ShoppingBag size={20} className="text-dark-800"/>
+        <button onClick={() => navigate('/panier')} className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-[#3a3b3c] border border-transparent dark:border-[#4e4f50] flex items-center justify-center relative active:scale-95 transition-all">
+          <ShoppingBag size={18} className="text-dark-800 dark:text-white"/>
           {cartCount > 0 && (
             <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center px-0.5 border-2 border-white">
               {cartCount}

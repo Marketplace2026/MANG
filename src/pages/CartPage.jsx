@@ -64,15 +64,15 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 pb-36 max-w-[var(--content-max-width)] mx-auto relative">
+    <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-36 max-w-[var(--content-max-width)] mx-auto relative transition-colors duration-200">
       {/* Sticky top header bar */}
-      <div className="sticky top-0 z-20 bg-white border-b border-surface-200 px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1 rounded-xl active:bg-surface-100 transition-colors">
-          <ArrowLeft size={20} className="text-dark-700" />
+      <div className="sticky top-0 z-20 bg-white dark:bg-gradient-to-r dark:from-[#242526] dark:via-[#1c1e21] dark:to-[#242526] border-b border-surface-200 dark:border-[#3a3b3c] px-4 py-3 flex items-center gap-3 transition-colors duration-200 shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-[#3a3b3c] border border-transparent dark:border-[#4e4f50] flex items-center justify-center active:scale-95 transition-all">
+          <ArrowLeft size={18} className="text-dark-700 dark:text-white" />
         </button>
         <div>
-          <h1 className="font-display font-black text-dark-800 text-base">Votre Panier</h1>
-          <p className="text-[10px] text-dark-600/50 font-bold uppercase tracking-wider">{totalQty} articles sélectionnés</p>
+          <h1 className="font-display font-black text-dark-800 dark:text-white text-base">Votre Panier</h1>
+          <p className="text-[10px] text-dark-600/50 dark:text-gray-400 font-bold uppercase tracking-wider">{totalQty} articles sélectionnés</p>
         </div>
       </div>
 
