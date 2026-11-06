@@ -18,6 +18,8 @@ import { generateAutoReply } from '@/lib/ai'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { soundFx } from '@/utils/sound'
+import CreateGroupModal from '@/components/chat/CreateGroupModal'
+import AddGroupMembersModal from '@/components/chat/AddGroupMembersModal'
 import { fr } from 'date-fns/locale'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
@@ -59,6 +61,23 @@ function groupByDate(msgs) {
     out.push({ type: 'msg', ...m })
   })
   return out
+}
+
+
+const SENDER_COLORS = [
+  'text-emerald-600 dark:text-emerald-400',
+  'text-blue-600 dark:text-blue-400',
+  'text-purple-600 dark:text-purple-400',
+  'text-amber-600 dark:text-amber-400',
+  'text-rose-600 dark:text-rose-400',
+  'text-indigo-600 dark:text-indigo-400',
+  'text-teal-600 dark:text-teal-400'
+]
+
+function getSenderColor(id = '') {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash << 5) - hash + id.charCodeAt(i)
+  return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length]
 }
 
 // ══════════════════════════════════════════════════════════
@@ -311,7 +330,7 @@ function VoicePreviewPlayer({ url, duration = 0, onDelete, onSend, sending }) {
 // ══════════════════════════════════════════════════════════
 // BULLE DE MESSAGE
 // ══════════════════════════════════════════════════════════
-function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, onReply, onCopy, onZoom, replyMsg, onFavorite, userId }) {
+function MessageBubble({ msg, isMe, isGroup, onLongPress, onReact, reactions, onDelete, onReply, onCopy, onZoom, replyMsg, onFavorite, userId }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [reactionOpen, setReactionOpen] = useState(false)
   const [swipeOffset, setSwipeOffset] = useState(0)
@@ -440,6 +459,12 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
             msg.type === 'image' || msg.type === 'video' ? 'p-1 overflow-hidden' : 'px-3.5 py-2'
           )}
         >
+          {isGroup && !isMe && (
+            <p className={clsx('text-[11px] font-black leading-tight mb-1 cursor-pointer hover:underline', getSenderColor(msg.sender_id))}>
+              @{msg.sender?.username || 'Membre'}
+            </p>
+          )}
+
           {/* Carte Produit MANG Interactive si détectée */}
           {productDetails ? (
             <div className="space-y-2 py-0.5 max-w-[260px]">
@@ -653,6 +678,10 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 // CHAT WINDOW
 // ══════════════════════════════════════════════════════════
 function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
+  const isGroup = Boolean(conv.is_group)
+  const [groupMembers, setGroupMembers] = useState([])
+  const [addMembersOpen, setAddMembersOpen] = useState(false)
+  const [leavingGroup, setLeavingGroup] = useState(false)
   const navigate = useNavigate()
   const other = conv.buyer_id === user.id ? conv.seller : conv.buyer
   const [messages, setMessages]     = useState([])
@@ -689,6 +718,55 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const waveIntervalRef             = useRef(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline(other?.last_seen_at))
   const [deletingConv, setDeletingConv] = useState(false)
+
+  // Charger les membres du groupe si conversation de groupe
+  useEffect(() => {
+    if (conv.id && isGroup) {
+      loadGroupMembers()
+    }
+  }, [conv.id, isGroup])
+
+  const loadGroupMembers = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_group_members', { p_conv_id: conv.id })
+      if (!error && data) {
+        setGroupMembers(data)
+      } else {
+        const { data: fallback } = await supabase
+          .from('conversation_members')
+          .select('*, user:profiles(id, username, avatar_url)')
+          .eq('conversation_id', conv.id)
+        if (fallback) {
+          setGroupMembers(fallback.map(m => ({
+            user_id: m.user_id,
+            username: m.user?.username || 'Membre',
+            avatar_url: m.user?.avatar_url || null,
+            role: m.role,
+            joined_at: m.joined_at
+          })))
+        }
+      }
+    } catch {}
+  }
+
+  const handleLeaveGroup = async () => {
+    if (!window.confirm('Voulez-vous vraiment quitter ce groupe ?')) return
+    setLeavingGroup(true)
+    try {
+      const { error } = await supabase.rpc('leave_group_conversation', { p_conv_id: conv.id })
+      if (error) {
+        await supabase.from('conversation_members').delete().eq('conversation_id', conv.id).eq('user_id', user.id)
+      }
+      toast.success('Vous avez quitté le groupe')
+      setShowInfo(false)
+      onBack?.()
+    } catch {
+      toast.error('Erreur pour quitter le groupe')
+    } finally {
+      setLeavingGroup(false)
+    }
+  }
+
 
   const handlePhoneCall = () => {
     // Recherche d'un numéro dans la boutique (si conversation avec boutique)
@@ -1270,13 +1348,33 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </button>
 
           <div className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer" onClick={() => setShowInfo(true)}>
-            <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
+            {isGroup ? (
+              <div className="w-10 h-10 rounded-full bg-emerald-700 dark:bg-emerald-800 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden shadow-xs border border-white/20">
+                {conv.avatar_url ? (
+                  <img src={conv.avatar_url} alt="" className="w-full h-full object-cover"/>
+                ) : (
+                  <Users size={18}/>
+                )}
+              </div>
+            ) : (
+              <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
+            )}
             <div className="min-w-0">
-              <p className="text-white font-bold text-base truncate leading-tight">@{other?.username}</p>
-              <p className="text-white/50 text-xs flex items-center gap-1.5">
-                {otherTyping ? <span className="text-green-300 animate-pulse">En train d'écrire...</span>
-                  : isOnlineState ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" /><span className="text-emerald-300">En ligne</span></>
-                  : other?.last_seen_at ? `Vu à ${format(new Date(other.last_seen_at), 'HH:mm')}` : 'Hors ligne'}
+              <p className="text-white font-bold text-base truncate leading-tight">
+                {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username}`}
+              </p>
+              <p className="text-white/70 text-xs flex items-center gap-1.5 truncate">
+                {isGroup ? (
+                  <span>👥 {groupMembers.length > 0 ? `${groupMembers.length} membres` : 'Groupe'}</span>
+                ) : otherTyping ? (
+                  <span className="text-emerald-200 animate-pulse">En train d'écrire...</span>
+                ) : isOnlineState ? (
+                  <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" /><span className="text-emerald-200">En ligne</span></>
+                ) : other?.last_seen_at ? (
+                  `Vu à ${format(new Date(other.last_seen_at), 'HH:mm')}`
+                ) : (
+                  'Hors ligne'
+                )}
               </p>
             </div>
           </div>
@@ -1342,6 +1440,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 key={item.id}
                 msg={item}
                 isMe={isMe}
+                isGroup={Boolean(conv.is_group)}
                 reactions={item.reactions}
                 replyMsg={item.reply_to_id ? messages.find(m => m.id === item.reply_to_id) : null}
                 onReact={emoji => addReaction(item.id, emoji)}
@@ -1593,14 +1692,61 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {isGroup && (
+                <div className="space-y-3 pb-3 border-b border-surface-100 dark:border-[#3a3b3c]">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-wider text-dark-500 dark:text-gray-400">
+                      Participants ({groupMembers.length})
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setAddMembersOpen(true)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 active:scale-95 shadow-xs"
+                    >
+                      <UserPlus size={12}/>
+                      <span>Ajouter</span>
+                    </button>
+                  </div>
+
+                  {/* Liste des membres */}
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {groupMembers.map(m => (
+                      <div key={m.user_id} className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-[#18191a] text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold flex items-center justify-center text-[10px] shrink-0">
+                            {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full rounded-full object-cover"/> : (m.username ? m.username[0].toUpperCase() : 'U')}
+                          </div>
+                          <span className="font-bold text-dark-900 dark:text-white truncate">@{m.username}</span>
+                        </div>
+                        {m.role === 'admin' ? (
+                          <span className="text-[9px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-300/40">
+                            Admin
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLeaveGroup}
+                    disabled={leavingGroup}
+                    className="w-full py-2.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border border-red-200 dark:border-red-900/40 active:scale-95 transition-all"
+                  >
+                    {leavingGroup ? <Loader2 size={13} className="animate-spin"/> : <LogOut size={13}/>}
+                    <span>Quitter le groupe</span>
+                  </button>
+                </div>
+              )}
+
               {[
-                { icon: User,    label: 'Voir le profil public', action: () => {
+                ...(isGroup ? [] : [{ icon: User, label: 'Voir le profil public', action: () => {
                     const target = other?.username || other?.id
                     if (target) {
                       setShowInfo(false)
                       navigate(`/profil/${target}`)
                     }
-                  } },
+                  } }]),
                 { icon: Bell,    label: (conv.muted_by || []).includes(user?.id) ? 'Activer les notifications' : 'Rendre silencieux', action: async () => {
                     const { supabase } = await import('@/lib/supabase');
                     await supabase.rpc('toggle_mute_conversation', { p_conv_id: conv.id, p_user_id: user?.id });
@@ -1648,6 +1794,27 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         </>
       )}
 
+      {/* Modal Ajouter des membres au groupe */}
+      <AddGroupMembersModal
+        open={addMembersOpen}
+        onClose={() => setAddMembersOpen(false)}
+        conversationId={conv.id}
+        currentMemberIds={groupMembers.map(m => m.user_id)}
+        onMembersAdded={loadGroupMembers}
+      />
+
+      {/* Modal Nouveau Groupe */}
+      <CreateGroupModal
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        user={user}
+        onGroupCreated={(newConvId) => {
+          loadConvs()
+          const found = convs.find(c => c.id === newConvId)
+          if (found) setActive(found)
+        }}
+      />
+
       {/* Image viewer */}
       <ImageViewer url={zoomImg} onClose={() => setZoomImg(null)}/>
     </div>
@@ -1658,6 +1825,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
 // CONVERSATION ITEM
 // ══════════════════════════════════════════════════════════
 function ConvItem({ conv, userId, onClick }) {
+  const isGroup = Boolean(conv.is_group)
   const other = conv.buyer_id === userId ? conv.seller : conv.buyer
   const online = isOnline(other?.last_seen_at)
   const unread = conv.unread_count || 0
@@ -1694,20 +1862,30 @@ function ConvItem({ conv, userId, onClick }) {
         hasUnread ? 'bg-white dark:bg-dark-800 active:bg-surface-50 dark:active:bg-dark-700' : 'bg-white/60 dark:bg-dark-900 active:bg-surface-50 dark:active:bg-dark-700'
       )}>
       <div className="relative flex-shrink-0">
-        <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
-        {/* Badge achat/vente */}
+        {isGroup ? (
+          <div className="w-12 h-12 rounded-2xl bg-emerald-700 dark:bg-emerald-800 text-white flex items-center justify-center font-bold text-base shadow-sm overflow-hidden border border-emerald-500/20">
+            {conv.avatar_url ? (
+              <img src={conv.avatar_url} alt="" className="w-full h-full object-cover"/>
+            ) : (
+              <Users size={22}/>
+            )}
+          </div>
+        ) : (
+          <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
+        )}
+        {/* Badge achat/vente/groupe */}
         <span className={clsx(
-          'absolute -top-1 -left-1 p-1 rounded-full shadow-sm flex items-center justify-center',
-          isAchat ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
-        )} title={isAchat ? 'Achat' : 'Vente'}>
-          {isAchat ? <ShoppingCart size={9} /> : <Store size={9} />}
+          'absolute -top-1 -left-1 p-1 rounded-full shadow-sm flex items-center justify-center text-white',
+          isGroup ? 'bg-purple-600' : isAchat ? 'bg-blue-600' : 'bg-emerald-600'
+        )} title={isGroup ? 'Groupe' : isAchat ? 'Achat' : 'Vente'}>
+          {isGroup ? <Users size={9}/> : isAchat ? <ShoppingCart size={9} /> : <Store size={9} />}
         </span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
           <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900 dark:text-white' : 'font-bold text-dark-700 dark:text-gray-200')}>
-            @{other?.username || conv.shop?.name || 'Utilisateur'}
+            {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username || conv.shop?.name || 'Utilisateur'}`}
           </p>
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
             {conv.last_message_at && (
@@ -1767,7 +1945,8 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
   const [active, setActive]   = useState(null)
-  const [tab, setTab]         = useState('all') // 'all' | 'unread' | 'achat' | 'vente'
+  const [tab, setTab]         = useState('all') // 'all' | 'unread' | 'groups' | 'achat' | 'vente'
+  const [createGroupOpen, setCreateGroupOpen] = useState(false)
   const readConvsSet = useRef(new Set())
 
   useEffect(() => { if (user) loadConvs() }, [user])
@@ -1826,13 +2005,28 @@ export default function MessagesPage() {
 
   const loadConvs = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let convIdsFilter = []
+    try {
+      const { data: memberRows } = await supabase
+        .from('conversation_members')
+        .select('conversation_id')
+        .eq('user_id', user.id)
+      if (memberRows) convIdsFilter = memberRows.map(m => m.conversation_id)
+    } catch {}
+
+    let query = supabase
       .from('conversations')
       .select(`*, shop:shops(id, name, cover_url, slug),
         buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
         seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
-      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      .order('last_message_at', { ascending: false })
+
+    if (convIdsFilter.length > 0) {
+      query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id},id.in.(${convIdsFilter.join(',')})`)
+    } else {
+      query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+    }
+
+    const { data, error } = await query.order('last_message_at', { ascending: false })
 
     if (error) console.error('[loadConvs error]', error)
 
@@ -1886,8 +2080,9 @@ export default function MessagesPage() {
     const matchTab =
       tab === 'all' ? true :
       tab === 'unread' ? (c.unread_count || 0) > 0 :
-      tab === 'achat' ? c.buyer_id === user?.id :
-      tab === 'vente' ? c.seller_id === user?.id : true
+      tab === 'groups' ? Boolean(c.is_group) :
+      tab === 'achat' ? (c.buyer_id === user?.id && !c.is_group) :
+      tab === 'vente' ? (c.seller_id === user?.id && !c.is_group) : true
     return matchSearch && matchTab
   })
   
@@ -1924,8 +2119,17 @@ export default function MessagesPage() {
                   {unreadTotal > 0 && <span className="ml-1.5 text-green-300 font-bold">· {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>}
                 </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={loadConvs} className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center active:scale-90">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCreateGroupOpen(true)}
+                  className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-1.5 text-xs font-bold active:scale-90 shadow-sm transition-all"
+                  title="Créer un groupe de discussion"
+                >
+                  <Users size={14}/>
+                  <span>Groupe</span>
+                </button>
+                <button onClick={loadConvs} className="w-8 h-8 bg-white/15 hover:bg-white/20 rounded-xl flex items-center justify-center active:scale-90" title="Actualiser">
                   <Loader2 size={16} className="text-white"/>
                 </button>
               </div>
@@ -1942,6 +2146,7 @@ export default function MessagesPage() {
             <div className="flex gap-2 overflow-x-auto pb-1">
               {[
                 { key: 'all',     label: 'Tous',     icon: MessageSquare, badge: unreadTotal },
+                { key: 'groups',  label: 'Groupes',  icon: Users,         badge: convs.filter(c => c.is_group && (c.unread_count || 0) > 0).length },
                 { key: 'achat',   label: 'Achat',    icon: ShoppingCart,  badge: unreadAchat },
                 { key: 'vente',   label: 'Vente',    icon: Store,         badge: unreadVente },
                 { key: 'unread',  label: 'Non lus',  icon: Mail,          badge: unreadTotal },

@@ -281,18 +281,46 @@ export const useMessagesStore = create((set, get) => ({
   messages: [],
   setActiveConversation: (conv) => set({ activeConversation: conv, messages: [] }),
   fetchUnreadCount: async (userId) => {
-    const { data: convs } = await supabase.from('conversations').select('id').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    if (!convs?.length) { set({ unreadCount: 0 }); return }
-    const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true }).or('is_read.is.null,is_read.eq.false').neq('delivery_status', 'read').neq('sender_id', userId).in('conversation_id', convs.map(c => c.id))
-    set({ unreadCount: count || 0 })
+    try {
+      const { data: memberRows } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', userId)
+      const groupConvIds = memberRows ? memberRows.map(m => m.conversation_id) : []
+      let convsQuery = supabase.from('conversations').select('id')
+      if (groupConvIds.length > 0) {
+        convsQuery = convsQuery.or(`buyer_id.eq.${userId},seller_id.eq.${userId},id.in.(${groupConvIds.join(',')})`)
+      } else {
+        convsQuery = convsQuery.or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      }
+      const { data: convs } = await convsQuery
+      if (!convs?.length) { set({ unreadCount: 0 }); return }
+      const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true }).or('is_read.is.null,is_read.eq.false').neq('delivery_status', 'read').neq('sender_id', userId).in('conversation_id', convs.map(c => c.id))
+      set({ unreadCount: count || 0 })
+    } catch {
+      const { data: convs } = await supabase.from('conversations').select('id').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      if (!convs?.length) { set({ unreadCount: 0 }); return }
+      const { count } = await supabase.from('messages').select('*', { count: 'exact', head: true }).or('is_read.is.null,is_read.eq.false').neq('delivery_status', 'read').neq('sender_id', userId).in('conversation_id', convs.map(c => c.id))
+      set({ unreadCount: count || 0 })
+    }
   },
   subscribeToUnread: (userId) => {
     const channel = supabase.channel(`msg-unread:${userId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => { if (payload.new.sender_id !== userId) { set(state => ({ unreadCount: state.unreadCount + 1 })) } }).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => { get().fetchUnreadCount(userId) }).subscribe()
     return () => supabase.removeChannel(channel)
   },
   fetchConversations: async (userId) => {
-    const { data } = await supabase.from('conversations').select(`*, shop:shops(id, name, cover_url), buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at), seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at), last_message:messages(content, type, created_at, sender_id)`).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order('last_message_at', { ascending: false })
-    set({ conversations: data || [] })
+    try {
+      const { data: memberRows } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', userId)
+      const groupConvIds = memberRows ? memberRows.map(m => m.conversation_id) : []
+      let query = supabase.from('conversations').select(`*, shop:shops(id, name, cover_url), buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at), seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at), last_message:messages(content, type, created_at, sender_id)`)
+      if (groupConvIds.length > 0) {
+        query = query.or(`buyer_id.eq.${userId},seller_id.eq.${userId},id.in.(${groupConvIds.join(',')})`)
+      } else {
+        query = query.or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      }
+      const { data } = await query.order('last_message_at', { ascending: false })
+      set({ conversations: data || [] })
+    } catch {
+      const { data } = await supabase.from('conversations').select(`*, shop:shops(id, name, cover_url), buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at), seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at), last_message:messages(content, type, created_at, sender_id)`).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order('last_message_at', { ascending: false })
+      set({ conversations: data || [] })
+    }
   },
   fetchMessages: async (conversationId) => {
     const { data } = await supabase.from('messages').select('*, sender:profiles(id, username, avatar_url)').eq('conversation_id', conversationId).order('created_at', { ascending: true })
