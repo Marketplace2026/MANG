@@ -430,3 +430,87 @@ html.dark nav.fixed.bottom-0 {
   background-color: rgba(24, 25, 26, 0.95) !important;
   border-top-color: #3a3b3c !important;
 }
+
+/* ============================================================
+   WHATSAPP PRO CHAT STYLES (Light & Dark)
+   ============================================================ */
+.whatsapp-chat-bg-light {
+  background-color: #efeae2;
+  background-image: radial-gradient(#d8d2c7 0.8px, transparent 0.8px), radial-gradient(#d8d2c7 0.8px, #efeae2 0.8px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.whatsapp-chat-bg-dark {
+  background-color: #0b141a;
+  background-image: radial-gradient(#182229 0.8px, transparent 0.8px), radial-gradient(#182229 0.8px, #0b141a 0.8px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* Bulles WhatsApp authentiques */
+.wa-bubble-sent {
+  background-color: #d9fdd3;
+  color: #111b21;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+}
+
+html.dark .wa-bubble-sent {
+  background-color: #005c4b;
+  color: #e9edef;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.35);
+}
+
+.wa-bubble-recv {
+  background-color: #ffffff;
+  color: #111b21;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+}
+
+html.dark .wa-bubble-recv {
+  background-color: #202c33;
+  color: #e9edef;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.35);
+}
+
+/* Queues de bulles triangulaires façon WhatsApp */
+.wa-tail-sent::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid #d9fdd3;
+  border-right: 10px solid transparent;
+}
+
+html.dark .wa-tail-sent::after {
+  border-top-color: #005c4b;
+}
+
+.wa-tail-recv::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid #ffffff;
+  border-left: 10px solid transparent;
+}
+
+html.dark .wa-tail-recv::before {
+  border-top-color: #202c33;
+}
+
+/* Animations d'émojis et pop */
+@keyframes wa-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-wa-pop {
+  animation: wa-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

@@ -17,6 +17,7 @@ import { mangCache } from '@/utils/cache'
 import { generateAutoReply } from '@/lib/ai'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
+import { soundFx } from '@/utils/sound'
 import { fr } from 'date-fns/locale'
 
 const formatFCFA = (val) => Math.round(val || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
@@ -93,12 +94,15 @@ function ImageViewer({ url, onClose }) {
 }
 
 // ══════════════════════════════════════════════════════════
-// AUDIO PLAYER
+// AUDIO PLAYER WHATSAPP PRO (Waveform & Vitesses 1x / 1.5x / 2x)
 // ══════════════════════════════════════════════════════════
+const WA_BARS = [4, 7, 12, 16, 9, 14, 20, 15, 10, 18, 22, 14, 8, 16, 19, 11, 6, 13, 17, 14, 9, 15, 8, 5]
+
 function AudioPlayer({ url, isMe }) {
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [speed, setSpeed] = useState(1)
   const audioRef = useRef(null)
 
   const toggle = () => {
@@ -108,44 +112,102 @@ function AudioPlayer({ url, isMe }) {
     setPlaying(!playing)
   }
 
+  const cycleSpeed = (e) => {
+    e.stopPropagation()
+    const next = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1
+    setSpeed(next)
+    if (audioRef.current) audioRef.current.playbackRate = next
+  }
+
+  const seek = (ratio) => {
+    if (!audioRef.current || !duration) return
+    audioRef.current.currentTime = ratio * duration
+    setProgress(ratio)
+  }
+
+  const currentSeconds = playing || progress > 0 ? Math.floor(progress * duration) : Math.floor(duration)
+
   return (
-    <div className="flex items-center gap-2 min-w-[180px]">
+    <div className="flex items-center gap-2.5 min-w-[220px] max-w-[280px] py-0.5 select-none">
       <audio ref={audioRef} src={url}
-        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || 1))}
+        onTimeUpdate={e => setProgress(e.target.currentTime / (e.target.duration || duration || 1))}
         onLoadedMetadata={e => {
           const d = e.target.duration
-          // Bug connu de Chrome : les fichiers audio/webm issus de MediaRecorder
-          // renvoient parfois duration = Infinity au premier chargement.
           if (d === Infinity || Number.isNaN(d)) {
             e.target.currentTime = 1e101
             e.target.ontimeupdate = () => {
               e.target.ontimeupdate = null
-              setDuration(e.target.duration)
+              setDuration(Math.round(e.target.duration))
               e.target.currentTime = 0
             }
           } else {
-            setDuration(d)
+            setDuration(Math.round(d))
           }
         }}
         onEnded={() => { setPlaying(false); setProgress(0) }}/>
-      <button onClick={toggle}
-        className={clsx('w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
-          isMe ? 'bg-white/20' : 'bg-primary-100')}>
-        {playing
-          ? <span className={clsx('text-sm', isMe ? 'text-white' : 'text-primary-700')}>⏸</span>
-          : <span className={clsx('text-sm', isMe ? 'text-white' : 'text-primary-700')}>▶</span>
-        }
+
+      {/* Bouton Play/Pause WhatsApp */}
+      <button
+        type="button"
+        onClick={toggle}
+        className={clsx(
+          'w-10 h-10 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-transform shadow-sm',
+          isMe
+            ? 'bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700'
+            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+        )}
+      >
+        {playing ? <Pause size={17} className="fill-white"/> : <Play size={17} className="fill-white ml-0.5"/>}
       </button>
-      <div className="flex-1">
-        <div className={clsx('h-1.5 rounded-full overflow-hidden', isMe ? 'bg-white/20' : 'bg-primary-100')}>
-          <div className={clsx('h-full rounded-full transition-all', isMe ? 'bg-white' : 'bg-primary-600')}
-            style={{ width: `${progress * 100}%` }}/>
+
+      {/* Waveform WhatsApp */}
+      <div className="flex-1 flex flex-col justify-center gap-1">
+        <div
+          className="flex items-center gap-[2.5px] h-6 cursor-pointer py-1"
+          onClick={e => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+            seek(ratio)
+          }}
+        >
+          {WA_BARS.map((h, i) => {
+            const isPlayed = (i / WA_BARS.length) <= progress
+            return (
+              <div
+                key={i}
+                className={clsx(
+                  'w-[3px] rounded-full transition-colors',
+                  isPlayed
+                    ? (isMe ? 'bg-emerald-700 dark:bg-emerald-300' : 'bg-emerald-600')
+                    : (isMe ? 'bg-emerald-900/30 dark:bg-emerald-200/30' : 'bg-dark-300 dark:bg-gray-600')
+                )}
+                style={{ height: `${h}px` }}
+              />
+            )
+          })}
         </div>
-        <p className={clsx('text-[9px] mt-0.5', isMe ? 'text-white/60' : 'text-dark-400')}>
-          {duration ? `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, '0')}` : '0:00'}
-        </p>
+
+        {/* Durée & vitesse */}
+        <div className="flex items-center justify-between text-[10px]">
+          <span className={clsx('font-semibold tabular-nums', isMe ? 'text-dark-700 dark:text-emerald-100' : 'text-dark-500 dark:text-gray-400')}>
+            {Math.floor(currentSeconds / 60)}:{String(currentSeconds % 60).padStart(2, '0')}
+          </span>
+          <button
+            type="button"
+            onClick={cycleSpeed}
+            className={clsx(
+              'px-1.5 py-0.2 rounded-md font-black text-[9px] border transition-all active:scale-90',
+              isMe
+                ? 'bg-emerald-200/60 dark:bg-emerald-900/70 border-emerald-400/40 text-emerald-900 dark:text-emerald-200'
+                : 'bg-surface-200 dark:bg-dark-700 border-surface-300 dark:border-dark-600 text-dark-700 dark:text-gray-300'
+            )}
+          >
+            {speed % 1 === 0 ? speed : speed.toFixed(1)}x
+          </button>
+        </div>
       </div>
-      <Mic size={12} className={isMe ? 'text-white/40' : 'text-dark-400'}/>
+
+      <Mic size={14} className={clsx('shrink-0 mr-1', isMe ? 'text-emerald-700 dark:text-emerald-300' : 'text-dark-400 dark:text-gray-500')} />
     </div>
   )
 }
@@ -252,56 +314,179 @@ function VoicePreviewPlayer({ url, duration = 0, onDelete, onSend, sending }) {
 function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, onReply, onCopy, onZoom, replyMsg, onFavorite, userId }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [reactionOpen, setReactionOpen] = useState(false)
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const touchStartRef = useRef(0)
   const longTimer = useRef(null)
+  const navigate = useNavigate()
 
   const handlePointerDown = () => {
-    longTimer.current = setTimeout(() => setMenuOpen(true), 500)
+    longTimer.current = setTimeout(() => {
+      soundFx.playSent()
+      setMenuOpen(true)
+    }, 450)
   }
   const handlePointerUp = () => clearTimeout(longTimer.current)
 
+  // Geste Swipe to reply
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e) => {
+    const diff = e.touches[0].clientX - touchStartRef.current
+    if (diff > 0 && diff < 85) {
+      setSwipeOffset(diff)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (swipeOffset > 45) {
+      if (navigator.vibrate) navigator.vibrate(25)
+      onReply?.()
+    }
+    setSwipeOffset(0)
+  }
+
   const totalReacts = reactions ? Object.values(reactions).reduce((s, a) => s + a.length, 0) : 0
 
+  // Détection d'un produit MANG partagé dans le texte
+  const isProductMsg = msg.type === 'text' && (
+    msg.content.includes('🛍️ *') || msg.content.includes('/produit/') || msg.content.includes('Prix :')
+  )
+
+  let productDetails = null
+  if (isProductMsg) {
+    try {
+      const lines = msg.content.split('\n')
+      let foundName = ''
+      let foundPrice = ''
+      let foundId = ''
+
+      for (const line of lines) {
+        if (line.includes('🛍️')) {
+          foundName = line.replace(/🛍️|\*/g, '').trim()
+        } else if (line.includes('Prix :')) {
+          foundPrice = line.replace(/💰|Prix :|\*/g, '').trim()
+        } else if (line.includes('/produit/')) {
+          const parts = line.split('/produit/')
+          if (parts[1]) foundId = parts[1].trim().split(' ')[0]
+        }
+      }
+
+      if (foundName || foundId) {
+        productDetails = {
+          name: foundName || 'Produit agricole',
+          price: foundPrice || '',
+          id: foundId || null
+        }
+      }
+    } catch {}
+  }
+
   return (
-    <div className={clsx('flex gap-2 group mb-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
-      {!isMe && (
-        <Avatar src={msg.sender?.avatar_url} name={msg.sender?.username} size="xs"
-          online={isOnline(msg.sender?.last_seen_at)}/>
+    <div
+      className={clsx(
+        'relative flex items-end gap-1.5 group mb-1.5 transition-transform duration-150',
+        isMe ? 'flex-row-reverse' : 'flex-row'
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ transform: `translateX(${swipeOffset}px)` }}
+    >
+      {/* Icône de swipe-to-reply qui apparaît au glissement */}
+      {swipeOffset > 15 && (
+        <div
+          className="absolute -left-8 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md animate-scale-in"
+          style={{ opacity: Math.min(1, swipeOffset / 45) }}
+        >
+          <Reply size={13} />
+        </div>
       )}
 
-      <div className={clsx('relative', isMe ? 'items-end' : 'items-start')} style={{ maxWidth: '75%' }}>
+      {/* Avatar (seulement pour l'interlocuteur) */}
+      {!isMe && (
+        <Avatar
+          src={msg.sender?.avatar_url}
+          name={msg.sender?.username}
+          size="xs"
+          online={isOnline(msg.sender?.last_seen_at)}
+        />
+      )}
+
+      <div className={clsx('relative max-w-[85%] sm:max-w-[70%]', isMe ? 'items-end' : 'items-start')}>
         {/* Reply preview */}
         {msg.reply_to_content && (
-          <div className={clsx('flex items-center gap-2 mb-0.5 px-2 py-1.5 rounded-xl text-xs border-l-2',
-            isMe ? 'bg-primary-700 border-white/40 text-white/70' : 'bg-surface-100 border-primary-400 text-dark-500')}>
-            <Reply size={10}/>
-            <span className="truncate max-w-[150px]">{msg.reply_to_content}</span>
+          <div className={clsx(
+            'flex items-center gap-2 mb-1 px-3 py-1.5 rounded-xl text-xs border-l-4 shadow-2xs',
+            isMe
+              ? 'bg-emerald-800/20 dark:bg-emerald-950/60 border-emerald-600 text-dark-800 dark:text-emerald-200'
+              : 'bg-surface-100 dark:bg-dark-700/80 border-emerald-500 text-dark-700 dark:text-gray-300'
+          )}>
+            <Reply size={11} className="text-emerald-600 shrink-0"/>
+            <span className="truncate font-medium">{msg.reply_to_content}</span>
           </div>
         )}
 
-        {/* Bulle */}
+        {/* Bulle WhatsApp authentique */}
         <div
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
           onContextMenu={e => { e.preventDefault(); setMenuOpen(true) }}
           className={clsx(
-            'relative rounded-2xl cursor-pointer select-none',
-            msg.type === 'image' || msg.type === 'video' ? 'p-0 overflow-hidden' : 'px-3.5 py-2.5',
-            isMe ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white text-dark-800 shadow-sm rounded-bl-sm border border-surface-100'
-          )}>
-
-          {/* Texte */}
-          {msg.type === 'text' && (
-            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+            'relative rounded-2xl cursor-pointer select-none transition-shadow',
+            isMe ? 'wa-bubble-sent rounded-tr-xs' : 'wa-bubble-recv rounded-tl-xs',
+            msg.type === 'image' || msg.type === 'video' ? 'p-1 overflow-hidden' : 'px-3.5 py-2'
+          )}
+        >
+          {/* Carte Produit MANG Interactive si détectée */}
+          {productDetails ? (
+            <div className="space-y-2 py-0.5 max-w-[260px]">
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-dark-900/60 border border-emerald-500/20 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 flex items-center justify-center shrink-0">
+                    <Store size={16}/>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-extrabold text-xs text-dark-900 dark:text-white truncate">{productDetails.name}</p>
+                    <p className="font-black text-xs text-emerald-700 dark:text-emerald-400">{productDetails.price}</p>
+                  </div>
+                </div>
+                {productDetails.id && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/produit/${productDetails.id}`)
+                    }}
+                    className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 shadow-2xs"
+                  >
+                    <span>Voir le produit</span>
+                    <ArrowRight size={10}/>
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Texte classique */
+            msg.type === 'text' && (
+              <p className="text-[13.5px] leading-relaxed break-words whitespace-pre-wrap font-normal">
+                {msg.content}
+              </p>
+            )
           )}
 
           {/* Image */}
           {msg.type === 'image' && (
-            <div className="relative">
-              <img loading="lazy" src={msg.file_url} alt="Image" className="max-w-[240px] max-h-[300px] object-cover block"
+            <div className="relative rounded-xl overflow-hidden">
+              <img loading="lazy" src={msg.file_url} alt="Image" className="max-w-[260px] sm:max-w-[320px] max-h-[340px] object-cover block rounded-xl"
                 onClick={() => onZoom && onZoom(msg.file_url)}/>
-              <button onClick={() => onZoom && onZoom(msg.file_url)}
-                className="absolute top-2 right-2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => onZoom && onZoom(msg.file_url)}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/50 backdrop-blur-xs rounded-full flex items-center justify-center active:scale-90"
+              >
                 <ZoomIn size={12} className="text-white"/>
               </button>
             </div>
@@ -309,95 +494,123 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
 
           {/* Video */}
           {msg.type === 'video' && (
-            <video src={msg.file_url} controls className="max-w-[240px] max-h-[300px] block"/>
+            <div className="rounded-xl overflow-hidden">
+              <video src={msg.file_url} controls className="max-w-[260px] sm:max-w-[320px] max-h-[340px] block rounded-xl"/>
+            </div>
           )}
 
           {/* Audio */}
           {msg.type === 'audio' && (
-            <div className="py-1"><AudioPlayer url={msg.file_url} isMe={isMe}/></div>
+            <div className="py-0.5">
+              <AudioPlayer url={msg.file_url} isMe={isMe}/>
+            </div>
           )}
 
-          {/* Fichier */}
+          {/* Fichier / Document */}
           {msg.type === 'file' && (
             <a href={msg.file_url} target="_blank" rel="noreferrer" download
-              className={clsx('flex items-center gap-2 text-sm font-medium', isMe ? 'text-white/90' : 'text-primary-600')}>
-              <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
-                isMe ? 'bg-white/20' : 'bg-primary-50')}>
+              className={clsx('flex items-center gap-2 text-sm font-medium p-1 rounded-xl', isMe ? 'text-emerald-950 dark:text-emerald-100' : 'text-primary-700 dark:text-emerald-400')}>
+              <div className="w-9 h-9 rounded-xl bg-emerald-600/15 flex items-center justify-center shrink-0">
                 <Paperclip size={16}/>
               </div>
-              <div className="min-w-0">
-                <p className="truncate max-w-[130px] font-semibold">{msg.file_name || 'Fichier'}</p>
-                <p className={clsx('text-[10px]', isMe ? 'text-white/50' : 'text-dark-400')}>
+              <div className="min-w-0 flex-1">
+                <p className="truncate max-w-[130px] font-bold text-xs">{msg.file_name || 'Document'}</p>
+                <p className="text-[10px] opacity-70">
                   {msg.file_size ? `${(msg.file_size / 1024).toFixed(0)} Ko` : 'Fichier'}
                 </p>
               </div>
-              <Download size={14} className="flex-shrink-0"/>
+              <Download size={14} className="shrink-0"/>
             </a>
           )}
 
-          {/* Statut */}
-          {msg.type !== 'image' && msg.type !== 'video' && (
-            <div className={clsx('flex items-center gap-1 mt-0.5', isMe ? 'justify-end' : 'justify-start')}>
-              <span className={clsx('text-[9px]', isMe ? 'text-white/60' : 'text-dark-400/60')}>{fmtTime(msg.created_at)}</span>
-              {isMe && (
-                msg.delivery_status === 'read' || msg.is_read ? (
-                  <CheckCheck size={12} className="text-sky-300" title="Lu" />
+          {/* Horodatage & Doubles Coches WhatsApp */}
+          <div className="flex items-center justify-end gap-1 mt-1 float-right ml-2 text-[10px] select-none">
+            <span className={clsx(
+              'text-[10px] font-normal tabular-nums leading-none',
+              isMe ? 'text-emerald-900/70 dark:text-emerald-200/70' : 'text-dark-500/70 dark:text-gray-400'
+            )}>
+              {fmtTime(msg.created_at)}
+            </span>
+            {isMe && (
+              <span className="flex items-center leading-none">
+                {msg.delivery_status === 'read' || msg.is_read ? (
+                  <CheckCheck size={14} className="text-[#53bdeb]" title="Lu" />
                 ) : msg.delivery_status === 'delivered' ? (
-                  <CheckCheck size={12} className="text-white/50" title="Distribué" />
+                  <CheckCheck size={14} className="text-[#8696a0] dark:text-[#8696a0]" title="Distribué" />
                 ) : (
-                  <Check size={12} className="text-white/50" title="Envoyé" />
-                )
-              )}
-              {msg.is_starred && <Star size={9} className={isMe ? 'text-yellow-300 fill-yellow-300' : 'text-yellow-500 fill-yellow-500'}/>}
-            </div>
-          )}
+                  <Check size={14} className="text-[#8696a0] dark:text-[#8696a0]" title="Envoyé" />
+                )}
+              </span>
+            )}
+            {msg.is_starred && <Star size={9} className="text-amber-500 fill-amber-500 ml-0.5"/>}
+          </div>
         </div>
 
-        {/* Réactions affichées */}
+        {/* Réactions affichées sous la bulle */}
         {reactions && totalReacts > 0 && (
-          <div className={clsx('flex flex-wrap gap-1 mt-1', isMe ? 'justify-end' : 'justify-start')}>
+          <div className={clsx('flex flex-wrap gap-1 mt-0.5', isMe ? 'justify-end' : 'justify-start')}>
             {Object.entries(reactions).filter(([, u]) => u.length > 0).map(([emoji, users]) => (
-              <span key={emoji}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white border border-surface-200 text-xs shadow-sm">
-                {emoji} <span className="text-dark-500 text-[10px] font-bold">{users.length}</span>
+              <span
+                key={emoji}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white dark:bg-[#202c33] border border-surface-200 dark:border-[#3a3b3c] text-xs shadow-2xs animate-wa-pop"
+              >
+                {emoji} <span className="text-dark-600 dark:text-gray-300 text-[10px] font-black">{users.length}</span>
               </span>
             ))}
           </div>
         )}
 
-        {/* MENU LONG PRESS */}
+        {/* MENU LONG PRESS & RÉACTIONS RAPIDES WHATSAPP */}
         {menuOpen && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)}/>
+            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)}/>
             <div className={clsx(
-              'absolute z-40 bg-white rounded-2xl shadow-xl border border-surface-100 overflow-hidden min-w-[190px] animate-scale-in',
+              'absolute z-50 bg-white dark:bg-[#202c33] rounded-2xl shadow-2xl border border-surface-200 dark:border-[#3a3b3c] overflow-hidden min-w-[200px] animate-wa-pop',
               isMe ? 'right-0' : 'left-0', 'bottom-full mb-2'
             )}>
-              {/* Réactions rapides */}
-              <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-surface-100">
+              {/* Barre de 6 émojis stars WhatsApp */}
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-surface-50 dark:bg-[#111b21] border-b border-surface-100 dark:border-[#3a3b3c]">
                 {REACTIONS.slice(0, 6).map(emoji => (
-                  <button key={emoji} onClick={() => { onReact(emoji); setMenuOpen(false) }}
-                    className="text-lg active:scale-75 transition-transform hover:scale-125">
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      soundFx.playSent()
+                      onReact(emoji)
+                      setMenuOpen(false)
+                    }}
+                    className="text-xl active:scale-75 transition-transform hover:scale-125"
+                  >
                     {emoji}
                   </button>
                 ))}
-                <button onClick={() => { setReactionOpen(true); setMenuOpen(false) }}
-                  className="w-7 h-7 bg-surface-100 rounded-full flex items-center justify-center text-xs text-dark-500 font-bold">+</button>
+                <button
+                  type="button"
+                  onClick={() => { setReactionOpen(true); setMenuOpen(false) }}
+                  className="w-7 h-7 bg-surface-200 dark:bg-[#2a3942] rounded-full flex items-center justify-center text-xs text-dark-700 dark:text-gray-200 font-black"
+                >
+                  +
+                </button>
               </div>
 
+              {/* Actions classiques */}
               {[
-                { icon: Reply,   label: 'Répondre',   action: () => { onReply(); setMenuOpen(false) } },
-                { icon: Copy,    label: 'Copier',      action: () => { onCopy(); setMenuOpen(false) } },
-                { icon: Star,    label: (msg.favorited_by || []).includes(userId) ? 'Retirer favori' : 'Mettre en favori', action: () => { if(onFavorite) onFavorite(); setMenuOpen(false) } },
-                { icon: Forward, label: 'Transférer',  action: () => { setMenuOpen(false) } },
-                ...(isMe ? [{ icon: Trash2, label: 'Supprimer', action: () => { onDelete(); setMenuOpen(false) }, red: true }] : []),
+                { icon: Reply,   label: 'Répondre', action: () => { onReply(); setMenuOpen(false) } },
+                { icon: Copy,    label: 'Copier le texte', action: () => { onCopy(); setMenuOpen(false) } },
+                { icon: Star,    label: (msg.favorited_by || []).includes(userId) ? 'Retirer des favoris' : 'Marquer d\'une étoile', action: () => { onFavorite?.(); setMenuOpen(false) } },
+                ...(isMe ? [{ icon: Trash2, label: 'Supprimer le message', action: () => { onDelete(); setMenuOpen(false) }, red: true }] : []),
               ].map(item => {
                 const Icon = item.icon
                 return (
-                  <button key={item.label} onClick={item.action}
-                    className={clsx('w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors hover:bg-surface-50 border-t border-surface-50',
-                      item.red ? 'text-red-600' : 'text-dark-700')}>
-                    <Icon size={15}/> {item.label}
+                  <button
+                    key={item.label}
+                    onClick={item.action}
+                    className={clsx(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-surface-100 dark:hover:bg-[#111b21] border-t border-surface-100 dark:border-[#3a3b3c]',
+                      item.red ? 'text-red-600 dark:text-red-400' : 'text-dark-800 dark:text-gray-200'
+                    )}
+                  >
+                    <Icon size={14}/> {item.label}
                   </button>
                 )
               })}
@@ -405,16 +618,26 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
           </>
         )}
 
-        {/* PICKER RÉACTIONS COMPLET */}
+        {/* PICKER RÉACTIONS COMPLET WHATSAPP */}
         {reactionOpen && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setReactionOpen(false)}/>
-            <div className={clsx('absolute z-40 bg-white rounded-2xl shadow-xl border border-surface-100 p-3 animate-scale-in',
-              isMe ? 'right-0' : 'left-0', 'bottom-full mb-2')}>
+            <div className="fixed inset-0 z-40" onClick={() => setReactionOpen(false)}/>
+            <div className={clsx(
+              'absolute z-50 bg-white dark:bg-[#202c33] rounded-2xl shadow-2xl border border-surface-200 dark:border-[#3a3b3c] p-3 animate-wa-pop',
+              isMe ? 'right-0' : 'left-0', 'bottom-full mb-2'
+            )}>
               <div className="grid grid-cols-5 gap-2">
                 {REACTIONS.map(emoji => (
-                  <button key={emoji} onClick={() => { onReact(emoji); setReactionOpen(false) }}
-                    className="w-10 h-10 rounded-xl hover:bg-surface-100 flex items-center justify-center text-2xl active:scale-75 transition-transform">
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      soundFx.playSent()
+                      onReact(emoji)
+                      setReactionOpen(false)
+                    }}
+                    className="w-10 h-10 rounded-xl hover:bg-surface-100 dark:hover:bg-[#111b21] flex items-center justify-center text-2xl active:scale-75 transition-transform"
+                  >
                     {emoji}
                   </button>
                 ))}
@@ -426,7 +649,6 @@ function MessageBubble({ msg, isMe, onLongPress, onReact, reactions, onDelete, o
     </div>
   )
 }
-
 // ══════════════════════════════════════════════════════════
 // CHAT WINDOW
 // ══════════════════════════════════════════════════════════
@@ -570,6 +792,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             return [...prev, enrichedMsg]
           })
           if (payload.new.sender_id !== user?.id) {
+            soundFx.playReceived()
             // Update to read since chat is open
             supabase.from('messages').update({ delivery_status: 'read', is_read: true }).eq('id', payload.new.id)
             markRead(conv.id)
@@ -719,6 +942,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   }
 
   const sendText = async () => {
+    soundFx.playSent()
     const content = text.trim()
     if (!content || sending) return
     setSending(true); setText('')
@@ -921,6 +1145,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   }
 
   const sendRecordedVoice = async () => {
+    soundFx.playSent()
     if (!recordedBlob || sending) return
     setSending(true)
     const file = new File([recordedBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
@@ -1022,14 +1247,13 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const grouped = groupByDate(filtered)
 
   return (
-    <div className="fixed inset-0 md:static md:inset-auto md:w-full md:h-full bg-surface-50 flex flex-col z-[200] md:z-auto">
+    <div className="fixed inset-0 md:static md:inset-auto md:w-full md:h-full flex flex-col z-[200] md:z-auto whatsapp-chat-bg-light dark:whatsapp-chat-bg-dark">
       {/* Fond décoratif léger */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
 
       {/* ── HEADER ── */}
-      <div className="relative bg-primary-700 pt-12 md:pt-4 pb-3 px-4 flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%)' }}>
+      <div className="relative pt-12 md:pt-4 pb-3 px-4 flex-shrink-0 bg-[#008069] dark:bg-[#202c33] border-b border-[#006e5a] dark:border-[#2a3942] transition-colors shadow-sm">
 
         {/* Bandeau message épinglé */}
         {pinned && (
@@ -1088,7 +1312,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       </div>
 
       {/* ── MESSAGES ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 space-y-1 whatsapp-chat-bg-light dark:whatsapp-chat-bg-dark">
         {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 size={24} className="animate-spin text-primary-400"/>
@@ -1107,7 +1331,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               return (
                 <div key={item.id} className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-surface-200"/>
-                  <span className="text-xs text-dark-400 font-semibold px-3 py-1 bg-surface-100 rounded-full">{item.label}</span>
+                  <span className="text-[11px] text-[#54656f] dark:text-[#8696a0] font-bold px-3 py-1 bg-white/90 dark:bg-[#182229]/90 rounded-lg shadow-2xs border border-surface-200/50 dark:border-[#2a3942] uppercase tracking-wider">{item.label}</span>
                   <div className="flex-1 h-px bg-surface-200"/>
                 </div>
               )
@@ -1172,8 +1396,8 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
       )}
 
       {/* ── INPUT ── */}
-      <div className="bg-white border-t border-surface-100 px-3 py-2.5 flex-shrink-0"
-        style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}>
+      <div className="bg-[#f0f2f5] dark:bg-[#202c33] border-t border-surface-200 dark:border-[#2a3942] px-3 py-2 flex-shrink-0 transition-colors"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
 
         {/* Encart Produit MANG Contextuel */}
         {contextProduct && (
@@ -1300,7 +1524,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText() } }}
                 placeholder="Message..."
                 rows={1}
-                className="w-full bg-surface-100 rounded-2xl px-4 py-2.5 text-sm text-dark-800 placeholder-dark-400 outline-none resize-none leading-relaxed font-medium block"
+                className="w-full bg-white dark:bg-[#2a3942] rounded-2xl px-4 py-2.5 text-sm text-dark-900 dark:text-[#e9edef] placeholder-dark-400 dark:placeholder-gray-400 outline-none resize-none leading-relaxed font-medium block border border-transparent focus:border-emerald-500"
                 style={{ minHeight: '40px', maxHeight: '120px' }}
               />
             </div>
@@ -1308,8 +1532,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
             {/* Bouton send / micro */}
             {text.trim() ? (
               <button onClick={sendText} disabled={sending}
-                className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform disabled:opacity-50 shadow-lg"
-                style={{ boxShadow: '0 4px 15px rgba(46,204,113,0.4)' }}>
+                className="w-11 h-11 rounded-full bg-[#00a884] hover:bg-[#008f6f] text-white flex items-center justify-center shrink-0 active:scale-90 transition-transform disabled:opacity-50 shadow-md">
                 {sending
                   ? <Loader2 size={16} className="text-white animate-spin"/>
                   : <Send size={16} className="text-white ml-0.5"/>}
