@@ -7,7 +7,7 @@ import {
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
   ChevronDown, Info, Bell, BellOff, Archive,
-  MessageCircle, MessageSquare, Users, User, Clock, Loader2, ZoomIn,
+  MessageCircle, MessageSquare, Users, User, UserPlus, LogOut, Clock, Loader2, ZoomIn,
   Lock, StopCircle, Play, Pause, ShoppingCart, Store, Mail, Radio, CircleDot
 } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -1380,6 +1380,17 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           </div>
 
           <div className="flex items-center gap-1">
+            {isGroup && (
+              <button 
+                type="button"
+                onClick={() => setAddMembersOpen(true)}
+                className="h-9 px-2.5 bg-emerald-600/90 hover:bg-emerald-600 rounded-xl flex items-center gap-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all"
+                title="Ajouter des participants au groupe"
+              >
+                <UserPlus size={15}/>
+                <span className="hidden sm:inline">Ajouter</span>
+              </button>
+            )}
             <button onClick={() => setShowSearch(!showSearch)}
               className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center active:scale-90"
               title="Rechercher dans les messages">
