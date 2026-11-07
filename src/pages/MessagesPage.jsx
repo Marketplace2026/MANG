@@ -2071,7 +2071,7 @@ export default function MessagesPage() {
   const filtered = convs.filter(c => {
     const other = c.buyer_id === user?.id ? c.seller : c.buyer
     const q = search.toLowerCase()
-    const matchSearch = !q || (other?.username || '').toLowerCase().includes(q) || (c.shop?.name || '').toLowerCase().includes(q) || (c.last_message || '').toLowerCase().includes(q);
+    const matchSearch = !q || (other?.username || '').toLowerCase().includes(q) || (c.shop?.name || '').toLowerCase().includes(q) || (c.last_message || '').toLowerCase().includes(q) || (c.title || '').toLowerCase().includes(q);
       const isArchived = Array.isArray(c.archived_by) && c.archived_by.includes(user?.id);
       if (tab === 'archive') return matchSearch && isArchived;
       if (isArchived) return false;

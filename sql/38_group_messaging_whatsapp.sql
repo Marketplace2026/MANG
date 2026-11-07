@@ -26,91 +26,133 @@ CREATE INDEX IF NOT EXISTS idx_conv_members_conv ON conversation_members(convers
 -- Activer RLS sur conversation_members
 ALTER TABLE conversation_members ENABLE ROW LEVEL SECURITY;
 
--- 3. Politiques RLS pour conversation_members
+-- 3. Fonctions SECURITY DEFINER pour éviter toute récursion infinie RLS
+CREATE OR REPLACE FUNCTION is_conversation_member(p_conv_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_members
+    WHERE conversation_id = p_conv_id AND user_id = p_user_id
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION is_conversation_participant(p_conv_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversations
+    WHERE id = p_conv_id AND (
+      buyer_id = p_user_id 
+      OR seller_id = p_user_id 
+      OR created_by = p_user_id
+    )
+  ) OR EXISTS (
+    SELECT 1 FROM conversation_members
+    WHERE conversation_id = p_conv_id AND user_id = p_user_id
+  );
+$$;
+
+-- 4. Politiques RLS pour conversation_members
 DROP POLICY IF EXISTS "Membres peuvent voir les membres de leur conversation" ON conversation_members;
-CREATE POLICY "Membres peuvent voir les membres de leur conversation"
+DROP POLICY IF EXISTS "Voir les membres de conversation" ON conversation_members;
+CREATE POLICY "Voir les membres de conversation"
   ON conversation_members FOR SELECT TO authenticated
   USING (
-    conversation_id IN (
-      SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid()
-    )
-    OR
-    conversation_id IN (
-      SELECT id FROM conversations WHERE buyer_id = auth.uid() OR seller_id = auth.uid()
-    )
+    user_id = auth.uid() 
+    OR is_conversation_participant(conversation_id, auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins ou créateurs peuvent ajouter des membres" ON conversation_members;
-CREATE POLICY "Admins ou créateurs peuvent ajouter des membres"
+DROP POLICY IF EXISTS "Ajouter des membres dans conversation_members" ON conversation_members;
+CREATE POLICY "Ajouter des membres dans conversation_members"
   ON conversation_members FOR INSERT TO authenticated
   WITH CHECK (
-    conversation_id IN (
-      SELECT id FROM conversations WHERE created_by = auth.uid()
-    )
-    OR
-    conversation_id IN (
-      SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid() AND role = 'admin'
-    )
-    OR
-    user_id = auth.uid() -- Auto-rejoindre lors de la création
+    user_id = auth.uid() 
+    OR is_conversation_participant(conversation_id, auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins ou membres peuvent quitter ou retirer" ON conversation_members;
-CREATE POLICY "Admins ou membres peuvent quitter ou retirer"
+DROP POLICY IF EXISTS "Supprimer des membres de conversation" ON conversation_members;
+CREATE POLICY "Supprimer des membres de conversation"
   ON conversation_members FOR DELETE TO authenticated
   USING (
-    user_id = auth.uid() -- L'utilisateur peut se retirer lui-même (quitter le groupe)
-    OR
-    conversation_id IN (
-      SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid() AND role = 'admin'
-    )
-    OR
-    conversation_id IN (
-      SELECT id FROM conversations WHERE created_by = auth.uid()
-    )
+    user_id = auth.uid() 
+    OR is_conversation_participant(conversation_id, auth.uid())
   );
 
--- 4. Mise à jour des politiques RLS de conversations pour inclure les groupes
+-- 5. Mise à jour des politiques RLS de conversations
 DROP POLICY IF EXISTS "Conversation visible par ses participants" ON conversations;
+DROP POLICY IF EXISTS "Conversations visibles par les participants" ON conversations;
 CREATE POLICY "Conversation visible par ses participants"
   ON conversations FOR SELECT TO authenticated
   USING (
     buyer_id = auth.uid() 
     OR seller_id = auth.uid()
     OR created_by = auth.uid()
-    OR id IN (SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid())
+    OR is_conversation_member(id, auth.uid())
   );
 
--- 5. Mise à jour des politiques RLS de messages pour inclure les membres de groupe
+DROP POLICY IF EXISTS "Acheteur ou vendeur peut créer une conversation" ON conversations;
+DROP POLICY IF EXISTS "Créer une conversation" ON conversations;
+CREATE POLICY "Créer une conversation"
+  ON conversations FOR INSERT TO authenticated
+  WITH CHECK (
+    auth.uid() = buyer_id 
+    OR auth.uid() = seller_id 
+    OR auth.uid() = created_by
+  );
+
+DROP POLICY IF EXISTS "Participants peuvent modifier la conversation" ON conversations;
+DROP POLICY IF EXISTS "Modifier la conversation" ON conversations;
+CREATE POLICY "Modifier la conversation"
+  ON conversations FOR UPDATE TO authenticated
+  USING (
+    buyer_id = auth.uid() 
+    OR seller_id = auth.uid() 
+    OR created_by = auth.uid()
+    OR is_conversation_member(id, auth.uid())
+  );
+
+-- 6. Mise à jour des politiques RLS de messages
 DROP POLICY IF EXISTS "Messages visibles par les participants de la conversation" ON messages;
 CREATE POLICY "Messages visibles par les participants de la conversation"
   ON messages FOR SELECT TO authenticated
   USING (
-    conversation_id IN (
-      SELECT id FROM conversations WHERE buyer_id = auth.uid() OR seller_id = auth.uid()
-    )
-    OR
-    conversation_id IN (
-      SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid()
-    )
+    is_conversation_participant(conversation_id, auth.uid())
   );
 
 DROP POLICY IF EXISTS "Participants peuvent envoyer un message" ON messages;
+DROP POLICY IF EXISTS "Participant peut envoyer un message" ON messages;
 CREATE POLICY "Participants peuvent envoyer un message"
   ON messages FOR INSERT TO authenticated
   WITH CHECK (
-    auth.uid() = sender_id AND (
-      conversation_id IN (
-        SELECT id FROM conversations WHERE buyer_id = auth.uid() OR seller_id = auth.uid()
-      )
-      OR
-      conversation_id IN (
-        SELECT conversation_id FROM conversation_members WHERE user_id = auth.uid()
-      )
-    )
+    auth.uid() = sender_id 
+    AND is_conversation_participant(conversation_id, auth.uid())
   );
 
--- 6. Fonctions RPC sécurisées pour la gestion des groupes
+DROP POLICY IF EXISTS "Participants peuvent modifier un message" ON messages;
+DROP POLICY IF EXISTS "Expéditeur peut modifier son message" ON messages;
+CREATE POLICY "Participants peuvent modifier un message"
+  ON messages FOR UPDATE TO authenticated
+  USING (
+    auth.uid() = sender_id 
+    OR is_conversation_participant(conversation_id, auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Expéditeur peut supprimer son message" ON messages;
+CREATE POLICY "Expéditeur peut supprimer son message"
+  ON messages FOR DELETE TO authenticated
+  USING (
+    auth.uid() = sender_id
+  );
+
+-- 7. Fonctions RPC sécurisées pour la gestion des groupes
 
 -- Créer un groupe
 CREATE OR REPLACE FUNCTION create_group_conversation(
@@ -208,7 +250,6 @@ DECLARE
   v_user_name TEXT;
   v_actor_name TEXT;
 BEGIN
-  -- Vérifier que l'utilisateur actuel est membre du groupe
   SELECT EXISTS (
     SELECT 1 FROM conversation_members WHERE conversation_id = p_conv_id AND user_id = auth.uid()
   ) INTO v_is_member;
@@ -226,7 +267,6 @@ BEGIN
 
     SELECT COALESCE(username, 'Un membre') INTO v_user_name FROM profiles WHERE id = v_user_id;
 
-    -- Notification dans le chat
     INSERT INTO messages (conversation_id, sender_id, content, type)
     VALUES (p_conv_id, auth.uid(), v_actor_name || ' a ajouté ' || v_user_name || ' au groupe.', 'text');
   END LOOP;
