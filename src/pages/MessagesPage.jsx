@@ -7,12 +7,12 @@ import {
   Search, MicOff, Phone, Video, Star, Forward,
   Copy, Reply, Pin, Download, Camera, Plus,
   ChevronDown, Info, Bell, BellOff, Archive,
-  MessageCircle, MessageSquare, Users, User, UserPlus, LogOut, Clock, Loader2, ZoomIn,
+  MessageCircle, MessageSquare, Users, User, UserPlus, LogOut, Pencil, UserMinus, Clock, Loader2, ZoomIn,
   Lock, StopCircle, Play, Pause, ShoppingCart, Store, Mail, Radio, CircleDot
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
-import { supabase } from '@/lib/supabase'
+import { supabase, uploadImage, compressImage, BUCKETS } from '@/lib/supabase'
 import { mangCache } from '@/utils/cache'
 import { generateAutoReply } from '@/lib/ai'
 import { useAuthStore, useMessagesStore } from '@/store'
@@ -34,10 +34,13 @@ const MSG_BUCKET = 'messages'
 // UTILS
 // ══════════════════════════════════════════════════════════
 function fmtTime(date) {
-  const d = new Date(date)
-  if (isToday(d))     return format(d, 'HH:mm')
-  if (isYesterday(d)) return 'Hier ' + format(d, 'HH:mm')
-  return format(d, 'dd/MM/yy')
+  if (!date) return ''
+  try {
+    const d = new Date(date)
+    return format(d, 'HH:mm')
+  } catch {
+    return ''
+  }
 }
 
 function fmtDate(date) {
@@ -549,10 +552,10 @@ function MessageBubble({ msg, isMe, isGroup, onLongPress, onReact, reactions, on
           )}
 
           {/* Horodatage & Doubles Coches WhatsApp */}
-          <div className="flex items-center justify-end gap-1 mt-1 float-right ml-2 text-[10px] select-none">
+          <div className="flex items-center justify-end gap-1 mt-1 select-none text-[10.5px]">
             <span className={clsx(
-              'text-[10px] font-normal tabular-nums leading-none',
-              isMe ? 'text-emerald-900/70 dark:text-emerald-200/70' : 'text-dark-500/70 dark:text-gray-400'
+              'text-[10.5px] font-semibold tabular-nums leading-none',
+              isMe ? 'text-emerald-950/80 dark:text-emerald-200' : 'text-dark-600 dark:text-gray-300'
             )}>
               {fmtTime(msg.created_at)}
             </span>
@@ -682,6 +685,81 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
   const [groupMembers, setGroupMembers] = useState([])
   const [addMembersOpen, setAddMembersOpen] = useState(false)
   const [leavingGroup, setLeavingGroup] = useState(false)
+
+  // Administration de groupe (Modifier nom, photo, retirer membres)
+  const isAdmin = isGroup && (
+    conv.created_by === user?.id || 
+    groupMembers.some(m => m.user_id === user?.id && m.role === 'admin')
+  )
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [groupTitleInput, setGroupTitleInput] = useState(conv.title || 'Groupe MANG')
+  const [savingTitle, setSavingTitle] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const groupAvatarInputRef = useRef(null)
+
+  const handleSaveGroupTitle = async () => {
+    if (!groupTitleInput.trim()) return toast.error('Le nom du groupe ne peut pas être vide')
+    setSavingTitle(true)
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ title: groupTitleInput.trim() })
+        .eq('id', conv.id)
+      if (error) throw error
+      conv.title = groupTitleInput.trim()
+      setIsEditingTitle(false)
+      toast.success('Nom du groupe mis à jour !')
+    } catch {
+      toast.error('Erreur lors de la mise à jour du nom')
+    } finally {
+      setSavingTitle(false)
+    }
+  }
+
+  const handleGroupAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const compressed = await compressImage(file, 400, 0.75)
+      const path = `groups/${conv.id}_${Date.now()}.jpg`
+      const avatarUrl = await uploadImage(BUCKETS.AVATARS || 'avatars', compressed, path)
+      if (avatarUrl) {
+        await supabase.from('conversations').update({ avatar_url: avatarUrl }).eq('id', conv.id)
+        conv.avatar_url = avatarUrl
+        toast.success('Photo du groupe mise à jour !')
+      }
+    } catch (err) {
+      toast.error("Erreur lors de l'upload de la photo")
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  const handleRemoveMember = async (member) => {
+    if (!window.confirm(`Voulez-vous retirer @${member.username} du groupe ?`)) return
+    try {
+      const { error } = await supabase
+        .from('conversation_members')
+        .delete()
+        .eq('conversation_id', conv.id)
+        .eq('user_id', member.user_id)
+      if (error) throw error
+
+      // Notification dans le chat
+      await supabase.from('messages').insert({
+        conversation_id: conv.id,
+        sender_id: user.id,
+        content: `⚠️ @${user.user_metadata?.username || 'Admin'} a retiré @${member.username} du groupe.`,
+        type: 'text'
+      })
+
+      setGroupMembers(prev => prev.filter(m => m.user_id !== member.user_id))
+      toast.success(`@${member.username} a été retiré du groupe`)
+    } catch {
+      toast.error('Erreur pour retirer le membre')
+    }
+  }
   const navigate = useNavigate()
   const other = conv.buyer_id === user.id ? conv.seller : conv.buyer
   const [messages, setMessages]     = useState([])
@@ -1331,7 +1409,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         style={{ backgroundImage: 'radial-gradient(circle, #2ECC71 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
 
       {/* ── HEADER ── */}
-      <div className="relative pt-12 md:pt-4 pb-3 px-4 flex-shrink-0 bg-[#008069] dark:bg-[#202c33] border-b border-[#006e5a] dark:border-[#2a3942] transition-colors shadow-sm">
+      <header className="bg-mang-header relative pt-12 md:pt-4 pb-3 px-4 flex-shrink-0 transition-colors shadow-md border-b border-[#14532d]/30 dark:border-[#3a3b3c]">
 
         {/* Bandeau message épinglé */}
         {pinned && (
@@ -1418,7 +1496,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               className="w-full pl-9 pr-4 py-2.5 bg-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none border border-white/15"/>
           </div>
         )}
-      </div>
+      </header>
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 space-y-1 whatsapp-chat-bg-light dark:whatsapp-chat-bg-dark">
@@ -1676,30 +1754,117 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               <button onClick={() => setShowInfo(false)} className="absolute top-4 left-4 w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
                 <X size={16} className="text-white"/>
               </button>
-              <div
-                onClick={() => {
-                  const target = other?.username || other?.id
-                  if (target) {
-                    setShowInfo(false)
-                    navigate(`/profil/${target}`)
-                  }
-                }}
-                className="cursor-pointer hover:opacity-85 transition-opacity inline-flex flex-col items-center"
-                title="Voir le profil public"
-              >
-                <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
-                <p className="text-white font-bold text-lg mt-3 hover:underline">@{other?.username}</p>
-              </div>
-              <p className="text-white/50 text-xs flex items-center justify-center gap-1.5 mt-0.5">
-                {online ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                    <span className="text-emerald-300 font-medium">En ligne</span>
-                  </>
-                ) : (
-                  <span>Hors ligne</span>
-                )}
-              </p>
+              {isGroup ? (
+                <div className="flex flex-col items-center">
+                  <input
+                    ref={groupAvatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleGroupAvatarUpload}
+                  />
+                  <div
+                    className={clsx(
+                      "relative w-20 h-20 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-2xl shadow-md border-2 border-white/30 overflow-hidden",
+                      isAdmin && "cursor-pointer group"
+                    )}
+                    onClick={() => isAdmin && groupAvatarInputRef.current?.click()}
+                    title={isAdmin ? "Cliquer pour modifier la photo" : undefined}
+                  >
+                    {conv.avatar_url ? (
+                      <img src={conv.avatar_url} alt="" className="w-full h-full object-cover"/>
+                    ) : (
+                      <Users size={32}/>
+                    )}
+                    {isAdmin && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploadingAvatar ? <Loader2 size={20} className="animate-spin text-white"/> : <Camera size={20} className="text-white"/>}
+                      </div>
+                    )}
+                  </div>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => groupAvatarInputRef.current?.click()}
+                      className="mt-1.5 text-[11px] text-white/80 hover:text-white underline font-semibold flex items-center gap-1"
+                    >
+                      <Camera size={12}/> Changer la photo
+                    </button>
+                  )}
+
+                  {/* Nom du groupe & Édition */}
+                  <div className="mt-3 w-full flex items-center justify-center gap-2">
+                    {isEditingTitle ? (
+                      <div className="flex items-center gap-1.5 w-full max-w-xs">
+                        <input
+                          type="text"
+                          value={groupTitleInput}
+                          onChange={e => setGroupTitleInput(e.target.value)}
+                          className="flex-1 px-3 py-1.5 rounded-xl bg-white/20 text-white font-bold text-sm border border-white/30 focus:outline-none placeholder-white/50 text-center"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveGroupTitle}
+                          disabled={savingTitle}
+                          className="w-8 h-8 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-xs"
+                          title="Enregistrer"
+                        >
+                          {savingTitle ? <Loader2 size={14} className="animate-spin"/> : <Check size={14}/>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsEditingTitle(false); setGroupTitleInput(conv.title || 'Groupe MANG') }}
+                          className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center"
+                          title="Annuler"
+                        >
+                          <X size={14}/>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-black text-lg">{conv.title || 'Groupe MANG'}</p>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => { setIsEditingTitle(true); setGroupTitleInput(conv.title || 'Groupe MANG') }}
+                            className="p-1 rounded-lg bg-white/15 hover:bg-white/25 text-white/80 hover:text-white transition-colors"
+                            title="Modifier le nom du groupe"
+                          >
+                            <Pencil size={13}/>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-white/60 text-xs mt-0.5">👥 Groupe · {groupMembers.length} participant{groupMembers.length > 1 ? 's' : ''}</p>
+                </div>
+              ) : (
+                <div
+                  onClick={() => {
+                    const target = other?.username || other?.id
+                    if (target) {
+                      setShowInfo(false)
+                      navigate(`/profil/${target}`)
+                    }
+                  }}
+                  className="cursor-pointer hover:opacity-85 transition-opacity inline-flex flex-col items-center"
+                  title="Voir le profil public"
+                >
+                  <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
+                  <p className="text-white font-bold text-lg mt-3 hover:underline">@{other?.username}</p>
+                  <p className="text-white/50 text-xs flex items-center justify-center gap-1.5 mt-0.5">
+                    {online ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                        <span className="text-emerald-300 font-medium">En ligne</span>
+                      </>
+                    ) : (
+                      <span>Hors ligne</span>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1729,11 +1894,23 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                           </div>
                           <span className="font-bold text-dark-900 dark:text-white truncate">@{m.username}</span>
                         </div>
-                        {m.role === 'admin' ? (
-                          <span className="text-[9px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-300/40">
-                            Admin
-                          </span>
-                        ) : null}
+                        <div className="flex items-center gap-1.5">
+                          {m.role === 'admin' ? (
+                            <span className="text-[9px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-300/40">
+                              Admin
+                            </span>
+                          ) : null}
+                          {isAdmin && m.user_id !== user.id && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(m)}
+                              className="p-1 rounded-md bg-red-50 hover:bg-red-100 dark:bg-red-950/60 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 transition-colors"
+                              title="Retirer ce membre du groupe"
+                            >
+                              <UserMinus size={13}/>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
