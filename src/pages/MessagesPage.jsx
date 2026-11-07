@@ -1803,18 +1803,6 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
         onMembersAdded={loadGroupMembers}
       />
 
-      {/* Modal Nouveau Groupe */}
-      <CreateGroupModal
-        open={createGroupOpen}
-        onClose={() => setCreateGroupOpen(false)}
-        user={user}
-        onGroupCreated={(newConvId) => {
-          loadConvs()
-          const found = convs.find(c => c.id === newConvId)
-          if (found) setActive(found)
-        }}
-      />
-
       {/* Image viewer */}
       <ImageViewer url={zoomImg} onClose={() => setZoomImg(null)}/>
     </div>
@@ -1938,6 +1926,7 @@ function ConvSkeleton() {
 // ══════════════════════════════════════════════════════════
 export default function MessagesPage() {
   const { user }          = useAuthStore()
+  const navigate          = useNavigate()
   const [searchParams]    = useSearchParams()
   const openConvId        = searchParams.get('conv')
   const openProductId     = searchParams.get('product')
@@ -2011,22 +2000,36 @@ export default function MessagesPage() {
         .from('conversation_members')
         .select('conversation_id')
         .eq('user_id', user.id)
-      if (memberRows) convIdsFilter = memberRows.map(m => m.conversation_id)
+      if (memberRows?.length) convIdsFilter = memberRows.map(m => m.conversation_id).filter(Boolean)
     } catch {}
 
-    let query = supabase
+    let orParts = [`buyer_id.eq.${user.id}`, `seller_id.eq.${user.id}`, `created_by.eq.${user.id}`]
+    convIdsFilter.forEach(cid => {
+      if (cid) orParts.push(`id.eq.${cid}`)
+    })
+
+    let { data, error } = await supabase
       .from('conversations')
       .select(`*, shop:shops(id, name, cover_url, slug),
         buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
         seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
+      .or(orParts.join(','))
+      .order('last_message_at', { ascending: false })
 
-    if (convIdsFilter.length > 0) {
-      query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id},id.in.(${convIdsFilter.join(',')})`)
-    } else {
-      query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+    // Fallback direct si l'un des filtres a échoué
+    if (error || !data) {
+      const fallback = await supabase
+        .from('conversations')
+        .select(`*, shop:shops(id, name, cover_url, slug),
+          buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url, last_seen_at),
+          seller:profiles!conversations_seller_id_fkey(id, username, avatar_url, last_seen_at)`)
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .order('last_message_at', { ascending: false })
+      if (fallback.data) {
+        data = fallback.data
+        error = null
+      }
     }
-
-    const { data, error } = await query.order('last_message_at', { ascending: false })
 
     if (error) console.error('[loadConvs error]', error)
 
@@ -2241,6 +2244,19 @@ export default function MessagesPage() {
         </div>
 
       </div>
+
+      {/* Modal Nouveau Groupe */}
+      <CreateGroupModal
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        user={user}
+        onGroupCreated={(newConvId) => {
+          loadConvs()
+          if (newConvId) {
+            navigate('/messages?conv=' + newConvId)
+          }
+        }}
+      />
     </div>
   )
 }
