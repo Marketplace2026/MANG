@@ -417,6 +417,15 @@ export default function PublicProfilePage() {
               )}
             </div>
             <p className="text-primary-700 font-bold text-sm mt-0.5">@{profile.username}</p>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <UserRoleBadge 
+                isSeller={shops.length > 0 || profile.account_type === 'seller'} 
+                role={profile.account_type} 
+                shopName={shops[0]?.name}
+                isVerified={isVerifiedProducer}
+                size="md"
+              />
+            </div>
 
             {/* Badges honorifiques MANG */}
             {profile.badges && profile.badges.length > 0 && (

@@ -18,6 +18,7 @@ import { generateAutoReply } from '@/lib/ai'
 import { useAuthStore, useMessagesStore } from '@/store'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
 import { soundFx } from '@/utils/sound'
+import UserRoleBadge from '@/components/common/UserRoleBadge'
 import CreateGroupModal from '@/components/chat/CreateGroupModal'
 import AddGroupMembersModal from '@/components/chat/AddGroupMembersModal'
 import { fr } from 'date-fns/locale'
@@ -86,13 +87,17 @@ function getSenderColor(id = '') {
 // ══════════════════════════════════════════════════════════
 // AVATAR
 // ══════════════════════════════════════════════════════════
-function Avatar({ src, name, size = 'md', online = false }) {
+function Avatar({ src, name, size = 'md', online = false, isSeller = false }) {
   const sizes = { xs: 'w-7 h-7 text-[10px]', sm: 'w-9 h-9 text-xs', md: 'w-11 h-11 text-sm', lg: 'w-12 h-12 text-base' }
   const dotSizes = { xs: 'w-2 h-2', sm: 'w-2.5 h-2.5', md: 'w-3 h-3', lg: 'w-3 h-3' }
   const initials = name ? name[0].toUpperCase() : '?'
   return (
     <div className="relative flex-shrink-0">
-      <div className={clsx('rounded-2xl overflow-hidden bg-primary-100 flex items-center justify-center font-bold text-primary-700', sizes[size])}>
+      <div className={clsx(
+        'rounded-2xl overflow-hidden bg-primary-100 flex items-center justify-center font-bold text-primary-700 transition-all',
+        isSeller ? 'ring-2 ring-emerald-500/80 shadow-xs' : 'ring-1.5 ring-blue-400/30',
+        sizes[size]
+      )}>
         {src ? <img loading="lazy" src={src} alt={name} className="w-full h-full object-cover"/> : initials}
       </div>
       {online && <span className={clsx('absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-400 border-2 border-white', dotSizes[size])}/>}
@@ -463,9 +468,17 @@ function MessageBubble({ msg, isMe, isGroup, onLongPress, onReact, reactions, on
           )}
         >
           {isGroup && !isMe && (
-            <p className={clsx('text-[11px] font-black leading-tight mb-1 cursor-pointer hover:underline', getSenderColor(msg.sender_id))}>
-              @{msg.sender?.username || 'Membre'}
-            </p>
+            <div className="flex items-center gap-1.5 mb-1 cursor-pointer flex-wrap">
+              <p className={clsx('text-[11px] font-black leading-tight hover:underline', getSenderColor(msg.sender_id))}>
+                @{msg.sender?.username || 'Membre'}
+              </p>
+              <UserRoleBadge 
+                isSeller={msg.sender?.account_type === 'seller' || Boolean(msg.sender?.shop)} 
+                role={msg.sender?.account_type} 
+                shopName={msg.sender?.shop?.name} 
+                size="xs" 
+              />
+            </div>
           )}
 
           {/* Carte Produit MANG Interactive si détectée */}
@@ -815,12 +828,21 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
           .select('*, user:profiles(id, username, avatar_url)')
           .eq('conversation_id', conv.id)
         if (fallback) {
+          const userIds = fallback.map(m => m.user_id).filter(Boolean)
+          let shopMap = {}
+          try {
+            const { data: userShops } = await supabase.from('shops').select('owner_id, name').in('owner_id', userIds)
+            userShops?.forEach(sh => { shopMap[sh.owner_id] = sh.name })
+          } catch {}
+
           setGroupMembers(fallback.map(m => ({
             user_id: m.user_id,
             username: m.user?.username || 'Membre',
             avatar_url: m.user?.avatar_url || null,
             role: m.role,
-            joined_at: m.joined_at
+            joined_at: m.joined_at,
+            account_type: shopMap[m.user_id] ? 'seller' : 'buyer',
+            shop_name: shopMap[m.user_id] || null
           })))
         }
       }
@@ -1438,9 +1460,20 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
               <Avatar src={other?.avatar_url} name={other?.username} size="md" online={isOnlineState}/>
             )}
             <div className="min-w-0">
-              <p className="text-white font-bold text-base truncate leading-tight">
-                {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username}`}
-              </p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-white font-bold text-base truncate leading-tight">
+                  {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username}`}
+                </p>
+                {!isGroup && (
+                  <UserRoleBadge 
+                    isSeller={conv.seller_id === other?.id && Boolean(conv.shop_id || conv.shop || other?.account_type === 'seller')} 
+                    role={other?.account_type}
+                    shopName={conv.seller_id === other?.id ? conv.shop?.name : null}
+                    size="xs"
+                    className="border-white/20 bg-white/15 text-white"
+                  />
+                )}
+              </div>
               <p className="text-white/70 text-xs flex items-center gap-1.5 truncate">
                 {isGroup ? (
                   <span>👥 {groupMembers.length > 0 ? `${groupMembers.length} membres` : 'Groupe'}</span>
@@ -1851,7 +1884,7 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                   className="cursor-pointer hover:opacity-85 transition-opacity inline-flex flex-col items-center"
                   title="Voir le profil public"
                 >
-                  <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online}/>
+                  <Avatar src={other?.avatar_url} name={other?.username} size="lg" online={online} isSeller={conv.seller_id === other?.id && Boolean(conv.shop_id || conv.shop || other?.account_type === 'seller')}/>
                   <p className="text-white font-bold text-lg mt-3 hover:underline">@{other?.username}</p>
                   <p className="text-white/50 text-xs flex items-center justify-center gap-1.5 mt-0.5">
                     {online ? (
@@ -1893,6 +1926,12 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                             {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full rounded-full object-cover"/> : (m.username ? m.username[0].toUpperCase() : 'U')}
                           </div>
                           <span className="font-bold text-dark-900 dark:text-white truncate">@{m.username}</span>
+                          <UserRoleBadge
+                            isSeller={m.account_type === 'seller' || Boolean(m.shop_name)}
+                            role={m.account_type}
+                            shopName={m.shop_name}
+                            size="xs"
+                          />
                         </div>
                         <div className="flex items-center gap-1.5">
                           {m.role === 'admin' ? (
@@ -2060,9 +2099,19 @@ function ConvItem({ conv, userId, onClick }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900 dark:text-white' : 'font-bold text-dark-700 dark:text-gray-200')}>
-            {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username || conv.shop?.name || 'Utilisateur'}`}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0 truncate">
+            <p className={clsx('text-sm truncate', hasUnread ? 'font-black text-dark-900 dark:text-white' : 'font-bold text-dark-700 dark:text-gray-200')}>
+              {isGroup ? (conv.title || 'Groupe MANG') : `@${other?.username || conv.shop?.name || 'Utilisateur'}`}
+            </p>
+            {!isGroup && (
+              <UserRoleBadge 
+                isSeller={conv.seller_id === other?.id && Boolean(conv.shop_id || conv.shop || other?.account_type === 'seller')} 
+                role={other?.account_type}
+                shopName={conv.seller_id === other?.id ? conv.shop?.name : null}
+                size="xs"
+              />
+            )}
+          </div>
           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
             {conv.last_message_at && (
               <span className={clsx('text-[10px]', hasUnread ? 'text-primary-600 font-bold' : 'text-dark-400')}>
