@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCacheStore } from '@/store'
 import Fuse from 'fuse.js'
 import toast from 'react-hot-toast'
+import { CATEGORIES } from '@/components/vendor/shared'
 
 // ============================================================
 // useShops — Fetch boutiques avec SWR Caching
@@ -202,8 +203,9 @@ export function useShop(slugOrId) {
 // ============================================================
 export function useCategories() {
   const { categoriesCache, setCategories } = useCacheStore()
-  const [categories, setCategoriesState] = useState(categoriesCache || [])
-  const [loading, setLoading] = useState(!categoriesCache)
+  const fallbackCategories = CATEGORIES.flatMap(g =>
+    g.items.map((item, idx) => ({ id: `cat-${g.name}-${idx}`, name: item, group_name: g.name, icon: g.icon }))
+  )
 
   const groupCats = (data) => {
     const grouped = {}
@@ -214,7 +216,10 @@ export function useCategories() {
     return Object.entries(grouped).map(([name, items]) => ({ name, items }))
   }
 
-  const [groups, setGroups] = useState(categoriesCache ? groupCats(categoriesCache) : [])
+  const initialData = (categoriesCache && categoriesCache.length > 0) ? categoriesCache : fallbackCategories
+  const [categories, setCategoriesState] = useState(initialData)
+  const [groups, setGroups] = useState(groupCats(initialData))
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     supabase
@@ -222,7 +227,7 @@ export function useCategories() {
       .select('*')
       .order('sort_order')
       .then(({ data }) => {
-        const result = data || []
+        const result = (data && data.length > 0) ? data : fallbackCategories
         setCategoriesState(result)
         setGroups(groupCats(result))
         setCategories(result) // Cache Zustand

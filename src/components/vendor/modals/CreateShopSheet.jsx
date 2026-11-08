@@ -227,9 +227,13 @@ export default function CreateShopSheet({ open, onClose, user, pieces, onCreated
     }
   }
 
-  // Groupement par group_name dynamique et filtrage de recherche
+  // Groupement par group_name dynamique et filtrage de recherche (avec fallback sur les 7 catégories officielles)
   const groupMap = {}
-  dbCategories.forEach(cat => {
+  const sourceCats = dbCategories.length > 0 ? dbCategories : CATEGORIES.flatMap(g => 
+    g.items.map((item, idx) => ({ id: `local-${g.name}-${idx}`, name: item, group_name: g.name, icon: g.icon }))
+  )
+
+  sourceCats.forEach(cat => {
     const matchesSearch = !catSearch 
       || cat.name.toLowerCase().includes(catSearch.toLowerCase()) 
       || cat.group_name.toLowerCase().includes(catSearch.toLowerCase())

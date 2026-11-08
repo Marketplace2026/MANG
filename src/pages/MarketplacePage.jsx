@@ -4,7 +4,9 @@ import {
   Search, X, SlidersHorizontal, Truck, MapPin,
   Flame, LayoutGrid, ChevronDown, Mic, Camera, Globe as GlobeIcon, Bell as BellIcon, Store,
   Package, Map, List, ShieldCheck, Sprout, FolderOpen, Clock, Users, Heart, Apple, Beef, FlaskConical, Leaf, Tag,
-  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight, Trophy, Zap, Gift, Award, Crown, Medal
+  LogIn, Eye, Star, BadgeCheck, Sparkles, ChevronRight, Trophy, Zap, Gift, Award, Crown, Medal,
+  Factory, Tractor, Trees, Wrench, Wheat, Salad, Carrot, Flower2, Footprints, Shield, Egg, Fish,
+  Layers, Box, Cog, Droplets, Shovel, ShieldAlert, Flower, TreePine, Scissors, Compass, Boxes, Warehouse, GraduationCap, Globe
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -32,16 +34,100 @@ const AVAIL = {
   '1y': { label: 'Dans 1 an',        color: 'bg-red-100 text-red-700' },
 }
 
-// CATÉGORIES (identiques à votre ancien fichier)
-const CATEGORIES = [
-  { name: 'Production végétale', items: ['Céréales & grains','Légumes','Fruits','Racines & tubercules','Plantes industrielles','Plantes aromatiques & médicinales'] },
-  { name: 'Production animale', items: ['Bovins','Ovins & caprins','Porcins','Aviculture','Apiculture','Pisciculture & aquaculture'] },
-  { name: 'Transformation agricole', items: ['Produits céréaliers transformés','Produits fruitiers transformés','Produits tubercules transformés','Produits animaux transformés'] },
-  { name: 'Machines & équipements', items: ['Machines lourdes','Équipements motorisés','Outils agricoles','Irrigation & énergie','Pièces & maintenance'] },
-  { name: 'Intrants agricoles', items: ['Semences & plants','Engrais organiques','Engrais chimiques','Amendements du sol','Produits phytosanitaires'] },
-  { name: 'Espaces verts', items: ['Plantes ornementales','Arbres & arbustes','Gazon & pelouses','Fleurs & pépinières','Aménagement paysager','Entretien des espaces verts','Matériel de jardinage'] },
-  { name: 'Services agricoles', items: ['Labour & préparation du sol','Récolte & battage','Transport & logistique','Stockage & conservation','Formation & conseil','Commercialisation & export'] },
+// CATÉGORIES OFFICIELLES (7 Catégories & 38 sous-catégories avec icônes SVG Lucide)
+export const CATEGORIES = [
+  { 
+    name: 'Production végétale', 
+    icon: Sprout, 
+    items: ['Céréales & grains','Légumes','Fruits','Racines & tubercules','Plantes industrielles','Plantes aromatiques & médicinales'] 
+  },
+  { 
+    name: 'Production animale', 
+    icon: Beef, 
+    items: ['Bovins','Ovins & caprins','Porcins','Aviculture','Apiculture','Pisciculture & aquaculture'] 
+  },
+  { 
+    name: 'Transformation agricole', 
+    icon: Factory, 
+    items: ['Produits céréaliers transformés','Produits fruitiers transformés','Produits tubercules transformés','Produits animaux transformés'] 
+  },
+  { 
+    name: 'Machines & équipements agricoles', 
+    icon: Tractor, 
+    items: ['Machines lourdes','Équipements motorisés','Outils agricoles','Irrigation & énergie','Pièces & maintenance'] 
+  },
+  { 
+    name: 'Intrants agricoles', 
+    icon: FlaskConical, 
+    items: ['Semences & plants','Engrais organiques','Engrais chimiques','Amendements du sol','Produits phytosanitaires'] 
+  },
+  { 
+    name: 'Espaces verts', 
+    icon: Trees, 
+    items: ['Plantes ornementales','Arbres & arbustes','Gazon & pelouses','Fleurs & pépinières','Aménagement paysager','Entretien des espaces verts','Matériel de jardinage'] 
+  },
+  { 
+    name: 'Services agricoles', 
+    icon: Wrench, 
+    items: ['Labour & préparation du sol','Récolte & battage','Transport & logistique','Stockage & conservation','Formation & conseil','Commercialisation & export'] 
+  },
 ]
+
+// Mappage des icônes SVG Lucide par sous-catégorie
+export const SUBCAT_ICONS = {
+  // Production végétale
+  'Céréales & grains': Wheat,
+  'Légumes': Salad,
+  'Fruits': Apple,
+  'Racines & tubercules': Carrot,
+  'Plantes industrielles': Trees,
+  'Plantes aromatiques & médicinales': Flower2,
+
+  // Production animale
+  'Bovins': Beef,
+  'Ovins & caprins': Footprints,
+  'Porcins': Shield,
+  'Aviculture': Egg,
+  'Apiculture': Sparkles,
+  'Pisciculture & aquaculture': Fish,
+
+  // Transformation agricole
+  'Produits céréaliers transformés': Package,
+  'Produits fruitiers transformés': Apple,
+  'Produits tubercules transformés': Layers,
+  'Produits animaux transformés': Box,
+
+  // Machines & équipements agricoles
+  'Machines lourdes': Truck,
+  'Équipements motorisés': Cog,
+  'Outils agricoles': Wrench,
+  'Irrigation & énergie': Droplets,
+  'Pièces & maintenance': Wrench,
+
+  // Intrants agricoles
+  'Semences & plants': Leaf,
+  'Engrais organiques': Shovel,
+  'Engrais chimiques': FlaskConical,
+  'Amendements du sol': Layers,
+  'Produits phytosanitaires': ShieldAlert,
+
+  // Espaces verts
+  'Plantes ornementales': Flower,
+  'Arbres & arbustes': TreePine,
+  'Gazon & pelouses': Scissors,
+  'Fleurs & pépinières': Flower2,
+  'Aménagement paysager': Compass,
+  'Entretien des espaces verts': Sparkles,
+  'Matériel de jardinage': Wrench,
+
+  // Services agricoles
+  'Labour & préparation du sol': Tractor,
+  'Récolte & battage': Boxes,
+  'Transport & logistique': Truck,
+  'Stockage & conservation': Warehouse,
+  'Formation & conseil': GraduationCap,
+  'Commercialisation & export': Globe,
+}
 
 const BANNERS = [
   {
@@ -277,35 +363,17 @@ export default function MarketplacePage() {
   }
 
   const getGroupCategoryIds = (catName) => {
-    if (!dbCategories.length) return []
-    if (catName === 'Céréales') {
-      return dbCategories.filter(c => c.group_name === 'Céréales & Légumineuses').map(c => c.id)
-    }
-    if (catName === 'Tubercules') {
-      return dbCategories.filter(c => c.group_name === 'Tubercules & Racines').map(c => c.id)
-    }
-    if (catName === 'Fruits') {
-      return dbCategories.filter(c => c.group_name === 'Fruits & Légumes' && (c.name.toLowerCase().includes('fruit') || c.name.toLowerCase().includes('banane') || c.name.toLowerCase().includes('mangue') || c.name.toLowerCase().includes('ananas') || c.name.toLowerCase().includes('papaye'))).map(c => c.id)
-    }
-    if (catName === 'Légumes') {
-      return dbCategories.filter(c => c.group_name === 'Fruits & Légumes' && (c.name.toLowerCase().includes('legume') || c.name.toLowerCase().includes('tomate') || c.name.toLowerCase().includes('oignon') || c.name.toLowerCase().includes('piment') || c.name.toLowerCase().includes('gombo') || c.name.toLowerCase().includes('aubergine'))).map(c => c.id)
-    }
-    if (catName === 'Élevage') {
-      return dbCategories.filter(c => c.group_name === 'Produits Animaux' && !c.name.toLowerCase().includes('poisson')).map(c => c.id)
-    }
-    if (catName === 'Produits Transformés') {
-      return dbCategories.filter(c => c.group_name === 'Produits Transformés').map(c => c.id)
-    }
-    if (catName === 'Intrants') {
-      return dbCategories.filter(c => c.group_name === 'Intrants Agricoles').map(c => c.id)
-    }
-    if (catName === 'Pêche') {
-      return dbCategories.filter(c => c.group_name === 'Produits Animaux' && c.name.toLowerCase().includes('poisson')).map(c => c.id)
-    }
-    if (catName === 'Artisanat') {
-      return dbCategories.filter(c => c.group_name === 'Épices & Condiments').map(c => c.id)
-    }
-    return []
+    if (!dbCategories.length || !catName) return []
+    // 1. Correspondance exacte par group_name
+    const exact = dbCategories.filter(c => c.group_name === catName).map(c => c.id)
+    if (exact.length > 0) return exact
+    // 2. Correspondance souple (insensible à la casse ou alias court)
+    const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const target = norm(catName)
+    return dbCategories.filter(c => {
+      const g = norm(c.group_name)
+      return g.includes(target) || target.includes(g)
+    }).map(c => c.id)
   }
 
   const loadShops = async () => {
@@ -1915,32 +1983,36 @@ function TopShopItem({ shop, rank, isFollowing, onFollow, onOpen }) {
 // ============================================================
 // MODAL CATÉGORIES EN SPLIT-PANEL (STYLE ALIBABA / JUMIA)
 // ============================================================
-function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = [], onSelectGroup, onSelectCategory }) {
-  const [activeGroup, setActiveGroup] = useState('Céréales & Légumineuses')
+function CategoryModal({ open, onClose, dbCategories = [], allShops, allProducts = [], onSelectGroup, onSelectCategory }) {
+  const [activeGroup, setActiveGroup] = useState('Production végétale')
 
   if (!open) return null
 
-  // Groupes prédéfinis avec leurs labels et icônes
+  // 7 Groupes prédéfinis avec leurs labels et icônes Lucide officielles
   const GROUPS = [
-    { name: 'Céréales & Légumineuses', label: 'Céréales', icon: Sprout },
-    { name: 'Tubercules & Racines', label: 'Tubercules', icon: Package },
-    { name: 'Fruits & Légumes', label: 'Fruits & Légumes', icon: Apple },
-    { name: 'Produits Animaux', label: 'Élevage', icon: Beef },
-    { name: 'Produits Transformés', label: 'Transformés', icon: FlaskConical },
-    { name: 'Épices & Condiments', label: 'Épices', icon: Flame },
-    { name: 'Intrants Agricoles', label: 'Intrants', icon: Leaf },
+    { name: 'Production végétale', label: 'Végétale', icon: Sprout },
+    { name: 'Production animale', label: 'Animale', icon: Beef },
+    { name: 'Transformation agricole', label: 'Transformation', icon: Factory },
+    { name: 'Machines & équipements agricoles', label: 'Machines & Équip.', icon: Tractor },
+    { name: 'Intrants agricoles', label: 'Intrants', icon: FlaskConical },
+    { name: 'Espaces verts', label: 'Espaces Verts', icon: Trees },
+    { name: 'Services agricoles', label: 'Services', icon: Wrench },
   ]
 
-  // Récupérer les sous-catégories associées au groupe actif
-  const subCategories = dbCategories.filter(c => c.group_name === activeGroup)
+  // Récupérer les sous-catégories associées au groupe actif avec fallback local si DB pas encore chargée
+  const foundSub = (dbCategories || []).filter(c => c.group_name === activeGroup)
+  const fallbackGroup = CATEGORIES.find(c => c.name === activeGroup)
+  const subCategories = foundSub.length > 0 
+    ? foundSub 
+    : (fallbackGroup?.items || []).map((name, idx) => ({ id: `cat-${activeGroup}-${idx}`, name, group_name: activeGroup }))
 
   return (
     <>
       <div className="overlay" onClick={onClose}/>
-      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0 p-0 rounded-t-3xl overflow-hidden bg-white animate-slide-up flex flex-col h-[480px]">
+      <div className="bottom-sheet z-50 max-w-[480px] mx-auto left-0 right-0 p-0 rounded-t-3xl overflow-hidden bg-white dark:bg-dark-900 animate-slide-up flex flex-col h-[480px]">
         {/* En-tête */}
-        <div className="p-4 border-b border-surface-100 flex items-center justify-between bg-surface-50">
-          <h3 className="font-display font-black text-sm text-dark-800 uppercase tracking-wide">
+        <div className="p-4 border-b border-surface-100 dark:border-dark-700 flex items-center justify-between bg-surface-50 dark:bg-dark-800">
+          <h3 className="font-display font-black text-sm text-dark-800 dark:text-dark-100 uppercase tracking-wide">
             Catégories Agricoles
           </h3>
           <button 
@@ -1948,7 +2020,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
               onSelectGroup(null)
               onClose()
             }}
-            className="text-[10px] font-black text-primary-600 bg-primary-50 px-2.5 py-1.5 rounded-lg tracking-wide uppercase active:scale-95 transition"
+            className="text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-dark-700 px-2.5 py-1.5 rounded-lg tracking-wide uppercase active:scale-95 transition"
           >
             Tous les produits
           </button>
@@ -1957,7 +2029,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
         {/* Corps split-panel */}
         <div className="flex-1 flex overflow-hidden">
           {/* Panneau gauche : Catégories Parentes */}
-          <div className="w-[140px] bg-surface-50 border-r border-surface-100 overflow-y-auto no-scrollbar py-2">
+          <div className="w-[140px] bg-surface-50 dark:bg-dark-800 border-r border-surface-100 dark:border-dark-700 overflow-y-auto no-scrollbar py-2">
             {GROUPS.map((g, idx) => {
               const isActive = activeGroup === g.name
               return (
@@ -1965,16 +2037,16 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
                   key={idx}
                   onClick={() => setActiveGroup(g.name)}
                   className={clsx(
-                    "w-full px-3 py-4 flex flex-col items-center justify-center gap-1 transition text-center relative border-b border-surface-100/50",
+                    "w-full px-3 py-4 flex flex-col items-center justify-center gap-1 transition text-center relative border-b border-surface-100/50 dark:border-dark-700/50",
                     isActive 
-                      ? "bg-white text-primary-600 font-bold" 
-                      : "text-dark-800 hover:bg-surface-100/50"
+                      ? "bg-white dark:bg-dark-900 text-primary-600 dark:text-primary-400 font-bold" 
+                      : "text-dark-800 dark:text-dark-300 hover:bg-surface-100/50 dark:hover:bg-dark-700/50"
                   )}
                 >
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-md" />
                   )}
-                  <div className="w-8 h-8 rounded-xl bg-surface-100 flex items-center justify-center mb-0.5 text-primary-700">
+                  <div className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-dark-700 flex items-center justify-center mb-0.5 text-primary-700 dark:text-primary-400">
                     <g.icon size={16} strokeWidth={2.2} />
                   </div>
                   <span className="text-[10px] font-bold leading-tight">{g.label}</span>
@@ -1984,9 +2056,9 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
           </div>
 
           {/* Panneau droit : Sous-catégories */}
-          <div className="flex-1 bg-white overflow-y-auto p-4">
-            <div className="flex items-center justify-between mb-3 pb-1 border-b border-surface-100">
-              <span className="text-[10px] font-black text-dark-600/40 uppercase tracking-wider truncate max-w-[130px]">
+          <div className="flex-1 bg-white dark:bg-dark-900 overflow-y-auto p-4">
+            <div className="flex items-center justify-between mb-3 pb-1 border-b border-surface-100 dark:border-dark-700">
+              <span className="text-[10px] font-black text-dark-600/40 dark:text-dark-400 uppercase tracking-wider truncate max-w-[130px]">
                 {activeGroup}
               </span>
               <button
@@ -1994,7 +2066,7 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
                   onSelectGroup(activeGroup)
                   onClose()
                 }}
-                className="text-[9px] font-black text-primary-700 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded flex-shrink-0"
+                className="text-[9px] font-black text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-dark-800 hover:bg-primary-100 dark:hover:bg-dark-700 px-2 py-1 rounded flex-shrink-0"
               >
                 Tout voir
               </button>
@@ -2002,13 +2074,14 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
 
             {subCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center mx-auto mb-1 text-dark-400"><Package size={20} /></div>
-                <span className="text-[10px] font-bold text-dark-600/50 mt-1">Aucune sous-catégorie disponible</span>
+                <div className="w-10 h-10 rounded-xl bg-surface-100 dark:bg-dark-800 flex items-center justify-center mx-auto mb-1 text-dark-400"><Package size={20} /></div>
+                <span className="text-[10px] font-bold text-dark-600/50 dark:text-dark-400 mt-1">Aucune sous-catégorie disponible</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-2">
                 {subCategories.map(cat => {
                   const productCount = allProducts.filter(p => p.shop?.category_id === cat.id).length
+                  const SubIcon = SUBCAT_ICONS[cat.name] || Sprout
                   return (
                     <button
                       key={cat.id}
@@ -2016,15 +2089,17 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
                         onSelectCategory(cat.id, cat.name)
                         onClose()
                       }}
-                      className="flex items-center justify-between p-2.5 rounded-xl border border-surface-200 hover:border-primary-400 hover:bg-primary-50/10 active:scale-95 transition text-left"
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-surface-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50/10 dark:hover:bg-primary-950/20 active:scale-95 transition text-left"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-5 h-5 rounded-md bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0"><Sprout size={12} strokeWidth={2.2} /></span>
-                        <span className="text-[10px] font-black text-dark-800 leading-tight truncate">
+                        <span className="w-6 h-6 rounded-md bg-primary-50 dark:bg-dark-800 flex items-center justify-center text-primary-600 dark:text-primary-400 flex-shrink-0">
+                          <SubIcon size={14} strokeWidth={2.2} />
+                        </span>
+                        <span className="text-[10px] font-black text-dark-800 dark:text-dark-100 leading-tight truncate">
                           {cat.name}
                         </span>
                       </div>
-                      <span className="text-[8px] font-bold text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                      <span className="text-[8px] font-bold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-dark-800 px-1.5 py-0.5 rounded-md flex-shrink-0">
                         {productCount}
                       </span>
                     </button>
@@ -2036,10 +2111,10 @@ function CategoryModal({ open, onClose, dbCategories, allShops, allProducts = []
         </div>
 
         {/* Bouton Fermer */}
-        <div className="p-3 border-t border-surface-100 bg-surface-50 text-center">
+        <div className="p-3 border-t border-surface-100 dark:border-dark-700 bg-surface-50 dark:bg-dark-800 text-center">
           <button 
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-dark-800 hover:bg-dark-900 text-white font-bold text-xs active:scale-95 transition"
+            className="w-full py-2.5 rounded-xl bg-dark-800 hover:bg-dark-900 dark:bg-dark-700 dark:hover:bg-dark-600 text-white font-bold text-xs active:scale-95 transition"
           >
             Fermer
           </button>
