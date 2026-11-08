@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#004D00">
+    <meta name="theme-color" content="#14532d">
     <meta name="description" content="MANG — Marché Agricole Nouvelle Génération. La marketplace agricole du Bénin." />
     
     <!-- PWA Capabilities -->
@@ -37,7 +37,7 @@
             if (meta) meta.setAttribute('content', '#18191a');
           } else {
             document.documentElement.classList.remove('dark');
-            if (meta) meta.setAttribute('content', '#ffffff');
+            if (meta) meta.setAttribute('content', '#14532d');
           }
         } catch(e) {}
       })();
@@ -74,13 +74,15 @@
   <body class="bg-surface-50 font-sans">
     <div id="root">
       <!-- Fallback visuel immédiat avant le montage de React (garantit zéro page blanche) -->
-      <div id="mang-preloader" style="position:fixed;inset:0;background:#004D00;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:'Nunito',sans-serif;color:white;text-align:center;padding:24px;">
-        <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-          <img src="/logo-mang.png" alt="MANG" style="width:52px;height:52px;object-fit:contain;" />
+      <div id="mang-preloader" class="mang-preloader-root">
+        <div style="display:flex;justify-content:center;margin-bottom:16px;">
+          <img src="/logo-mang.png" alt="MANG" style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 14px 28px rgba(0,0,0,0.35));" />
         </div>
-        <h2 style="font-size:26px;font-weight:800;letter-spacing:1px;margin:0 0 6px 0;">MANG</h2>
-        <p style="font-size:13px;opacity:0.85;margin:0 0 24px 0;max-width:280px;line-height:1.4;">Marché Agricole Nouvelle Génération</p>
-        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.2);border-top-color:#facc15;border-radius:50%;animation:mangSpin 0.8s linear infinite;"></div>
+        <h2 style="font-size:30px;font-weight:900;letter-spacing:1px;margin:0 0 6px 0;text-shadow:0 2px 8px rgba(0,0,0,0.2);">MANG</h2>
+        <p style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.85;margin:0 0 20px 0;max-width:320px;line-height:1.4;font-weight:700;">Marché Agricole Nouvelle Génération</p>
+        <div class="mang-bounce-dots">
+          <span></span><span></span><span></span>
+        </div>
         <div id="mang-recovery-box" style="display:none;margin-top:28px;">
           <p style="font-size:12px;opacity:0.8;margin-bottom:12px;">Chargement prolongé ?</p>
           <button onclick="if('caches' in window){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}window.location.reload(true);" style="background:#facc15;color:#0f172a;border:none;padding:10px 20px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
@@ -89,7 +91,42 @@
         </div>
       </div>
       <style>
-        @keyframes mangSpin { to { transform: rotate(360deg); } }
+        .mang-preloader-root {
+          position: fixed;
+          inset: 0;
+          background: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 999999;
+          font-family: 'Nunito', sans-serif;
+          color: white;
+          text-align: center;
+          padding: 24px;
+          transition: background 0.2s ease;
+        }
+        html.dark .mang-preloader-root {
+          background: linear-gradient(to right, #242526, #1c1e21, #242526) !important;
+        }
+        .mang-bounce-dots {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .mang-bounce-dots span {
+          width: 9px;
+          height: 9px;
+          background: #facc15;
+          border-radius: 50%;
+          animation: mangDotBounce 1.4s infinite ease-in-out both;
+        }
+        .mang-bounce-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .mang-bounce-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes mangDotBounce {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1.0); opacity: 1; }
+        }
       </style>
       <script>
         setTimeout(function() {

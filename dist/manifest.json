@@ -3,9 +3,13 @@
   "short_name": "MANG",
   "description": "Marché Agricole Nouvelle Génération. La marketplace agricole et bio du Bénin.",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "theme_color": "#004D00",
-  "background_color": "#004D00",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "theme_color": "#14532d",
+  "background_color": "#14532d",
   "start_url": "/",
   "scope": "/",
   "orientation": "portrait",

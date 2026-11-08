@@ -376,16 +376,15 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950 text-dark-800 dark:text-gray-100 transition-colors duration-200">
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-dark-900 border-b border-gray-100 dark:border-dark-800 transition-colors duration-200"
-        style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
+      <header className="sticky top-0 z-10 bg-mang-header border-b border-[#14532d]/40 dark:border-[#3a3b3c] transition-colors duration-200 shadow-md">
         <div className="flex items-center gap-3 px-4 py-3.5">
           <button onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark-800 flex items-center justify-center active:scale-90 transition-transform">
-            <ArrowLeft size={18} className="text-gray-700" />
+            className="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/20 flex items-center justify-center active:scale-90 transition-transform">
+            <ArrowLeft size={18} className="text-white" />
           </button>
-          <h1 className="font-black text-gray-900 dark:text-white dark:text-white text-[17px] tracking-tight">{t.settings}</h1>
+          <h1 className="font-black text-white text-[17px] tracking-tight">{t.settings}</h1>
         </div>
-      </div>
+      </header>
 
       <div className="px-4 pt-4 pb-28 space-y-4">
 

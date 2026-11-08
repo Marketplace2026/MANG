@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom'
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] transition-colors duration-200">
+    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-[#14532d] via-[#166534] to-[#15803d] dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] transition-colors duration-200">
       {/* Décoration fond */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-gold-500/10 blur-3xl" />

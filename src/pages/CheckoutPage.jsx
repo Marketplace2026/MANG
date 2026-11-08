@@ -243,15 +243,15 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-surface-50 dark:bg-dark-950 pb-56 text-dark-900 dark:text-gray-100 font-sans transition-colors duration-200">
       
       {/* Sticky Header */}
-      <div className="sticky top-0 bg-white/80 dark:bg-gradient-to-r dark:from-[#242526] dark:via-[#1c1e21] dark:to-[#242526] backdrop-blur-md border-b border-surface-200 dark:border-[#3a3b3c] px-4 py-3.5 z-20 flex items-center gap-3 max-w-[var(--content-max-width)] mx-auto transition-colors duration-200 shadow-sm">
-        <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-[#3a3b3c] border border-transparent dark:border-[#4e4f50] flex items-center justify-center active:scale-95 transition-all">
-          <ArrowLeft size={18} className="text-dark-800 dark:text-white" />
+      <header className="sticky top-0 bg-mang-header border-b border-[#14532d]/40 dark:border-[#3a3b3c] px-4 py-3.5 z-20 flex items-center gap-3 max-w-[var(--content-max-width)] mx-auto transition-colors duration-200 shadow-md">
+        <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all">
+          <ArrowLeft size={18} className="text-white" />
         </button>
         <div>
-          <h1 className="font-display font-black text-dark-900 dark:text-white text-base leading-tight">Validation de commande</h1>
-          <p className="text-[10px] text-dark-600/60 dark:text-gray-400 font-semibold">Paiement unique via Wallet</p>
+          <h1 className="font-display font-black text-white text-base leading-tight">Validation de commande</h1>
+          <p className="text-[10px] text-white/70 font-semibold">Paiement unique via Wallet</p>
         </div>
-      </div>
+      </header>
 
       <div className="px-4 mt-4 max-w-[var(--content-max-width)] mx-auto space-y-4">
         

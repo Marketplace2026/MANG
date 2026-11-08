@@ -37,15 +37,15 @@ const SettingsPage       = lazy(() => import('@/pages/SettingsPage'))
 // ── Splash screen (photo existante - initial boot uniquement) ──
 function SplashScreen() {
   return (
-    <div className="fixed inset-0 bg-primary-900 flex flex-col items-center justify-center gap-4">
+    <div className="fixed inset-0 bg-mang-header flex flex-col items-center justify-center gap-4 transition-colors duration-200">
       <div className="text-center">
-        <img src="/logo-mang.png" className="w-40 h-40 mx-auto mb-4" />
-        <h1 className="font-display text-3xl text-white font-bold">MANG</h1>
-        <p className="text-primary-300 text-sm mt-1">Marché Agricole Nouvelle Génération</p>
+        <img src="/logo-mang.png" className="w-40 h-40 mx-auto mb-4 object-contain drop-shadow-2xl" />
+        <h1 className="font-display text-3xl text-white font-black tracking-tight">MANG</h1>
+        <p className="text-white/80 dark:text-gray-300 text-xs tracking-widest uppercase mt-1 font-semibold">Marché Agricole Nouvelle Génération</p>
       </div>
-      <div className="flex gap-1 mt-4">
+      <div className="flex gap-1.5 mt-4">
         {[0,1,2].map(i => (
-          <div key={i} className="w-2 h-2 rounded-full bg-gold-400 animate-bounce"
+          <div key={i} className="w-2.5 h-2.5 rounded-full bg-gold-400 animate-bounce shadow-xs"
             style={{ animationDelay: `${i * 0.15}s` }}/>
         ))}
       </div>

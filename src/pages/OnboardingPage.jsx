@@ -65,7 +65,7 @@ export default function OnboardingPage() {
   const testimonial = TESTIMONIALS[tIdx]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-dark-900 dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between transition-colors duration-200">
+    <div className="min-h-screen bg-gradient-to-br from-[#14532d] via-[#166534] to-[#15803d] dark:from-[#18191a] dark:via-[#242526] dark:to-[#18191a] max-w-[480px] mx-auto relative overflow-hidden font-sans shadow-2xl flex flex-col justify-between transition-colors duration-200">
       
       {/* Éléments de fond décoratifs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
