@@ -433,12 +433,22 @@ function MessageBubble({ msg, isMe, isGroup, onLongPress, onReact, reactions, on
 
       {/* Avatar (seulement pour l'interlocuteur) */}
       {!isMe && (
-        <Avatar
-          src={msg.sender?.avatar_url}
-          name={msg.sender?.username}
-          size="xs"
-          online={isOnline(msg.sender?.last_seen_at)}
-        />
+        <div
+          onClick={(e) => {
+            e.stopPropagation()
+            const target = msg.sender?.username || msg.sender_id
+            if (target) navigate(`/profil/${target}`)
+          }}
+          className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+          title={`Voir le profil de @${msg.sender?.username || 'Membre'}`}
+        >
+          <Avatar
+            src={msg.sender?.avatar_url}
+            name={msg.sender?.username}
+            size="xs"
+            online={isOnline(msg.sender?.last_seen_at)}
+          />
+        </div>
       )}
 
       <div className={clsx('relative max-w-[85%] sm:max-w-[70%]', isMe ? 'items-end' : 'items-start')}>
@@ -468,7 +478,15 @@ function MessageBubble({ msg, isMe, isGroup, onLongPress, onReact, reactions, on
           )}
         >
           {isGroup && !isMe && (
-            <div className="flex items-center gap-1.5 mb-1 cursor-pointer flex-wrap">
+            <div 
+              onClick={(e) => {
+                e.stopPropagation()
+                const target = msg.sender?.username || msg.sender_id
+                if (target) navigate(`/profil/${target}`)
+              }}
+              className="flex items-center gap-1.5 mb-1 cursor-pointer flex-wrap hover:opacity-85 transition-opacity"
+              title={`Voir le profil de @${msg.sender?.username || 'Membre'}`}
+            >
               <p className={clsx('text-[11px] font-black leading-tight hover:underline', getSenderColor(msg.sender_id))}>
                 @{msg.sender?.username || 'Membre'}
               </p>
@@ -1920,8 +1938,18 @@ function ChatWindow({ conv, user, onBack, onMarkRead, initialProductId }) {
                   {/* Liste des membres */}
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     {groupMembers.map(m => (
-                      <div key={m.user_id} className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-[#18191a] text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div key={m.user_id} className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-[#18191a] hover:bg-surface-100 dark:hover:bg-[#242526] transition-colors text-xs">
+                        <div 
+                          onClick={() => {
+                            const target = m.username || m.user_id
+                            if (target) {
+                              setShowInfo(false)
+                              navigate(`/profil/${target}`)
+                            }
+                          }}
+                          className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
+                          title={`Voir le profil de @${m.username || 'membre'}`}
+                        >
                           <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold flex items-center justify-center text-[10px] shrink-0">
                             {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full rounded-full object-cover"/> : (m.username ? m.username[0].toUpperCase() : 'U')}
                           </div>

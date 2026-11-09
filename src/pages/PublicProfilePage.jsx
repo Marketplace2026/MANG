@@ -33,9 +33,12 @@ export default function PublicProfilePage() {
   const navigate = useNavigate()
   const { user, profile: myProfile } = useAuthStore()
 
-  const cachedProfile = useCacheStore.getState().membersCache[username] || null
-  const cachedPosts = useCacheStore.getState().postsCache["profile_" + username] || []
-  const cachedShops = useCacheStore.getState().shopsCache["profile_" + username] || []
+  // Nettoyage rigoureux du paramètre (retire le @ éventuel, espaces, décodage URL)
+  const cleanParam = decodeURIComponent(username || '').replace(/^@+/, '').trim()
+
+  const cachedProfile = useCacheStore.getState().membersCache[cleanParam] || null
+  const cachedPosts = useCacheStore.getState().postsCache["profile_" + cleanParam] || []
+  const cachedShops = useCacheStore.getState().shopsCache["profile_" + cleanParam] || []
 
   const [profile, setProfile]         = useState(cachedProfile)
   const [posts, setPosts]             = useState(cachedPosts)
@@ -50,7 +53,14 @@ export default function PublicProfilePage() {
   const [avatarLightbox, setAvatarLightbox] = useState(false)
   const [isScrolled, setIsScrolled]   = useState(false)
 
-  const isMe = myProfile?.username === username || myProfile?.id === username || (profile && myProfile?.id === profile.id)
+  // Vérifier si c'est notre propre profil
+  const isMe = Boolean(
+    myProfile && (
+      myProfile.username?.toLowerCase() === cleanParam.toLowerCase() ||
+      myProfile.id === cleanParam ||
+      (profile && myProfile.id === profile.id)
+    )
+  )
 
   // Effet de défilement pour faire apparaître le header sticky Facebook/Twitter style
   useEffect(() => {
@@ -61,32 +71,65 @@ export default function PublicProfilePage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Réinitialiser les états quand cleanParam change
+  useEffect(() => {
+    const freshCached = useCacheStore.getState().membersCache[cleanParam] || null
+    setProfile(freshCached)
+    setPosts(useCacheStore.getState().postsCache["profile_" + cleanParam] || [])
+    setShops(useCacheStore.getState().shopsCache["profile_" + cleanParam] || [])
+    setLoading(!freshCached)
+  }, [cleanParam])
+
   // Chargement des données du profil
   const load = useCallback(async () => {
-    if (!useCacheStore.getState().membersCache[username]) {
+    if (!cleanParam || cleanParam === 'undefined' || cleanParam === 'null') {
+      setLoading(false)
+      setProfile(null)
+      return
+    }
+
+    if (!useCacheStore.getState().membersCache[cleanParam]) {
       setLoading(true)
     }
 
-    // Supporte soit l'ID UUID (depuis une notification), soit le pseudo username
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)
-    let query = supabase.from('profiles').select('*')
-    if (isUuid) {
-      query = query.eq('id', username)
-    } else {
-      query = query.eq('username', username.toLowerCase())
+    // Supporte soit l'ID UUID (depuis une notification), soit le pseudo username (insensible à la casse)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam)
+    let prof = null
+
+    try {
+      if (isUuid) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', cleanParam).maybeSingle()
+        if (data) prof = data
+      }
+
+      // Si pas encore trouvé ou si ce n'est pas un UUID : recherche par pseudo (insensible à la casse)
+      if (!prof) {
+        const { data } = await supabase.from('profiles').select('*').ilike('username', cleanParam).maybeSingle()
+        if (data) prof = data
+      }
+
+      // Fallback 2: si l'ID a été passé ou pseudo approximatif
+      if (!prof && !isUuid) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', cleanParam).maybeSingle()
+        if (data) prof = data
+      }
+    } catch (err) {
+      console.error('[PublicProfilePage load error]', err)
     }
-    const { data: prof } = await query.maybeSingle()
 
     if (!prof) {
+      setProfile(null)
       setLoading(false)
       return
     }
 
     setProfile(prof)
-    useCacheStore.getState().setMembers(username, prof)
+    useCacheStore.getState().setMembers(cleanParam, prof)
     if (prof.username) {
       useCacheStore.getState().setMembers(prof.username, prof)
+      useCacheStore.getState().setMembers(prof.username.toLowerCase(), prof)
     }
+    useCacheStore.getState().setMembers(prof.id, prof)
 
     // Publications du profil
     const { data: postsData } = await supabase
@@ -134,7 +177,7 @@ export default function PublicProfilePage() {
     }
 
     setLoading(false)
-  }, [username, user])
+  }, [cleanParam, user])
 
   useEffect(() => { load() }, [load])
 
@@ -280,12 +323,12 @@ export default function PublicProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-surface-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4 text-red-500 shadow-sm">
+      <div className="min-h-screen bg-surface-50 dark:bg-dark-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-4 text-red-500 shadow-sm">
           <UserX size={42} strokeWidth={1.8} />
         </div>
-        <h2 className="font-display font-black text-dark-900 text-2xl mb-1">Profil introuvable</h2>
-        <p className="text-dark-600/70 text-sm max-w-xs mb-6">
+        <h2 className="font-display font-black text-dark-900 dark:text-white text-2xl mb-1">Profil introuvable</h2>
+        <p className="text-dark-600/70 dark:text-dark-400 text-sm max-w-xs mb-6">
           Ce profil n'existe pas ou a peut-être changé de nom d'utilisateur.
         </p>
         <button

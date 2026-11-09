@@ -1753,14 +1753,20 @@ function PostCard({
     <div className="bg-white dark:bg-dark-900 px-4 py-4 rounded-3xl mb-3 shadow-sm border border-surface-100 dark:border-dark-800 relative">
       {/* Header */}
       <div className="flex items-start gap-3 mb-3">
-        <button onClick={() => navigate(`/profil/${post.user?.username}`)} className="relative flex-shrink-0">
+        <button onClick={() => {
+          const target = post.user?.username || post.user?.id || post.user_id
+          if (target) navigate(`/profil/${target}`)
+        }} className="relative flex-shrink-0">
           <Avatar src={post.user?.avatar_url} name={post.user?.username} size="md"/>
           {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => navigate(`/profil/${post.user?.username}`)}>
-              <p className="font-bold text-dark-800 dark:text-white text-sm">@{post.user?.username}</p>
+            <button onClick={() => {
+              const target = post.user?.username || post.user?.id || post.user_id
+              if (target) navigate(`/profil/${target}`)
+            }}>
+              <p className="font-bold text-dark-800 dark:text-white text-sm">@{post.user?.username || 'Membre'}</p>
             </button>
             {renderUserBadges(post.user)}
           </div>
@@ -2453,12 +2459,18 @@ function MembersTab({ user, profile }) {
             const isFollowed = following.has(member.id)
             return (
               <div key={member.id} className="flex items-center gap-3 px-4 py-3">
-                <button onClick={() => navigate(`/profil/${member.username}`)} className="relative flex-shrink-0">
+                <button onClick={() => {
+                  const target = member.username || member.id
+                  if (target) navigate(`/profil/${target}`)
+                }} className="relative flex-shrink-0">
                   <Avatar src={member.avatar_url} name={member.username} size="md"/>
                   {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-dark-900"/>}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <button onClick={() => navigate(`/profil/${member.username}`)} className="text-left">
+                  <button onClick={() => {
+                    const target = member.username || member.id
+                    if (target) navigate(`/profil/${target}`)
+                  }} className="text-left">
                     <p className="font-bold text-dark-800 dark:text-white text-sm truncate">{member.full_name || member.username}</p>
                     <p className="text-dark-600/50 dark:text-dark-400 text-xs">@{member.username}</p>
                   </button>
