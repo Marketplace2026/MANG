@@ -5,7 +5,7 @@ import {
   Store, MessageCircle, Share2, Grid, BookOpen,
   ChevronRight, Heart, Users, UserX, CheckCircle2,
   Phone, Calendar, Sparkles, ShieldCheck, ExternalLink,
-  X, Eye, Info, MessageSquare, Award, Clock, Edit3, Briefcase
+  X, Eye, Info, MessageSquare, Award, Clock, Edit3, Briefcase, BarChart2
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import toast from 'react-hot-toast'
@@ -783,35 +783,94 @@ export default function PublicProfilePage() {
 // ── MINI CARTE DE PUBLICATION COMMUNAUTAIRE ──
 function MiniPostCard({ post }) {
   const navigate = useNavigate()
+
+  let pollData = null
+  if (post.content && post.content.startsWith('{"is_poll":')) {
+    try {
+      pollData = JSON.parse(post.content)
+    } catch (e) {
+      pollData = null
+    }
+  }
+
+  const totalVotes = pollData && pollData.votes
+    ? Object.values(pollData.votes).reduce((acc, curr) => acc + (Array.isArray(curr) ? curr.length : 0), 0)
+    : 0
+
   return (
     <div
       onClick={() => navigate('/communaute', { state: { openPostId: post.id } })}
-      className="bg-white rounded-3xl shadow-sm border border-surface-200/80 p-4 cursor-pointer hover:border-primary-300 transition active:scale-[0.99]"
+      className="bg-white dark:bg-dark-850 rounded-3xl shadow-sm border border-surface-200/80 dark:border-dark-700/80 p-4 cursor-pointer hover:border-primary-300 dark:hover:border-primary-600 transition active:scale-[0.99]"
     >
       {post.image_url && (
-        <div className="mb-3 rounded-2xl overflow-hidden bg-surface-100 max-h-64">
+        <div className="mb-3 rounded-2xl overflow-hidden bg-surface-100 dark:bg-dark-800 max-h-64">
           <img loading="lazy" src={post.image_url} alt="post" className="w-full h-full object-cover" />
         </div>
       )}
-      {post.content && (
-        <p className="text-dark-800 text-sm leading-relaxed line-clamp-3">{post.content}</p>
+
+      {pollData ? (
+        <div className="rounded-2xl p-3.5 bg-violet-50/70 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 space-y-2 mb-2">
+          <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 font-bold text-[11px] uppercase tracking-wide">
+            <BarChart2 size={14} />
+            <span>Sondage communauté</span>
+            <span className="text-[10px] text-dark-500 dark:text-dark-400 font-normal ml-auto">
+              {totalVotes} vote{totalVotes > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <p className="text-dark-900 dark:text-white text-sm font-bold leading-snug">
+            {pollData.question}
+          </p>
+
+          <div className="space-y-1.5 pt-1">
+            {(pollData.options || []).slice(0, 3).map((opt, idx) => {
+              const voters = (pollData.votes && pollData.votes[opt]) || []
+              const percent = totalVotes > 0 ? Math.round((voters.length / totalVotes) * 100) : 0
+              return (
+                <div key={idx} className="relative overflow-hidden rounded-xl bg-white dark:bg-dark-800 border border-surface-200/80 dark:border-dark-700 px-3 py-1.5 text-xs flex items-center justify-between">
+                  <div
+                    className="absolute left-0 top-0 bottom-0 bg-violet-100/70 dark:bg-violet-900/40 transition-all"
+                    style={{ width: `${percent}%` }}
+                  />
+                  <span className="relative z-10 font-semibold text-dark-800 dark:text-dark-200 truncate pr-2">
+                    {opt}
+                  </span>
+                  <span className="relative z-10 font-bold text-[11px] text-dark-600 dark:text-dark-400 shrink-0">
+                    {percent}%
+                  </span>
+                </div>
+              )
+            })}
+            {(pollData.options || []).length > 3 && (
+              <p className="text-[10px] text-dark-400 dark:text-dark-500 text-center font-medium">
+                +{(pollData.options.length - 3)} autre{(pollData.options.length - 3) > 1 ? 's' : ''} option{(pollData.options.length - 3) > 1 ? 's' : ''}...
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        post.content && (
+          <p className="text-dark-800 dark:text-dark-200 text-sm leading-relaxed line-clamp-3">{post.content}</p>
+        )
       )}
+
       {post.shop && (
-        <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-800 rounded-xl text-xs font-semibold">
-          <Store size={12} className="text-primary-600" />
+        <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 dark:bg-primary-950/40 text-primary-800 dark:text-primary-300 rounded-xl text-xs font-semibold">
+          <Store size={12} className="text-primary-600 dark:text-primary-400" />
           <span>{post.shop.name}</span>
         </div>
       )}
-      <div className="flex items-center gap-4 mt-3 pt-2.5 border-t border-surface-100 text-xs text-dark-500">
+
+      <div className="flex items-center gap-4 mt-3 pt-2.5 border-t border-surface-100 dark:border-dark-700/60 text-xs text-dark-500 dark:text-dark-400">
         <span className="flex items-center gap-1">
           <Heart size={14} className="text-red-500 fill-red-500" />
           <span>{post.likes_count || 0}</span>
         </span>
         <span className="flex items-center gap-1">
-          <MessageCircle size={14} className="text-primary-600" />
+          <MessageCircle size={14} className="text-primary-600 dark:text-primary-400" />
           <span>{post.comments_count || 0} avis</span>
         </span>
-        <span className="ml-auto text-[11px] text-dark-400">
+        <span className="ml-auto text-[11px] text-dark-400 dark:text-dark-500">
           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
         </span>
       </div>
