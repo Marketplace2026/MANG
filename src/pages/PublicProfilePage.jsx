@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, useCacheStore } from '@/store'
 import { Avatar, BottomSheet } from '@/components/ui'
+import UserRoleBadge from '@/components/common/UserRoleBadge'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
