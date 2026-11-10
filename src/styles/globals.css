@@ -11,6 +11,16 @@
 .bg-mang-gradient {
   background: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%) !important;
 }
+
+@keyframes mangSlide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(60%); }
+  100% { transform: translateX(220%); }
+}
+
+.animate-mang-slide {
+  animation: mangSlide 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
 body { 
   padding-top: calc(env(safe-area-inset-top) + var(--pwa-banner-offset, 0px)); 
   background-color: white;

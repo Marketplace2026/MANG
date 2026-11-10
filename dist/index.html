@@ -70,31 +70,39 @@
         }
       }, true);
     </script>
-    <script type="module" crossorigin src="/assets/index-DQ8M5dAr.js"></script>
+    <script type="module" crossorigin src="/assets/index-JtU4APIW.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-CF4KUbtU.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-utils-DleeHdt0.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-CoN1UZ5H.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-icons-aA91cQ8x.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-i18n-GmFFxxL1.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-B0nifCIO.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-D64Y53FF.css">
   </head>
   <body class="bg-surface-50 font-sans">
     <div id="root">
       <!-- Fallback visuel immédiat avant le montage de React (garantit zéro page blanche) -->
       <div id="mang-preloader" class="mang-preloader-root">
-        <div style="display:flex;justify-content:center;margin-bottom:16px;">
-          <img src="/logo-mang.png" alt="MANG" style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 14px 28px rgba(0,0,0,0.35));" />
+        <div style="width:100%;height:16px;"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+          <div style="display:flex;justify-content:center;margin-bottom:18px;">
+            <img src="/logo-mang.png" alt="MANG" style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 14px 28px rgba(0,0,0,0.35));" />
+          </div>
+          <h2 style="font-size:32px;font-weight:900;letter-spacing:1px;margin:0 0 6px 0;text-shadow:0 2px 8px rgba(0,0,0,0.2);">MANG</h2>
+          <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.85;margin:0 0 22px 0;max-width:320px;line-height:1.4;font-weight:700;">Marché Agricole Nouvelle Génération</p>
+          <div class="mang-loader-track">
+            <div class="mang-loader-bar"></div>
+          </div>
+          <div id="mang-recovery-box" style="display:none;margin-top:28px;">
+            <p style="font-size:12px;opacity:0.8;margin-bottom:12px;">Chargement prolongé ?</p>
+            <button onclick="if('caches' in window){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}window.location.reload(true);" style="background:#facc15;color:#0f172a;border:none;padding:10px 20px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              Actualiser la page
+            </button>
+          </div>
         </div>
-        <h2 style="font-size:30px;font-weight:900;letter-spacing:1px;margin:0 0 6px 0;text-shadow:0 2px 8px rgba(0,0,0,0.2);">MANG</h2>
-        <p style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.85;margin:0 0 20px 0;max-width:320px;line-height:1.4;font-weight:700;">Marché Agricole Nouvelle Génération</p>
-        <div class="mang-bounce-dots">
-          <span></span><span></span><span></span>
-        </div>
-        <div id="mang-recovery-box" style="display:none;margin-top:28px;">
-          <p style="font-size:12px;opacity:0.8;margin-bottom:12px;">Chargement prolongé ?</p>
-          <button onclick="if('caches' in window){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}window.location.reload(true);" style="background:#facc15;color:#0f172a;border:none;padding:10px 20px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-            Actualiser la page
-          </button>
+        <div style="text-align:center;max-width:300px;">
+          <p style="font-size:10px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:#fbbf24;margin:0;opacity:0.95;line-height:1.5;">
+            Bâtissons le futur agro-alimentaire du continent
+          </p>
         </div>
       </div>
       <style>
@@ -105,34 +113,38 @@
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
           z-index: 999999;
           font-family: 'Nunito', sans-serif;
           color: white;
           text-align: center;
-          padding: 24px;
+          padding: 32px 24px 24px 24px;
           transition: background 0.2s ease;
         }
         html.dark .mang-preloader-root {
           background: linear-gradient(to right, #242526, #1c1e21, #242526) !important;
         }
-        .mang-bounce-dots {
-          display: flex;
-          align-items: center;
-          gap: 6px;
+        .mang-loader-track {
+          width: 96px;
+          height: 4px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 9999px;
+          overflow: hidden;
+          position: relative;
         }
-        .mang-bounce-dots span {
-          width: 9px;
-          height: 9px;
-          background: #facc15;
-          border-radius: 50%;
-          animation: mangDotBounce 1.4s infinite ease-in-out both;
+        .mang-loader-bar {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 50%;
+          background: #fbbf24;
+          border-radius: 9999px;
+          animation: mangSlidePreloader 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        .mang-bounce-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .mang-bounce-dots span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes mangDotBounce {
-          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-          40% { transform: scale(1.0); opacity: 1; }
+        @keyframes mangSlidePreloader {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(60%); }
+          100% { transform: translateX(220%); }
         }
       </style>
       <script>

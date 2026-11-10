@@ -37,17 +37,39 @@ const SettingsPage       = lazy(() => import('@/pages/SettingsPage'))
 // ── Splash screen (photo existante - initial boot uniquement) ──
 function SplashScreen() {
   return (
-    <div className="fixed inset-0 bg-mang-header flex flex-col items-center justify-center gap-4 transition-colors duration-200">
-      <div className="text-center">
-        <img src="/logo-mang.png" className="w-40 h-40 mx-auto mb-4 object-contain drop-shadow-2xl" />
-        <h1 className="font-display text-3xl text-white font-black tracking-tight">MANG</h1>
-        <p className="text-white/80 dark:text-gray-300 text-xs tracking-widest uppercase mt-1 font-semibold">Marché Agricole Nouvelle Génération</p>
+    <div className="fixed inset-0 z-50 bg-mang-gradient flex flex-col justify-between items-center py-8 px-6 select-none transition-colors duration-200"
+         style={{ paddingTop: 'max(32px, env(safe-area-inset-top))', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+      
+      {/* Espaceur haut pour équilibrer le centrage */}
+      <div className="w-full h-4" />
+
+      {/* Bloc Central Épuré */}
+      <div className="flex flex-col items-center text-center animate-fadeIn">
+        <div className="relative mb-5">
+          <img 
+            src="/logo-mang.png" 
+            alt="Logo MANG" 
+            className="w-36 h-36 sm:w-40 sm:h-40 mx-auto object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.35)]" 
+          />
+        </div>
+        <h1 className="font-display text-3xl sm:text-4xl text-white font-black tracking-tight drop-shadow-sm">
+          MANG
+        </h1>
+        <p className="text-white/85 dark:text-gray-300 text-[11px] sm:text-xs tracking-widest uppercase mt-1.5 font-bold">
+          Marché Agricole Nouvelle Génération
+        </p>
+
+        {/* Fine ligne de chargement dorée élégante */}
+        <div className="w-24 h-1 bg-white/20 dark:bg-white/10 rounded-full overflow-hidden mt-6 relative">
+          <div className="absolute inset-y-0 w-1/2 bg-gold-400 rounded-full animate-mang-slide" />
+        </div>
       </div>
-      <div className="flex gap-1.5 mt-4">
-        {[0,1,2].map(i => (
-          <div key={i} className="w-2.5 h-2.5 rounded-full bg-gold-400 animate-bounce shadow-xs"
-            style={{ animationDelay: `${i * 0.15}s` }}/>
-        ))}
+
+      {/* Signature Officielle en bas */}
+      <div className="text-center animate-fadeIn max-w-xs">
+        <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.2em] text-gold-400/95 dark:text-gold-400 drop-shadow-xs leading-relaxed">
+          BÂTISSONS LE FUTUR AGRO-ALIMENTAIRE DU CONTINENT
+        </p>
       </div>
     </div>
   )
